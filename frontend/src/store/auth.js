@@ -155,6 +155,139 @@ const useAuthStore = create(
       },
       
       clearError: () => set({ error: null }),
+      
+      register: async (userData) => {
+        console.log('Auth store register called with:', userData);
+        set({ isLoading: true, error: null });
+        try {
+          if (!userData.name || !userData.email || !userData.password) {
+            throw new Error('Tüm alanlar gerekli');
+          }
+          
+          // Real API call to backend
+          const response = await fetch('http://localhost:8000/auth/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: userData.name,
+              email: userData.email,
+              password: userData.password,
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Kayıt başarısız');
+          }
+          
+          const data = await response.json();
+          console.log('Register response:', data);
+          
+          set({
+            isLoading: false,
+            error: null,
+          });
+          
+          return { message: 'Kayıt başarılı' };
+        } catch (error) {
+          console.error('Register error in store:', error);
+          set({
+            isLoading: false,
+            error: error.message,
+          });
+          throw error;
+        }
+      },
+      
+      forgotPassword: async (email) => {
+        console.log('Auth store forgotPassword called with:', email);
+        set({ isLoading: true, error: null });
+        try {
+          if (!email) {
+            throw new Error('Email adresi gerekli');
+          }
+          
+          // Real API call to backend
+          const response = await fetch('http://localhost:8000/auth/forgot-password', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: email,
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Şifre sıfırlama isteği başarısız');
+          }
+          
+          const data = await response.json();
+          console.log('Forgot password response:', data);
+          
+          set({
+            isLoading: false,
+            error: null,
+          });
+          
+          return { message: 'Şifre sıfırlama linki gönderildi' };
+        } catch (error) {
+          console.error('Forgot password error in store:', error);
+          set({
+            isLoading: false,
+            error: error.message,
+          });
+          throw error;
+        }
+      },
+      
+      resetPassword: async (token, email, newPassword) => {
+        console.log('Auth store resetPassword called');
+        set({ isLoading: true, error: null });
+        try {
+          if (!token || !email || !newPassword) {
+            throw new Error('Tüm alanlar gerekli');
+          }
+          
+          // Real API call to backend
+          const response = await fetch('http://localhost:8000/auth/reset-password', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token: token,
+              email: email,
+              new_password: newPassword,
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Şifre sıfırlama başarısız');
+          }
+          
+          const data = await response.json();
+          console.log('Reset password response:', data);
+          
+          set({
+            isLoading: false,
+            error: null,
+          });
+          
+          return { message: 'Şifre başarıyla sıfırlandı' };
+        } catch (error) {
+          console.error('Reset password error in store:', error);
+          set({
+            isLoading: false,
+            error: error.message,
+          });
+          throw error;
+        }
+      },
     }),
     {
       name: 'cyberscope-auth',

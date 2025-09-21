@@ -10,6 +10,9 @@ import AppShell from './components/layout/AppShell';
 
 // Auth pages
 import Login from './features/auth/Login';
+import Register from './features/auth/Register';
+import ForgotPassword from './features/auth/ForgotPassword';
+import ResetPassword from './features/auth/ResetPassword';
 
 // Feature pages
 import Dashboard from './features/dashboard/Dashboard';
@@ -80,6 +83,30 @@ function App() {
               element={
                 <AuthRoute>
                   <Login />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="/auth/register"
+              element={
+                <AuthRoute>
+                  <Register />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="/auth/forgot-password"
+              element={
+                <AuthRoute>
+                  <ForgotPassword />
+                </AuthRoute>
+              }
+            />
+            <Route
+              path="/auth/reset-password"
+              element={
+                <AuthRoute>
+                  <ResetPassword />
                 </AuthRoute>
               }
             />
