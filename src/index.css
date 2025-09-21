@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary-950: #070D1A;
+  --color-primary-900: #0B1730;
+  --color-primary-800: #0F2147;
+  --color-primary-700: #12305F;
+  --color-primary-600: #163D79;
+  --color-primary-500: #1A4A93;
+  --color-primary-400: #2A67AF;
+  --color-primary-300: #3B85CB;
+  --color-primary-200: #6FA7DE;
+  --color-primary-100: #A9C8EE;
+  
+  --color-surface-bg: #0B1220;
+  --color-surface-panel: #0F1A33;
+  --color-surface-border: #1E2B4A;
+  --color-surface-muted: #94A3B8;
+  
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #38BDF8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-surface-bg);
+  color: #ffffff;
+}
+
+code {
+  font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-panel);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-600);
+}
+
+/* Glass morphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-bg;
+}
+
+/* Animation utilities */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Risk badge colors */
+.risk-low { @apply bg-success/20 text-success border-success/30; }
+.risk-medium { @apply bg-warning/20 text-warning border-warning/30; }
+.risk-high { @apply bg-danger/20 text-danger border-danger/30; }
+.risk-critical { @apply bg-red-600/20 text-red-400 border-red-600/30; }
+
+/* Severity colors */
+.severity-low { @apply bg-green-500/20 text-green-400; }
+.severity-medium { @apply bg-yellow-500/20 text-yellow-400; }
+.severity-high { @apply bg-orange-500/20 text-orange-400; }
+.severity-critical { @apply bg-red-500/20 text-red-400; }
