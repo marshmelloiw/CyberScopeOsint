@@ -1,11 +1,7 @@
 osint\controller\HealthController.class
-osint\controller\AuthController$MessageResponse.class
-osint\dto\LoginRequest.class
-osint\controller\AuthController$ErrorResponse.class
-osint\dto\ResetPasswordRequest.class
+osint\service\HaveIBeenPwnedService.class
+osint\controller\OsintController.class
+osint\service\ShodanService.class
+osint\service\VirusTotalService.class
 osint\config\SecurityConfig.class
-osint\dto\ForgotPasswordRequest.class
-osint\dto\JwtResponse.class
 osint\OsintBackendApplication.class
-osint\controller\AuthController.class
-osint\dto\RegisterRequest.class

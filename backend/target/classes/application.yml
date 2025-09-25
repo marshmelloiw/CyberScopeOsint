@@ -7,6 +7,18 @@ spring:
   
   profiles:
     active: dev
+  
+  config:
+    import: optional:file:.env
+
+# OSINT API Keys Configuration
+osint:
+  shodan:
+    api-key: ${SHODAN_API_KEY:Vg3Cqg9KxB32E0ZhT1JRraMiYLeBAjdf}
+  virustotal:
+    api-key: ${VIRUSTOTAL_API_KEY:5f8038cb6237695af7d6b01f508fff4d1512782710d924ac6df87b07ffe2219b}
+  hibp:
+    api-key: ${HIBP_API_KEY:your_actual_hibp_api_key_here}
 
 logging:
   level:
