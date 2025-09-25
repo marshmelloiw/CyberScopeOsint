@@ -35,19 +35,19 @@ const Login = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     clearError();
-    
+
     try {
       console.log('Login attempt with:', data);
       const result = await login(data);
       console.log('Login result:', result);
-      
+
       // Check if MFA is required
       if (result && result.token_type === 'mfa_required') {
         setMfaUsername(data.email);
         setShowMFA(true);
         return;
       }
-      
+
       console.log('Navigating to /');
       navigate('/');
     } catch (err) {
@@ -95,6 +95,8 @@ const Login = () => {
             onCancel={handleMFACancel}
           />
         </div>
+
+
       </div>
     );
   }
@@ -202,14 +204,7 @@ const Login = () => {
               </div>
             </div>
 
-            {/* MFA button */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate('/auth/mfa')}
-            >
-              İki Faktörlü Doğrulama
-            </Button>
+            {/* MFA setup giriş ekranından kaldırıldı; Settings > Security içinde */}
 
             {/* Register link */}
             <div className="mt-6 text-center">
@@ -236,5 +231,6 @@ const Login = () => {
     </div>
   );
 };
+
 
 export default Login;
