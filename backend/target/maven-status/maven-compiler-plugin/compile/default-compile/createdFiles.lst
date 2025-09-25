@@ -1,0 +1,11 @@
+osint\controller\HealthController.class
+osint\controller\AuthController$MessageResponse.class
+osint\dto\LoginRequest.class
+osint\controller\AuthController$ErrorResponse.class
+osint\dto\ResetPasswordRequest.class
+osint\config\SecurityConfig.class
+osint\dto\ForgotPasswordRequest.class
+osint\dto\JwtResponse.class
+osint\OsintBackendApplication.class
+osint\controller\AuthController.class
+osint\dto\RegisterRequest.class

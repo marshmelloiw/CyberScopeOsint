@@ -1,0 +1,9 @@
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\config\SecurityConfig.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\dto\ForgotPasswordRequest.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\dto\RegisterRequest.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\dto\LoginRequest.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\dto\ResetPasswordRequest.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\controller\AuthController.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\dto\JwtResponse.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\OsintBackendApplication.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\controller\HealthController.java

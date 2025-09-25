@@ -34,7 +34,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
     
     try {
       // Real API call to backend
-      const response = await fetch('http://localhost:8000/auth/mfa/setup', {
+      const response = await fetch('http://localhost:8080/api/auth/mfa/setup', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -90,7 +90,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
     
     try {
       // Real API call to backend
-      const response = await fetch('http://localhost:8000/auth/mfa/enable', {
+      const response = await fetch('http://localhost:8080/api/auth/mfa/enable', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,

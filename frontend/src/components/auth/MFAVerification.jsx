@@ -29,7 +29,7 @@ const MFAVerification = ({ username, onVerificationSuccess, onBack, onCancel }) 
     
     try {
       // Real API call to backend
-      const response = await fetch('http://localhost:8000/auth/mfa/verify', {
+      const response = await fetch('http://localhost:8080/api/auth/mfa/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

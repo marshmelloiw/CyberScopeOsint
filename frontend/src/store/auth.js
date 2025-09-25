@@ -34,7 +34,7 @@ const useAuthStore = create(
           }
           
           // Real API call to backend
-          const response = await fetch('http://localhost:8000/auth/login', {
+          const response = await fetch('http://localhost:8080/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -165,7 +165,7 @@ const useAuthStore = create(
           }
           
           // Real API call to backend
-          const response = await fetch('http://localhost:8000/auth/register', {
+          const response = await fetch('http://localhost:8080/api/auth/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ const useAuthStore = create(
           }
           
           // Real API call to backend
-          const response = await fetch('http://localhost:8000/auth/forgot-password', {
+          const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ const useAuthStore = create(
           }
           
           // Real API call to backend
-          const response = await fetch('http://localhost:8000/auth/reset-password', {
+          const response = await fetch('http://localhost:8080/api/auth/reset-password', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
