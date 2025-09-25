@@ -6,6 +6,7 @@ import { Shield, QrCode, Smartphone, CheckCircle, AlertCircle } from 'lucide-rea
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Card } from '../ui/Card';
+import useAuthStore from '../../store/auth';
 import QRCode from 'qrcode';
 
 const mfaSetupSchema = z.object({
@@ -13,11 +14,14 @@ const mfaSetupSchema = z.object({
 });
 
 const MFASetup = ({ onSetupComplete, onCancel }) => {
-  const [step, setStep] = useState('setup'); // 'setup', 'verification', 'success'
+  const [step, setStep] = useState('verification'); // 'verification', 'success'
   const [qrCodeData, setQrCodeData] = useState(null);
   const [qrCodeImage, setQrCodeImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
 
   const {
     register,
@@ -28,18 +32,24 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
     resolver: zodResolver(mfaSetupSchema),
   });
 
+  // Sayfa açılır açılmaz otomatik olarak QR/secret üretmek için
+  useEffect(() => {
+    initiateMFASetup();
+  }, []);
+
   const initiateMFASetup = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Real API call to backend
       const response = await fetch('http://localhost:8080/api/auth/mfa/setup', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ username: user?.email }),
       });
 
       if (!response.ok) {
@@ -48,11 +58,15 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
 
       const data = await response.json();
       setQrCodeData(data);
+      // Başarılı yanıtta da QR görselini üret
+      if (data?.totp_uri) {
+        await generateQRCode(data.totp_uri);
+      }
       setStep('verification');
     } catch (error) {
       console.error('MFA setup error:', error);
       setError('MFA setup başlatılamadı. Lütfen tekrar deneyin.');
-      
+
       // Mock data for development
       setQrCodeData({
         totp_secret: 'JBSWY3DPEHPK3PXP',
@@ -60,7 +74,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
         message: 'QR kodu authenticator app ile tarayın'
       });
       setStep('verification');
-      
+
       // Generate QR code
       generateQRCode('otpauth://totp/CyberScope:melisa?secret=JBSWY3DPEHPK3PXP&issuer=CyberScope');
     } finally {
@@ -87,18 +101,16 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
   const verifyAndEnableMFA = async (data) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Real API call to backend
-      const response = await fetch('http://localhost:8080/api/auth/mfa/enable', {
+      const response = await fetch('http://localhost:8080/api/auth/mfa/verify', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'user': credentials.email,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: credentials.email,
+          username: user?.email,
           totp_token: data.totp_token,
         }),
       });
@@ -114,7 +126,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
     } catch (error) {
       console.error('MFA verification error:', error);
       setError('Geçersiz TOTP token. Lütfen tekrar deneyin.');
-      
+
       // Mock success for development
       setStep('success');
       setTimeout(() => {
@@ -132,7 +144,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           <Shield className="w-8 h-8 text-blue-600" />
         </div>
       </div>
-      
+
       <div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           İki Faktörlü Kimlik Doğrulama
@@ -141,19 +153,19 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           Hesabınızı daha güvenli hale getirmek için MFA'yı etkinleştirin
         </p>
       </div>
-      
+
       <div className="space-y-4">
         <div className="flex items-center justify-center space-x-3 text-sm text-gray-600">
           <Smartphone className="w-4 h-4" />
           <span>Google Authenticator, Authy veya benzeri bir app kullanın</span>
         </div>
-        
+
         <div className="flex items-center justify-center space-x-3 text-sm text-gray-600">
           <QrCode className="w-4 h-4" />
           <span>QR kodu tarayarak hesabınızı ekleyin</span>
         </div>
       </div>
-      
+
       <Button
         onClick={initiateMFASetup}
         disabled={isLoading}
@@ -161,7 +173,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
       >
         {isLoading ? 'Hazırlanıyor...' : 'MFA Kurulumunu Başlat'}
       </Button>
-      
+
       <Button
         variant="outline"
         onClick={onCancel}
@@ -182,28 +194,28 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           Authenticator app'inizde QR kodu tarayın veya kodu manuel olarak girin
         </p>
       </div>
-      
+
       {/* QR Code Display */}
       <div className="flex justify-center">
         <div className="bg-white p-4 rounded-lg border">
           {qrCodeImage ? (
-            <img 
-              src={qrCodeImage} 
-              alt="MFA QR Code" 
+            <img
+              src={qrCodeImage}
+              alt="MFA QR Code"
               className="w-48 h-48 rounded"
             />
           ) : (
             <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
               <QrCode className="w-24 h-24 text-gray-400" />
               <div className="text-xs text-gray-500 text-center">
-                QR Kod<br/>
+                QR Kod<br />
                 Yükleniyor...
               </div>
             </div>
           )}
         </div>
       </div>
-      
+
       {/* Manual Secret Entry */}
       <div className="text-center">
         <p className="text-sm text-gray-600 mb-2">Veya manuel olarak girin:</p>
@@ -211,7 +223,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           {qrCodeData?.totp_secret}
         </div>
       </div>
-      
+
       {/* TOTP Verification Form */}
       <form onSubmit={handleSubmit(verifyAndEnableMFA)} className="space-y-4">
         <div>
@@ -228,14 +240,14 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
             <p className="text-red-600 text-sm mt-1">{errors.totp_token.message}</p>
           )}
         </div>
-        
+
         {error && (
           <div className="flex items-center space-x-2 text-red-600 text-sm">
             <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
           </div>
         )}
-        
+
         <Button
           type="submit"
           disabled={isLoading}
@@ -244,7 +256,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           {isLoading ? 'Doğrulanıyor...' : 'MFA\'yı Etkinleştir'}
         </Button>
       </form>
-      
+
       <Button
         variant="outline"
         onClick={() => setStep('setup')}
@@ -262,7 +274,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
       </div>
-      
+
       <div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           MFA Başarıyla Etkinleştirildi!
@@ -271,10 +283,10 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           Artık hesabınız iki faktörlü kimlik doğrulama ile korunuyor
         </p>
       </div>
-      
+
       <div className="bg-green-50 p-4 rounded-lg">
         <p className="text-sm text-green-800">
-          <strong>Önemli:</strong> Backup kodlarınızı güvenli bir yerde saklayın. 
+          <strong>Önemli:</strong> Backup kodlarınızı güvenli bir yerde saklayın.
           Telefonunuzu kaybederseniz, bu kodlar olmadan hesabınıza erişemeyebilirsiniz.
         </p>
       </div>
