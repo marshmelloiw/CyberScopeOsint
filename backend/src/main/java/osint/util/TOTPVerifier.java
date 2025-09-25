@@ -13,10 +13,14 @@ public class TOTPVerifier {
     public boolean verify(String base32Secret, int code) throws Exception {
         long epochSeconds = System.currentTimeMillis() / 1000L;
         long currentCounter = epochSeconds / TIME_STEP_SECONDS;
-        int current = generateCode(base32Secret, currentCounter);
-        int previous = generateCode(base32Secret, currentCounter - 1);
-        int next = generateCode(base32Secret, currentCounter + 1);
-        return code == current || code == previous || code == next;
+        // Zaman senkronizasyon sorunları için toleransı genişlet (-2..+2)
+        for (long offset = -2; offset <= 2; offset++) {
+            int candidate = generateCode(base32Secret, currentCounter + offset);
+            if (candidate == code) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int generateCode(String base32Secret, long counter) throws Exception {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -13,9 +13,12 @@ const Settings = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showMFASetup, setShowMFASetup] = useState(false);
-  
+
   const { theme, toggleTheme, sidebarCollapsed, toggleSidebar } = useUIStore();
   const { user, updateProfile } = useAuthStore();
+  const phoneRef = useRef(null);
+  const [savingSms, setSavingSms] = useState(false);
+  const [smsSaveMessage, setSmsSaveMessage] = useState('');
 
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -29,6 +32,9 @@ const Settings = () => {
     newPassword: '',
     confirmPassword: '',
     twoFactorEnabled: true,
+    smsMfaEnabled: false,
+    countryCode: '+90',
+    phoneNumber: '',
     sessionTimeout: 30,
   });
 
@@ -122,7 +128,7 @@ const Settings = () => {
                   placeholder="Enter your full name"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Email Address</label>
                 <Input
@@ -132,7 +138,7 @@ const Settings = () => {
                   placeholder="Enter your email"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Role</label>
                 <Input
@@ -141,7 +147,7 @@ const Settings = () => {
                   placeholder="Enter your role"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Avatar URL</label>
                 <Input
@@ -175,7 +181,7 @@ const Settings = () => {
                 Active
               </span>
             </div>
-            
+
             <div className="flex justify-between items-center p-3 bg-surface-panel/50 rounded-lg">
               <div>
                 <p className="font-medium text-white">Member Since</p>
@@ -183,7 +189,7 @@ const Settings = () => {
               </div>
               <span className="text-white">January 2024</span>
             </div>
-            
+
             <div className="flex justify-between items-center p-3 bg-surface-panel/50 rounded-lg">
               <div>
                 <p className="font-medium text-white">Last Login</p>
@@ -224,7 +230,7 @@ const Settings = () => {
                 </button>
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-white mb-2">New Password</label>
               <Input
@@ -234,7 +240,7 @@ const Settings = () => {
                 placeholder="Enter new password"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-white mb-2">Confirm New Password</label>
               <div className="relative">
@@ -279,7 +285,22 @@ const Settings = () => {
                     <span className="px-3 py-1 bg-success/20 text-success text-sm rounded-full">
                       Enabled
                     </span>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await fetch('http://localhost:8080/api/auth/mfa/disable', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: user?.email })
+                          });
+                          updateProfile({ ...user, totp_enabled: false });
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }}
+                    >
                       Configure
                     </Button>
                   </>
@@ -288,8 +309,8 @@ const Settings = () => {
                     <span className="px-3 py-1 bg-warning/20 text-warning text-sm rounded-full">
                       Disabled
                     </span>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setShowMFASetup(true)}
                     >
@@ -299,7 +320,126 @@ const Settings = () => {
                 )}
               </div>
             </div>
-            
+
+            {/* SMS MFA */}
+            <div className="p-3 bg-surface-panel/50 rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-white">SMS MFA</p>
+                  <p className="text-sm text-surface-muted">Telefon numaranıza SMS ile kod gönderilir</p>
+                </div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={securityData.smsMfaEnabled}
+                    onChange={(e) => setSecurityData(prev => ({ ...prev, smsMfaEnabled: e.target.checked }))}
+                  />
+                  <span className="text-sm text-white">Aktif</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Ülke</label>
+                  <select
+                    value={securityData.countryCode}
+                    onChange={(e) => setSecurityData(prev => ({ ...prev, countryCode: e.target.value }))}
+                    className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white"
+                  >
+                    <option value="+90">Türkiye (+90)</option>
+                    <option value="+1">ABD/Canada (+1)</option>
+                    <option value="+44">Birleşik Krallık (+44)</option>
+                    <option value="+49">Almanya (+49)</option>
+                    <option value="+33">Fransa (+33)</option>
+                    <option value="+34">İspanya (+34)</option>
+                    <option value="+39">İtalya (+39)</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-white mb-2">Telefon Numarası</label>
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="555XXXXXXX (başında 0 yok)"
+                    value={securityData.phoneNumber}
+                    ref={phoneRef}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setSecurityData(prev => ({ ...prev, phoneNumber: next }));
+                      // Odak kaybını engelle
+                      requestAnimationFrame(() => phoneRef.current && phoneRef.current.focus());
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </div>
+                <Button
+                  disabled={savingSms}
+                  onClick={async () => {
+                    try {
+                      setSmsSaveMessage('');
+                      setSavingSms(true);
+                      const emailVal = user?.email || (profileData?.email ?? '');
+                      if (!emailVal) {
+                        setSmsSaveMessage('Önce profil email adresinizi girin.');
+                        return;
+                      }
+                      const normalized = (securityData.phoneNumber || '').replace(/\D/g, '').replace(/^0+/, '');
+                      if (!normalized) {
+                        setSmsSaveMessage('Telefon numarası boş olamaz.');
+                        return;
+                      }
+                      const fullPhone = `${securityData.countryCode}${normalized}`;
+                      const res = await fetch('http://localhost:8080/api/auth/mfa/sms/setup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          username: emailVal,
+                          phoneNumber: fullPhone,
+                          enabled: securityData.smsMfaEnabled,
+                        })
+                      });
+                      if (!res.ok) {
+                        const text = await res.text();
+                        throw new Error(text || 'SMS MFA kaydedilemedi');
+                      }
+                      const data = await res.json();
+                      // Ülke kodunu yanlışlıkla yerel numaranın ilk hanesiyle birlikte silmemek için
+                      const savedFull = (data.phoneNumber || fullPhone);
+                      const chosenCc = (prev => prev)(securityData).countryCode || '+90';
+                      const savedNoPlus = savedFull.startsWith('+') ? savedFull.slice(1) : savedFull;
+                      const ccDigits = chosenCc.replace('+', '');
+                      const localPart = savedNoPlus.startsWith(ccDigits)
+                        ? savedNoPlus.slice(ccDigits.length)
+                        : normalized; // fallback: kullanıcının girdiği normalize numara
+
+                      setSecurityData(prev => ({
+                        ...prev,
+                        smsMfaEnabled: !!data.smsMfaEnabled,
+                        phoneNumber: localPart,
+                        countryCode: chosenCc,
+                      }));
+                      setSmsSaveMessage('Kaydedildi');
+                    } catch (e) {
+                      console.error(e);
+                      setSmsSaveMessage('Kaydedilemedi');
+                    } finally {
+                      setSavingSms(false);
+                    }
+                  }}
+                >
+                  {savingSms ? 'Kaydediliyor...' : 'Kaydet'}
+                </Button>
+              </div>
+              {smsSaveMessage && (
+                <p className="text-sm text-surface-muted">{smsSaveMessage}</p>
+              )}
+            </div>
+
             <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
               <div>
                 <p className="font-medium text-white">Session Timeout</p>
@@ -337,7 +477,7 @@ const Settings = () => {
               </div>
               <span className="text-xs text-surface-muted">IP: 192.168.1.100</span>
             </div>
-            
+
             <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <Globe className="h-5 w-5 text-info" />
@@ -384,7 +524,7 @@ const Settings = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div
                   className={cn(
                     'p-4 border rounded-lg cursor-pointer transition-all',
@@ -402,7 +542,7 @@ const Settings = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div
                   className={cn(
                     'p-4 border rounded-lg cursor-pointer transition-all',
@@ -437,7 +577,7 @@ const Settings = () => {
                   <option value="spacious">Spacious</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Animations</label>
                 <div className="flex items-center space-x-3">
@@ -500,7 +640,7 @@ const Settings = () => {
                 placeholder="Enter organization name"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-white mb-2">Domain</label>
               <Input
@@ -509,7 +649,7 @@ const Settings = () => {
                 placeholder="Enter domain"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-white mb-2">Industry</label>
               <select
@@ -524,7 +664,7 @@ const Settings = () => {
                 <option value="Other">Other</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-white mb-2">Company Size</label>
               <select
@@ -539,7 +679,7 @@ const Settings = () => {
                 <option value="500+">500+ employees</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-white mb-2">Timezone</label>
               <select
@@ -553,7 +693,7 @@ const Settings = () => {
                 <option value="Europe/London">Europe/London (UTC+0)</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-white mb-2">Language</label>
               <select
@@ -585,7 +725,7 @@ const Settings = () => {
         </CardHeader>
         <CardContent>
           <p className="text-surface-muted">
-            Notification settings are managed in the Notifications page. 
+            Notification settings are managed in the Notifications page.
             <Button variant="link" className="p-0 h-auto text-primary">
               Go to Notifications
             </Button>
@@ -615,7 +755,7 @@ const Settings = () => {
                 Manage Keys
               </Button>
             </div>
-            
+
             <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <Globe className="h-5 w-5 text-primary" />

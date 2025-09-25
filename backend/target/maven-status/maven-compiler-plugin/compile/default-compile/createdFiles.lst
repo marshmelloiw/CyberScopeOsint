@@ -1,9 +1,0 @@
-
-osint\controller\HealthController.class
-osint\service\HaveIBeenPwnedService.class
-osint\controller\OsintController.class
-osint\service\ShodanService.class
-osint\service\VirusTotalService.class
-osint\config\SecurityConfig.class
-osint\OsintBackendApplication.class
-

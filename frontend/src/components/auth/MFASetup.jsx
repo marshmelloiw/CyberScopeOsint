@@ -53,7 +53,8 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
       });
 
       if (!response.ok) {
-        throw new Error('MFA setup başlatılamadı');
+        const text = await response.text();
+        throw new Error(text || 'MFA setup başlatılamadı');
       }
 
       const data = await response.json();
@@ -66,17 +67,6 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
     } catch (error) {
       console.error('MFA setup error:', error);
       setError('MFA setup başlatılamadı. Lütfen tekrar deneyin.');
-
-      // Mock data for development
-      setQrCodeData({
-        totp_secret: 'JBSWY3DPEHPK3PXP',
-        totp_uri: 'otpauth://totp/CyberScope:melisa?secret=JBSWY3DPEHPK3PXP&issuer=CyberScope',
-        message: 'QR kodu authenticator app ile tarayın'
-      });
-      setStep('verification');
-
-      // Generate QR code
-      generateQRCode('otpauth://totp/CyberScope:melisa?secret=JBSWY3DPEHPK3PXP&issuer=CyberScope');
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +106,8 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
       });
 
       if (!response.ok) {
-        throw new Error('MFA verification başarısız');
+        const text = await response.text();
+        throw new Error(text || 'MFA verification başarısız');
       }
 
       setStep('success');
@@ -125,13 +116,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
       }, 2000);
     } catch (error) {
       console.error('MFA verification error:', error);
-      setError('Geçersiz TOTP token. Lütfen tekrar deneyin.');
-
-      // Mock success for development
-      setStep('success');
-      setTimeout(() => {
-        onSetupComplete();
-      }, 2000);
+      setError('Geçersiz TOTP token veya secret eşleşmedi. Lütfen QR’ı yeniden tarayın ve 30 sn içinde deneyin.');
     } finally {
       setIsLoading(false);
     }
