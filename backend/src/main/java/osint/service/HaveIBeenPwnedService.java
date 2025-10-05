@@ -19,13 +19,15 @@ public class HaveIBeenPwnedService {
 
     public HaveIBeenPwnedService(@Value("${osint.hibp.api-key:}") String apiKey) {
         this.apiKey = apiKey;
-        logger.info("HaveIBeenPwnedService - API Key: {}", (apiKey != null && !apiKey.isEmpty() ? "SET" : "NOT SET"));
+        logger.info("HaveIBeenPwnedService - API Key: {}",
+                (apiKey != null && !apiKey.isEmpty() && !apiKey.equals("your_actual_hibp_api_key_here") ? "SET"
+                        : "NOT SET"));
 
         WebClient.Builder builder = WebClient.builder()
                 .baseUrl("https://haveibeenpwned.com/api/v3");
 
         // Sadece API key varsa header ekle
-        if (apiKey != null && !apiKey.isEmpty()) {
+        if (apiKey != null && !apiKey.isEmpty() && !apiKey.equals("your_actual_hibp_api_key_here")) {
             builder.defaultHeader("hibp-api-key", apiKey);
         }
 
@@ -33,7 +35,7 @@ public class HaveIBeenPwnedService {
     }
 
     public Mono<Map<String, Object>> checkEmailBreach(String email) {
-        if (apiKey.isEmpty()) {
+        if (apiKey == null || apiKey.isEmpty() || apiKey.equals("your_actual_hibp_api_key_here")) {
             return Mono.just(createErrorMap("HaveIBeenPwned API key not configured"));
         }
 
@@ -41,12 +43,16 @@ public class HaveIBeenPwnedService {
                 .uri("/breachedaccount/{email}", email)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> (Map<String, Object>) response)
+                .map(response -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> typedResponse = (Map<String, Object>) response;
+                    return typedResponse;
+                })
                 .onErrorReturn(createErrorMap("Failed to check email breach from HaveIBeenPwned"));
     }
 
     public Mono<Map<String, Object>> getBreachDetails(String breachName) {
-        if (apiKey.isEmpty()) {
+        if (apiKey == null || apiKey.isEmpty() || apiKey.equals("your_actual_hibp_api_key_here")) {
             return Mono.just(createErrorMap("HaveIBeenPwned API key not configured"));
         }
 
@@ -54,7 +60,11 @@ public class HaveIBeenPwnedService {
                 .uri("/breach/{breachName}", breachName)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> (Map<String, Object>) response)
+                .map(response -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> typedResponse = (Map<String, Object>) response;
+                    return typedResponse;
+                })
                 .onErrorReturn(createErrorMap("Failed to fetch breach details from HaveIBeenPwned"));
     }
 

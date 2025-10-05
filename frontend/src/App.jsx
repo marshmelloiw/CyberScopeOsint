@@ -42,14 +42,14 @@ const queryClient = new QueryClient({
 // Protected route component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
-  
+
   console.log('ProtectedRoute check:', { isAuthenticated, user });
-  
+
   if (!isAuthenticated) {
     console.log('Not authenticated, redirecting to login');
     return <Navigate to="/auth/login" replace />;
   }
-  
+
   console.log('Authenticated, rendering children');
   return children;
 };
@@ -57,17 +57,17 @@ const ProtectedRoute = ({ children }) => {
 // Auth route component (redirect if already authenticated)
 const AuthRoute = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
-  
+
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-  
+
   return children;
 };
 
 function App() {
   const { initializeTheme } = useUIStore();
-  
+
   useEffect(() => {
     initializeTheme();
   }, [initializeTheme]);
@@ -110,7 +110,7 @@ function App() {
                 </AuthRoute>
               }
             />
-            
+
             {/* Protected routes */}
             <Route
               path="/"
@@ -121,37 +121,41 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              
+
               {/* Scans routes */}
               <Route path="scans" element={<ScansList />} />
               <Route path="scans/new" element={<NewScan />} />
-              
+
               {/* Entities routes */}
+              <Route path="entities" element={<Navigate to="/entities/email" replace />} />
               <Route path="entities/email" element={<EmailBreach />} />
               <Route path="entities/domain" element={<DomainIP />} />
-              
+              <Route path="entities/ports" element={<div className="p-6"><h1 className="text-2xl font-bold text-white mb-4">Ports & Services</h1><p className="text-surface-muted">Coming soon...</p></div>} />
+              <Route path="entities/social" element={<div className="p-6"><h1 className="text-2xl font-bold text-white mb-4">Social Monitor</h1><p className="text-surface-muted">Coming soon...</p></div>} />
+              <Route path="entities/links" element={<div className="p-6"><h1 className="text-2xl font-bold text-white mb-4">Links & Files</h1><p className="text-surface-muted">Coming soon...</p></div>} />
+
               {/* Reports routes */}
               <Route path="reports" element={<Reports />} />
-              
+
               {/* Notifications routes */}
               <Route path="notifications" element={<Notifications />} />
-              
+
               {/* Settings routes */}
               <Route path="settings" element={<Settings />} />
-              
+
               {/* API Keys routes */}
               <Route path="apikeys" element={<APIKeys />} />
-              
+
               {/* User Management routes */}
               <Route path="users" element={<UserManagement />} />
-              
+
               {/* Add more routes here as we build them */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Catch-all route removed to allow proper navigation */}
             </Route>
           </Routes>
         </div>
       </Router>
-      
+
       {/* React Query DevTools - only in development */}
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>

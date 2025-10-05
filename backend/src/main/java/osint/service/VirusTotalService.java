@@ -41,7 +41,11 @@ public class VirusTotalService {
                 .uri("/ip_addresses/{ip}", ip)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> (Map<String, Object>) response)
+                .map(response -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> typedResponse = (Map<String, Object>) response;
+                    return typedResponse;
+                })
                 .onErrorReturn(createErrorMap("Failed to fetch IP report from VirusTotal"));
     }
 
@@ -54,7 +58,11 @@ public class VirusTotalService {
                 .uri("/domains/{domain}", domain)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> (Map<String, Object>) response)
+                .map(response -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> typedResponse = (Map<String, Object>) response;
+                    return typedResponse;
+                })
                 .onErrorReturn(createErrorMap("Failed to fetch domain report from VirusTotal"));
     }
 
@@ -67,7 +75,11 @@ public class VirusTotalService {
                 .uri("/urls/{url}", url)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> (Map<String, Object>) response)
+                .map(response -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> typedResponse = (Map<String, Object>) response;
+                    return typedResponse;
+                })
                 .onErrorReturn(createErrorMap("Failed to fetch URL report from VirusTotal"));
     }
 

@@ -12,7 +12,7 @@ import MFAVerification from '../../components/auth/MFAVerification';
 
 const loginSchema = z.object({
   email: z.string().email('Geçerli bir email adresi giriniz'),
-  password: z.string().min(6, 'Şifre en az 6 karakter olmalıdır'),
+  password: z.string().min(1, 'Şifre gerekli'), // Geçici olarak minimum 1 karakter
   rememberMe: z.boolean().optional(),
 });
 

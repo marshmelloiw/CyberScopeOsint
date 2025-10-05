@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Search, Plus, FileText, Download, Eye, Calendar, Filter, BarChart3, Users, Globe, Mail, MapPin } from 'lucide-react';
+import { Search, Plus, FileText, Download, Eye, Calendar, Filter, BarChart3, Users, Globe, Mail, MapPin, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const Reports = () => {
@@ -105,11 +105,11 @@ const Reports = () => {
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      report.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     const matchesType = typeFilter === 'all' || report.type === typeFilter;
-    
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -299,7 +299,7 @@ const Reports = () => {
                         {report.status}
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <span className="text-surface-muted">Author:</span>
@@ -318,7 +318,7 @@ const Reports = () => {
                         <span className="text-white ml-2">{report.riskScore}/10</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-4 mt-3 text-sm text-surface-muted">
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4" />
@@ -329,7 +329,7 @@ const Reports = () => {
                         <span>{report.format} • {report.size}</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-1 mt-3">
                       {report.tags.map((tag, idx) => (
                         <span
@@ -341,7 +341,7 @@ const Reports = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col space-y-2 ml-4">
                     <Button variant="ghost" size="sm">
                       <Eye className="h-4 w-4 mr-2" />

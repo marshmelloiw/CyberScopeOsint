@@ -11,18 +11,18 @@ const useAuthStore = create(
       isAuthenticated: false,
       isLoading: false,
       error: null,
-      
+
       // Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
-      
+
       setToken: (token) => set({ token }),
-      
+
       setRefreshToken: (refreshToken) => set({ refreshToken }),
-      
+
       setLoading: (isLoading) => set({ isLoading }),
-      
+
       setError: (error) => set({ error }),
-      
+
       login: async (credentials) => {
         console.log('Auth store login called with:', credentials);
         set({ isLoading: true, error: null });
@@ -32,7 +32,7 @@ const useAuthStore = create(
           if (!credentials.email || !credentials.password) {
             throw new Error('Email ve şifre gerekli');
           }
-          
+
           // Real API call to backend
           const response = await fetch('http://localhost:8080/api/auth/login', {
             method: 'POST',
@@ -40,19 +40,19 @@ const useAuthStore = create(
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              username: credentials.email,
+              email: credentials.email,
               password: credentials.password,
             }),
           });
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Giriş başarısız');
           }
-          
+
           const data = await response.json();
           console.log('Login response:', data);
-          
+
           // Check if MFA is required
           if (data.token_type === 'mfa_required') {
             return {
@@ -60,7 +60,7 @@ const useAuthStore = create(
               message: 'MFA verification required'
             };
           }
-          
+
           // Create user object from response
           const user = {
             id: data.user_id || 1,
@@ -72,24 +72,24 @@ const useAuthStore = create(
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${credentials.email}`,
             totp_enabled: false,
           };
-          
+
           console.log('Setting auth state:', { user, isAuthenticated: true });
-          
+
           set({
             user: user,
-            token: data.access_token,
+            token: data.token, // Backend'den gelen token field'ı
             refreshToken: data.refresh_token,
             isAuthenticated: true,
             isLoading: false,
             error: null,
           });
-          
+
           // Store tokens in localStorage
-          localStorage.setItem('authToken', data.access_token);
+          localStorage.setItem('authToken', data.token);
           localStorage.setItem('refreshToken', data.refresh_token);
-          
+
           console.log('Auth state updated, returning result');
-          return { user, token: data.access_token, refreshToken: data.refresh_token };
+          return { user, token: data.token, refreshToken: data.refresh_token };
         } catch (error) {
           console.error('Login error in store:', error);
           set({
@@ -99,7 +99,7 @@ const useAuthStore = create(
           throw error;
         }
       },
-      
+
       logout: () => {
         set({
           user: null,
@@ -109,53 +109,53 @@ const useAuthStore = create(
           isLoading: false,
           error: null,
         });
-        
+
         // Clear localStorage
         localStorage.removeItem('authToken');
         localStorage.removeItem('refreshToken');
       },
-      
+
       refreshAuth: async () => {
         const { refreshToken } = get();
         if (!refreshToken) return false;
-        
+
         try {
           const response = await fetch('/api/auth/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken }),
           });
-          
+
           if (!response.ok) {
             throw new Error('Token refresh failed');
           }
-          
+
           const data = await response.json();
           set({
             token: data.token,
             refreshToken: data.refreshToken,
           });
-          
+
           // Update localStorage
           localStorage.setItem('authToken', data.token);
           localStorage.setItem('refreshToken', data.refreshToken);
-          
+
           return true;
         } catch (error) {
           get().logout();
           return false;
         }
       },
-      
+
       updateProfile: (updates) => {
         const { user } = get();
         if (user) {
           set({ user: { ...user, ...updates } });
         }
       },
-      
+
       clearError: () => set({ error: null }),
-      
+
       register: async (userData) => {
         console.log('Auth store register called with:', userData);
         set({ isLoading: true, error: null });
@@ -163,7 +163,7 @@ const useAuthStore = create(
           if (!userData.name || !userData.email || !userData.password) {
             throw new Error('Tüm alanlar gerekli');
           }
-          
+
           // Real API call to backend
           const response = await fetch('http://localhost:8080/api/auth/register', {
             method: 'POST',
@@ -176,20 +176,20 @@ const useAuthStore = create(
               password: userData.password,
             }),
           });
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Kayıt başarısız');
           }
-          
+
           const data = await response.json();
           console.log('Register response:', data);
-          
+
           set({
             isLoading: false,
             error: null,
           });
-          
+
           return { message: 'Kayıt başarılı' };
         } catch (error) {
           console.error('Register error in store:', error);
@@ -200,7 +200,7 @@ const useAuthStore = create(
           throw error;
         }
       },
-      
+
       forgotPassword: async (email) => {
         console.log('Auth store forgotPassword called with:', email);
         set({ isLoading: true, error: null });
@@ -208,7 +208,7 @@ const useAuthStore = create(
           if (!email) {
             throw new Error('Email adresi gerekli');
           }
-          
+
           // Real API call to backend
           const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
             method: 'POST',
@@ -219,20 +219,20 @@ const useAuthStore = create(
               email: email,
             }),
           });
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Şifre sıfırlama isteği başarısız');
           }
-          
+
           const data = await response.json();
           console.log('Forgot password response:', data);
-          
+
           set({
             isLoading: false,
             error: null,
           });
-          
+
           return { message: 'Şifre sıfırlama linki gönderildi' };
         } catch (error) {
           console.error('Forgot password error in store:', error);
@@ -243,7 +243,7 @@ const useAuthStore = create(
           throw error;
         }
       },
-      
+
       resetPassword: async (token, email, newPassword) => {
         console.log('Auth store resetPassword called');
         set({ isLoading: true, error: null });
@@ -251,7 +251,7 @@ const useAuthStore = create(
           if (!token || !email || !newPassword) {
             throw new Error('Tüm alanlar gerekli');
           }
-          
+
           // Real API call to backend
           const response = await fetch('http://localhost:8080/api/auth/reset-password', {
             method: 'POST',
@@ -264,20 +264,20 @@ const useAuthStore = create(
               new_password: newPassword,
             }),
           });
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Şifre sıfırlama başarısız');
           }
-          
+
           const data = await response.json();
           console.log('Reset password response:', data);
-          
+
           set({
             isLoading: false,
             error: null,
           });
-          
+
           return { message: 'Şifre başarıyla sıfırlandı' };
         } catch (error) {
           console.error('Reset password error in store:', error);
