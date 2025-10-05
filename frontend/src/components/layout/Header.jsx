@@ -117,7 +117,7 @@ const Header = () => {
           <div className="relative w-full max-w-2xl">
             <div className="glass rounded-2xl border border-white/10 p-4">
               <div className="flex items-center space-x-2">
-                <MagnifyingGlassIcon className="h-5 w-5 text-surface-muted" />
+                <Search className="h-5 w-5 text-surface-muted" />
                 <input
                   type="text"
                   placeholder="Search entities, scans, reports..."
@@ -128,7 +128,7 @@ const Header = () => {
                   ESC
                 </kbd>
               </div>
-              
+
               {/* Search results would go here */}
               <div className="mt-4 text-sm text-surface-muted">
                 Start typing to search...

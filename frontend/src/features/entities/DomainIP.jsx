@@ -76,7 +76,7 @@ const DomainIP = () => {
       { port: 443, service: 'HTTPS', status: 'open', risk: 'low' },
     ],
     threats: [],
-    reputation: {
+    reputationDetails: {
       abuseScore: 0,
       threatScore: 0,
       trustScore: 100,
@@ -85,19 +85,19 @@ const DomainIP = () => {
 
   const handleSearch = async () => {
     if (!searchTerm) return;
-    
+
     setIsSearching(true);
-    
+
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     // Return appropriate mock data based on search type
     if (searchType === 'domain') {
       setSearchResults(mockDomainData);
     } else {
       setSearchResults(mockIPData);
     }
-    
+
     setIsSearching(false);
   };
 
@@ -118,7 +118,7 @@ const DomainIP = () => {
       fair: 'bg-warning/20 text-warning border-warning/30',
       poor: 'bg-danger/20 text-danger border-danger/30',
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium border ${colors[reputation] || 'bg-surface-muted/20 text-surface-muted border-surface-muted/30'}`}>
         {reputation.toUpperCase()}
@@ -230,7 +230,7 @@ const DomainIP = () => {
                 ))}
               </div>
             </div>
-            
+
             <div>
               <h5 className="font-medium text-white mb-2">MX Records</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -531,7 +531,7 @@ const DomainIP = () => {
         <CardContent>
           <div className="space-y-3 text-sm text-surface-muted">
             <p>
-              Our domain and IP analysis service provides comprehensive security assessment using multiple 
+              Our domain and IP analysis service provides comprehensive security assessment using multiple
               intelligence sources including VirusTotal, Shodan, WHOIS databases, and threat intelligence feeds.
             </p>
             <p>

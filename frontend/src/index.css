@@ -5,6 +5,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark mode (default) */
 :root {
   --color-primary-950: #070D1A;
   --color-primary-900: #0B1730;
@@ -16,16 +17,40 @@
   --color-primary-300: #3B85CB;
   --color-primary-200: #6FA7DE;
   --color-primary-100: #A9C8EE;
-  
+
   --color-surface-bg: #0B1220;
   --color-surface-panel: #0F1A33;
   --color-surface-border: #1E2B4A;
   --color-surface-muted: #94A3B8;
-  
+
   --color-success: #22C55E;
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
   --color-info: #38BDF8;
+}
+
+/* Light mode */
+.light {
+  --color-primary-950: #f0f4ff;
+  --color-primary-900: #e0e9ff;
+  --color-primary-800: #c7d6ff;
+  --color-primary-700: #a5b8ff;
+  --color-primary-600: #8191ff;
+  --color-primary-500: #6366f1;
+  --color-primary-400: #4f46e5;
+  --color-primary-300: #4338ca;
+  --color-primary-200: #3730a3;
+  --color-primary-100: #312e81;
+
+  --color-surface-bg: #ffffff;
+  --color-surface-panel: #f8fafc;
+  --color-surface-border: #e2e8f0;
+  --color-surface-muted: #64748b;
+
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-info: #0284c7;
 }
 
 * {
@@ -40,7 +65,42 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-surface-bg);
-  color: #ffffff;
+  color: var(--color-surface-muted);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Force light mode styles - override everything */
+.light {
+  --color-surface-bg: #ffffff !important;
+  --color-surface-panel: #f8fafc !important;
+  --color-surface-border: #e2e8f0 !important;
+  --color-surface-muted: #64748b !important;
+}
+
+.light body {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.light * {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.light .bg-surface-panel,
+.light .bg-surface-bg,
+.light .bg-navy-900,
+.light .bg-navy-800 {
+  background-color: #f8fafc !important;
+}
+
+.light .text-white,
+.light .text-surface-muted {
+  color: #1f2937 !important;
+}
+
+.light .border-surface-border {
+  border-color: #e2e8f0 !important;
 }
 
 code {
@@ -95,13 +155,35 @@ code {
 }
 
 /* Risk badge colors */
-.risk-low { @apply bg-success/20 text-success border-success/30; }
-.risk-medium { @apply bg-warning/20 text-warning border-warning/30; }
-.risk-high { @apply bg-danger/20 text-danger border-danger/30; }
-.risk-critical { @apply bg-red-600/20 text-red-400 border-red-600/30; }
+.risk-low {
+  @apply bg-success/20 text-success border-success/30;
+}
+
+.risk-medium {
+  @apply bg-warning/20 text-warning border-warning/30;
+}
+
+.risk-high {
+  @apply bg-danger/20 text-danger border-danger/30;
+}
+
+.risk-critical {
+  @apply bg-red-600/20 text-red-400 border-red-600/30;
+}
 
 /* Severity colors */
-.severity-low { @apply bg-green-500/20 text-green-400; }
-.severity-medium { @apply bg-yellow-500/20 text-yellow-400; }
-.severity-high { @apply bg-orange-500/20 text-orange-400; }
-.severity-critical { @apply bg-red-500/20 text-red-400; }
+.severity-low {
+  @apply bg-green-500/20 text-green-400;
+}
+
+.severity-medium {
+  @apply bg-yellow-500/20 text-yellow-400;
+}
+
+.severity-high {
+  @apply bg-orange-500/20 text-orange-400;
+}
+
+.severity-critical {
+  @apply bg-red-500/20 text-red-400;
+}
