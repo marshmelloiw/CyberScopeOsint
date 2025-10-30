@@ -38,11 +38,7 @@ public class ShodanService {
                 .uri("/shodan/host/{ip}?key={key}", ip, apiKey)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> typedResponse = (Map<String, Object>) response;
-                    return typedResponse;
-                })
+                .map(response -> (Map<String, Object>) response)
                 .onErrorReturn(createErrorMap("Failed to fetch data from Shodan"));
     }
 
@@ -55,11 +51,7 @@ public class ShodanService {
                 .uri("/shodan/host/search?key={key}&query={query}", apiKey, query)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> typedResponse = (Map<String, Object>) response;
-                    return typedResponse;
-                })
+                .map(response -> (Map<String, Object>) response)
                 .onErrorReturn(createErrorMap("Failed to search Shodan"));
     }
 
@@ -72,11 +64,7 @@ public class ShodanService {
                 .uri("/dns/domain/{domain}?key={key}", domain, apiKey)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .map(response -> {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> typedResponse = (Map<String, Object>) response;
-                    return typedResponse;
-                })
+                .map(response -> (Map<String, Object>) response)
                 .onErrorReturn(createErrorMap("Failed to fetch domain info from Shodan"));
     }
 

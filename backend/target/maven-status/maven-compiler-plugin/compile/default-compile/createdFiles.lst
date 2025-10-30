@@ -3,11 +3,16 @@ osint/model/Role$Builder.class
 osint/service/ShodanService.class
 osint/model/Role.class
 osint/model/PasswordResetToken.class
+osint/util/JwtUtil.class
 osint/dto/JwtResponse$Builder.class
 osint/dto/JwtResponse.class
 osint/repository/RoleRepository.class
 osint/dto/ForgotPasswordRequest.class
+osint/dto/SmsMfaSetupRequest.class
+osint/config/SecurityConfig$1.class
 osint/config/SecurityConfig.class
+osint/controller/ApiKeysController.class
+osint/dto/SmsMfaVerifyRequest.class
 osint/service/VirusTotalService.class
 osint/repository/UserRepository.class
 osint/controller/HealthController.class
@@ -16,6 +21,7 @@ osint/service/SmsService.class
 osint/controller/OsintController.class
 osint/model/User$Builder.class
 osint/util/TOTPUtil.class
+osint/service/ApiKeyService.class
 osint/dto/RegisterRequest.class
 osint/service/HaveIBeenPwnedService.class
 osint/repository/PasswordResetTokenRepository.class

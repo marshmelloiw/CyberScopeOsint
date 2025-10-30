@@ -4,7 +4,10 @@
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/VirusTotalService.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/util/TOTPVerifier.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/HealthController.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/ApiKeyService.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/util/JwtUtil.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/repository/PasswordResetTokenRepository.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/ApiKeysController.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/dto/ForgotPasswordRequest.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/OsintBackendApplication.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/dto/LoginRequest.java
