@@ -21,6 +21,13 @@ public class AuthController {
         // manual wiring for in-memory setup
         this.authService = new AuthService(new UserRepository(), new RoleRepository(),
                 new PasswordResetTokenRepository());
+
+        // Seed default admin user on startup (idempotent)
+        try {
+            authService.register("admin@example.com", "Admin123!");
+        } catch (IllegalArgumentException ignored) {
+            // email already exists -> ignore
+        }
     }
 
     @PostMapping("/register")

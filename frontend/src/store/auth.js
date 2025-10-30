@@ -34,7 +34,8 @@ const useAuthStore = create(
           }
 
           // Real API call to backend
-          const response = await fetch('http://localhost:8080/api/auth/login', {
+          const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+          const response = await fetch(`${base}/api/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -45,12 +46,27 @@ const useAuthStore = create(
             }),
           });
 
+          let data;
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Giriş başarısız');
+            // Read body ONCE safely, prefer text then try to JSON-parse
+            const text = await response.text();
+            let message = `Giriş başarısız (HTTP ${response.status})`;
+            if (text) {
+              try {
+                const parsed = JSON.parse(text);
+                message = parsed.message || parsed.detail || message;
+              } catch (_) {
+                message = text;
+              }
+            }
+            throw new Error(message);
+          } else {
+            try {
+              data = await response.json();
+            } catch (_) {
+              throw new Error('Sunucudan beklenmeyen yanıt alındı');
+            }
           }
-
-          const data = await response.json();
           console.log('Login response:', data);
 
           // Check if MFA is required

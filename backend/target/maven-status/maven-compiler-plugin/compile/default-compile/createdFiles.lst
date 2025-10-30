@@ -9,7 +9,6 @@ osint/dto/JwtResponse.class
 osint/repository/RoleRepository.class
 osint/dto/ForgotPasswordRequest.class
 osint/dto/SmsMfaSetupRequest.class
-osint/config/SecurityConfig$1.class
 osint/config/SecurityConfig.class
 osint/controller/ApiKeysController.class
 osint/dto/SmsMfaVerifyRequest.class
