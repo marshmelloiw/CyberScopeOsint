@@ -181,7 +181,8 @@ const useAuthStore = create(
           }
 
           // Real API call to backend
-          const response = await fetch('http://localhost:8080/api/auth/register', {
+          const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+          const response = await fetch(`${base}/api/auth/register`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
