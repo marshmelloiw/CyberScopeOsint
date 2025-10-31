@@ -1,16 +1,87 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import StatWidget from '../../components/common/StatWidget';
 import RiskBadge from '../../components/common/RiskBadge';
+import useAuthStore from '../../store/auth';
 import {
   AlertTriangle,
   Shield,
   Search,
   FileSearch,
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from 'recharts';
 import { cn } from '../../lib/utils';
 
 const Dashboard = () => {
+  const [result, setResult] = useState(null);
+  const [trend, setTrend] = useState([]);
+  const [severityDist, setSeverityDist] = useState([]);
+  const [incidents, setIncidents] = useState([]);
+  const { user } = useAuthStore();
+  const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+
+  useEffect(() => {
+    const fetchScore = async () => {
+      try {
+        const payload = {
+          provider: {
+            virustotal_detected: 2,
+            virustotal_total: 70,
+            shodan_open_ports: 3,
+            shodan_high_risk_ports: 1,
+            hibp_breach_count: 1
+          },
+          context: { asset_type: 'domain' }
+        };
+        const res = await fetch(`${base}/api/threat/score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setResult(data);
+          const now = Date.now();
+          const series = Array.from({ length: 10 }).map((_, i) => ({
+            t: new Date(now - (9 - i) * 3600_000).toLocaleTimeString(),
+            score: Math.max(0, Math.min(100, Math.round(data.risk_score + (Math.random() * 20 - 10))))
+          }));
+          setTrend(series);
+          const dist = [
+            { name: 'Low', value: Math.max(0, 100 - data.risk_score) },
+            { name: 'Medium', value: Math.max(0, Math.min(100, data.risk_score - 30)) },
+            { name: 'High', value: Math.max(0, data.risk_score > 70 ? 30 : 10) },
+          ];
+          setSeverityDist(dist);
+        }
+      } catch (e) {
+        // ignore demo errors
+      }
+    };
+    const loadIncidents = () => {
+      setIncidents([
+        { id: 1, time: '10:12', type: 'VT Detection', detail: 'Malware flagged in sample.zip' },
+        { id: 2, time: '10:40', type: 'Shodan', detail: 'Open RDP detected on 3389' },
+        { id: 3, time: '11:05', type: 'HIBP', detail: 'Email breach found for admin@example.com' },
+      ]);
+    };
+    fetchScore();
+    loadIncidents();
+  }, []);
+
   // Mock data - in real app this would come from API
   const stats = [
     {
@@ -87,132 +158,76 @@ const Dashboard = () => {
     }
   };
 
+  const COLORS = ['#22c55e', '#eab308', '#ef4444'];
+  const isAdmin = (user?.role || '').toLowerCase() === 'admin';
+
   return (
-    <div className="space-y-6">
-      {/* Page header */}
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="p-4 border rounded xl:col-span-1">
+        <h3 className="font-semibold mb-2">AI Threat Score</h3>
+        {result ? (
+          <div className="flex items-center gap-3">
+            <RiskBadge risk={Math.round(result.risk_score/10)} showScore={true} />
       <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-surface-muted">Welcome back! Here's what's happening with your security posture.</p>
-      </div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <StatWidget key={index} {...stat} />
-        ))}
-      </div>
-
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Recent alerts */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Alerts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-center justify-between rounded-lg border border-surface-border p-4 hover:bg-surface-panel/50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={cn('h-3 w-3 rounded-full', getSeverityColor(alert.severity))} />
-                      <div>
-                        <p className="font-medium text-white">{alert.entity}</p>
-                        <p className="text-sm text-surface-muted">{alert.description}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-surface-muted">{alert.source}</p>
-                      <p className="text-xs text-surface-muted">{alert.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 text-center">
-                <button className="text-sm text-primary-500 hover:text-primary-400 transition-colors">
-                  View all alerts →
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick actions */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <button className="w-full rounded-lg bg-primary-600 p-3 text-left text-white hover:bg-primary-700 transition-colors">
-                <div className="flex items-center space-x-2">
-                  <Search className="h-5 w-5" />
-                  <span>New Scan</span>
-                </div>
-              </button>
-              <button className="w-full rounded-lg bg-surface-panel p-3 text-left text-white hover:bg-surface-border transition-colors border border-surface-border">
-                <div className="flex items-center space-x-2">
-                  <FileSearch className="h-5 w-5" />
-                  <span>Generate Report</span>
-                </div>
-              </button>
-              <button className="w-full rounded-lg bg-surface-panel p-3 text-left text-white hover:bg-surface-border transition-colors border border-surface-border">
-                <div className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5" />
-                  <span>Security Check</span>
-                </div>
-              </button>
-            </CardContent>
-          </Card>
-
-          {/* System status */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>System Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-surface-muted">API Status</span>
-                  <span className="flex items-center space-x-2">
-                    <div className="h-2 w-2 rounded-full bg-success"></div>
-                    <span className="text-sm text-success">Online</span>
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-surface-muted">Database</span>
-                  <span className="flex items-center space-x-2">
-                    <div className="h-2 w-2 rounded-full bg-success"></div>
-                    <span className="text-sm text-success">Connected</span>
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-surface-muted">External APIs</span>
-                  <span className="flex items-center space-x-2">
-                    <div className="h-2 w-2 rounded-full bg-success"></div>
-                    <span className="text-sm text-success">All Active</span>
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Charts section - placeholder for now */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Security Trends</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center text-surface-muted">
-            <p>Charts will be implemented with Recharts library</p>
+              <div className="text-sm text-gray-600">Level: {result.risk_level}</div>
+              <div className="text-sm text-gray-600">Score: {result.risk_score}</div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="text-sm text-gray-500">Hesaplanıyor...</div>
+        )}
+      </div>
+
+      <div className="p-4 border rounded xl:col-span-2">
+        <h3 className="font-semibold mb-2">Risk Trend</h3>
+        <div className="w-full h-56">
+          <ResponsiveContainer>
+            <LineChart data={trend}>
+              <Line type="monotone" dataKey="score" stroke="#2563eb" strokeWidth={2} />
+              <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+              <XAxis dataKey="t" hide />
+              <YAxis domain={[0, 100]} />
+              <Tooltip />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="p-4 border rounded xl:col-span-1">
+        <h3 className="font-semibold mb-2">Severity Distribution</h3>
+        <div className="w-full h-56">
+          <ResponsiveContainer>
+            <PieChart>
+              <Pie data={severityDist} dataKey="value" nameKey="name" outerRadius={80} label>
+                {severityDist.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+                </div>
+
+      <div className="p-4 border rounded xl:col-span-2">
+        <h3 className="font-semibold mb-2">Incident Logs</h3>
+        <div className="space-y-2">
+          {incidents.map((it) => (
+            <div key={it.id} className="flex items-center justify-between border rounded px-3 py-2">
+              <div className="text-sm text-gray-500 w-16">{it.time}</div>
+              <div className="font-medium w-40">{it.type}</div>
+              <div className="text-sm text-gray-700 flex-1">{it.detail}</div>
+                </div>
+          ))}
+        </div>
+      </div>
+
+      {isAdmin && (
+        <div className="p-4 border rounded xl:col-span-1">
+          <h3 className="font-semibold mb-2">Admin Panel</h3>
+          <p className="text-sm text-gray-600">Yalnızca Admin görünümü: sistem genel risk, kullanıcı yönetimi ve rapor tetikleme kısayolları burada yer alabilir.</p>
+          </div>
+      )}
     </div>
   );
 };

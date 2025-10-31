@@ -6,6 +6,53 @@ import { Search, Plus, FileText, Download, Eye, Calendar, Filter, BarChart3, Use
 import { cn } from '../../lib/utils';
 
 const Reports = () => {
+  const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+  const [taskId, setTaskId] = useState(null);
+  const [pdfBase64, setPdfBase64] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const startReport = async () => {
+    setLoading(true);
+    setPdfBase64(null);
+    try {
+      const res = await fetch(`${base}/api/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'CyberScope Risk Report',
+          items: [
+            { label: 'High Risks', value: '2' },
+            { label: 'Open Ports', value: '3' },
+            { label: 'HIBP Breaches', value: '1' }
+          ]
+        })
+      });
+      const data = await res.json();
+      setTaskId(data.task_id);
+      poll(data.task_id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const poll = async (id) => {
+    const iv = setInterval(async () => {
+      const res = await fetch(`${base}/api/reports/${id}`);
+      const data = await res.json();
+      if (data.status === 'done' && data.pdf_base64) {
+        clearInterval(iv);
+        setPdfBase64(data.pdf_base64);
+      }
+    }, 2000);
+  };
+
+  const download = () => {
+    const a = document.createElement('a');
+    a.href = `data:application/pdf;base64,${pdfBase64}`;
+    a.download = 'report.pdf';
+    a.click();
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -378,6 +425,29 @@ const Reports = () => {
               <Globe className="h-6 w-6" />
               <span>Domain Security Summary</span>
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Minimal UI for creating and polling report */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New Report (Minimal)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-3">Reports</h2>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={startReport} disabled={loading}>
+              {loading ? 'Creating...' : 'Create Report'}
+            </button>
+            {taskId && !pdfBase64 && (
+              <div className="mt-3 text-sm text-gray-600">Task: {taskId} (processing)</div>
+            )}
+            {pdfBase64 && (
+              <div className="mt-3">
+                <button className="px-3 py-2 bg-green-600 text-white rounded" onClick={download}>Download PDF</button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

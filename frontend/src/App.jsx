@@ -41,16 +41,15 @@ const queryClient = new QueryClient({
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, token, user } = useAuthStore();
 
-  console.log('ProtectedRoute check:', { isAuthenticated, user });
+  const hasValidSession = Boolean(token) && isAuthenticated;
+  console.log('ProtectedRoute check:', { isAuthenticated, hasValidSession, user });
 
-  if (!isAuthenticated) {
-    console.log('Not authenticated, redirecting to login');
+  if (!hasValidSession) {
     return <Navigate to="/auth/login" replace />;
   }
 
-  console.log('Authenticated, rendering children');
   return children;
 };
 

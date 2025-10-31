@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import osint.model.Role;
 import osint.service.AuthService;
@@ -13,6 +14,7 @@ import osint.repository.UserRepository;
 import osint.model.User;
 
 @SpringBootApplication
+@EnableScheduling
 public class OsintBackendApplication {
 
     public static void main(String[] args) {

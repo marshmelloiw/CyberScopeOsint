@@ -1,0 +1,70 @@
+{
+  "info": {
+    "name": "CyberScope",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {"method": "GET", "url": "{{baseUrl}}/health"}
+    },
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin123!\"\n}"}
+      }
+    },
+    {
+      "name": "Threat Score",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "X-API-KEY", "value": "{{apiKey}}"}
+        ],
+        "url": "{{baseUrl}}/api/threat/score",
+        "body": {"mode": "raw", "raw": "{\n  \"provider\": {\n    \"virustotal_detected\": 2,\n    \"virustotal_total\": 70,\n    \"shodan_open_ports\": 3,\n    \"shodan_high_risk_ports\": 1,\n    \"hibp_breach_count\": 1\n  },\n  \"context\": {\n    \"asset_type\": \"domain\"\n  }\n}"}
+      }
+    },
+    {
+      "name": "Create Report",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "X-API-KEY", "value": "{{apiKey}}"}
+        ],
+        "url": "{{baseUrl}}/api/reports",
+        "body": {"mode": "raw", "raw": "{\n  \"title\": \"CyberScope Risk Report\",\n  \"items\": [{\n    \"label\": \"High Risks\", \"value\": \"2\"\n  }]\n}"}
+      }
+    },
+    {
+      "name": "Get Report",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "X-API-KEY", "value": "{{apiKey}}"}],
+        "url": "{{baseUrl}}/api/reports/{{taskId}}"
+      }
+    },
+    {
+      "name": "Alerts Test",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "X-API-KEY", "value": "{{apiKey}}"}
+        ],
+        "url": "{{baseUrl}}/api/alerts/test",
+        "body": {"mode": "raw", "raw": "{\n  \"subject\": \"Test\",\n  \"message\": \"Alert\",\n  \"risk_score\": 85\n}"}
+      }
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080"},
+    {"key": "apiKey", "value": ""},
+    {"key": "taskId", "value": ""}
+  ]
+}

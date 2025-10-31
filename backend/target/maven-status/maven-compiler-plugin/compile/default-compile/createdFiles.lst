@@ -16,7 +16,6 @@ osint/service/VirusTotalService.class
 osint/repository/UserRepository.class
 osint/controller/HealthController.class
 osint/controller/AuthController.class
-osint/service/SmsService.class
 osint/controller/OsintController.class
 osint/model/User$Builder.class
 osint/util/TOTPUtil.class

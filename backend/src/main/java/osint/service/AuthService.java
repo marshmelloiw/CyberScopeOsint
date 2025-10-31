@@ -52,9 +52,12 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
         String mockJwt = "mock-" + UUID.randomUUID();
+        java.util.List<String> roles = user.getRoles().stream().map(Role::getName).toList();
         return JwtResponse.builder()
                 .token(mockJwt)
                 .mfaRequired(false)
+                .email(user.getEmail())
+                .roles(roles)
                 .build();
     }
 

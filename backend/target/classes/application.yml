@@ -23,6 +23,11 @@ spring:
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+# AI service config
+ai:
+  service:
+    url: ${AI_SERVICE_URL:http://localhost:8000}
+
 # OSINT API Keys Configuration
 osint:
   shodan:

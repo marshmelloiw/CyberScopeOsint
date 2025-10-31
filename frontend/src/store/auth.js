@@ -82,7 +82,7 @@ const useAuthStore = create(
             id: data.user_id || 1,
             name: credentials.email.split('@')[0],
             email: credentials.email,
-            role: 'admin', // Backend'den alınacak
+            role: Array.isArray(data.roles) && data.roles.length ? data.roles[0] : 'BIREYSEL',
             status: 'active',
             lastActive: new Date().toISOString(),
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${credentials.email}`,
