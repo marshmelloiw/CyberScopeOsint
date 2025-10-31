@@ -25,6 +25,7 @@ import Notifications from './features/notifications/Notifications';
 import Settings from './features/settings/Settings';
 import APIKeys from './features/apikeys/APIKeys';
 import UserManagement from './features/users/UserManagement';
+import Landing from './features/landing/Landing';
 
 // Mock server setup
 // MSW is initialized in main.jsx during development
@@ -77,6 +78,10 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
+            {/* Default root -> landing */}
+            <Route path="/" element={<Navigate to="/landing" replace />} />
+            {/* Public landing page */}
+            <Route path="/landing" element={<Landing />} />
             {/* Auth routes */}
             <Route
               path="/auth/login"
@@ -111,9 +116,9 @@ function App() {
               }
             />
 
-            {/* Protected routes */}
+            {/* Protected app routes */}
             <Route
-              path="/"
+              path="/app"
               element={
                 <ProtectedRoute>
                   <AppShell />
@@ -127,7 +132,7 @@ function App() {
               <Route path="scans/new" element={<NewScan />} />
 
               {/* Entities routes */}
-              <Route path="entities" element={<Navigate to="/entities/email" replace />} />
+              <Route path="entities" element={<Navigate to="/app/entities/email" replace />} />
               <Route path="entities/email" element={<EmailBreach />} />
               <Route path="entities/domain" element={<DomainIP />} />
               <Route path="entities/ports" element={<div className="p-6"><h1 className="text-2xl font-bold text-white mb-4">Ports & Services</h1><p className="text-surface-muted">Coming soon...</p></div>} />
