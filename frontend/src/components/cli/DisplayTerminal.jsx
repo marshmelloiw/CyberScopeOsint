@@ -8,6 +8,28 @@ const DisplayTerminal = ({ logs, scanId, status }) => {
   const xtermRef = useRef(null);
   const fitAddonRef = useRef(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const resizeTimerRef = useRef(null);
+
+  const safeFit = () => {
+    try {
+      const container = terminalRef.current;
+      const addon = fitAddonRef.current;
+      if (!container || !addon) return;
+
+      // Only fit when container is laid out and visible
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width > 0 && height > 0) {
+        addon.fit();
+      } else {
+        // Retry next frame until it has size (e.g., after animations/tabs)
+        requestAnimationFrame(safeFit);
+      }
+    } catch (_) {
+      // Renderer may not be ready yet; retry on next frame
+      requestAnimationFrame(safeFit);
+    }
+  };
 
   useEffect(() => {
     if (!terminalRef.current || isInitialized) return;
@@ -39,7 +61,7 @@ const DisplayTerminal = ({ logs, scanId, status }) => {
     terminal.loadAddon(fitAddon);
 
     terminal.open(terminalRef.current);
-    fitAddon.fit();
+    safeFit();
     
     xtermRef.current = terminal;
     fitAddonRef.current = fitAddon;
@@ -58,14 +80,20 @@ const DisplayTerminal = ({ logs, scanId, status }) => {
 
     // Window resize
     const handleResize = () => {
-      if (fitAddonRef.current) {
-        fitAddonRef.current.fit();
+      if (resizeTimerRef.current) {
+        clearTimeout(resizeTimerRef.current);
       }
+      resizeTimerRef.current = setTimeout(() => {
+        safeFit();
+      }, 100);
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (resizeTimerRef.current) {
+        clearTimeout(resizeTimerRef.current);
+      }
       terminal.dispose();
     };
   }, [isInitialized]);
@@ -110,7 +138,7 @@ const DisplayTerminal = ({ logs, scanId, status }) => {
   useEffect(() => {
     if (fitAddonRef.current && terminalRef.current) {
       setTimeout(() => {
-        fitAddonRef.current.fit();
+        safeFit();
       }, 100);
     }
   }, [isInitialized]);
