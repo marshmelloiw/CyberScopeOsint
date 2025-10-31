@@ -8,12 +8,14 @@ import osint.model.PasswordResetToken;
 import osint.model.Role;
 import osint.model.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.UUID;
 
+@Service
 public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -33,8 +35,8 @@ public class AuthService {
             throw new IllegalArgumentException("Email already in use");
         }
         String hash = passwordEncoder.encode(rawPassword);
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
+        Role userRole = roleRepository.findByName("BIREYSEL")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("BIREYSEL").build()));
         User user = User.builder()
                 .email(email)
                 .passwordHash(hash)

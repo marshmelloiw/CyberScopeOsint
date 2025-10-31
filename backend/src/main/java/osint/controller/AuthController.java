@@ -2,9 +2,7 @@ package osint.controller;
 
 import osint.dto.*;
 import osint.service.AuthService;
-import osint.repository.UserRepository;
-import osint.repository.RoleRepository;
-import osint.repository.PasswordResetTokenRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +15,9 @@ public class AuthController {
 
     private final AuthService authService;
 
-    public AuthController() {
-        // manual wiring for in-memory setup
-        this.authService = new AuthService(new UserRepository(), new RoleRepository(),
-                new PasswordResetTokenRepository());
+    @Autowired
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/register")

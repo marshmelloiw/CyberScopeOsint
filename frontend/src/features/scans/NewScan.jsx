@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText } from 'lucide-react';
+import DisplayTerminal from '../../components/cli/DisplayTerminal';
+import axios from '../../lib/axios';
+import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText, Terminal } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const NewScan = () => {
@@ -19,6 +21,12 @@ const NewScan = () => {
     notifications: true,
     tags: [],
   });
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanId, setScanId] = useState(null);
+  const [scanLogs, setScanLogs] = useState([]);
+  const [scanStatus, setScanStatus] = useState(null);
+  const [scanResult, setScanResult] = useState(null);
+  const pollingIntervalRef = useRef(null);
 
   const scanTypes = [
     { id: 'domain', name: 'Domain Analysis', icon: Globe, description: 'Analyze domain security, DNS, and reputation' },
@@ -65,15 +73,110 @@ const NewScan = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
+  // Poll scan status
+  useEffect(() => {
+    if (!scanId || !isScanning) {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const pollStatus = async () => {
+      try {
+        const response = await axios.get(`/scans/status/${scanId}`);
+        const status = response.data;
+        
+        setScanStatus(status.status);
+        setScanLogs(status.logs || []);
+        
+        if (status.result) {
+          setScanResult(status.result);
+        }
+        
+        if (status.status === 'COMPLETED' || status.status === 'FAILED') {
+          setIsScanning(false);
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }
+      } catch (error) {
+        console.error('Error polling scan status:', error);
+      }
+    };
+
+    // Poll every 1 second
+    pollingIntervalRef.current = setInterval(pollStatus, 1000);
+    
+    // Initial poll
+    pollStatus();
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [scanId, isScanning]);
+
   const handleSubmit = async () => {
-    // Mock API call
-    console.log('Creating scan:', formData);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Redirect to scans list
-    navigate('/scans');
+    try {
+      setIsScanning(true);
+      setScanLogs([]);
+      setScanResult(null);
+      
+      // Start scan via API
+      const scanRequest = {
+        name: formData.name,
+        type: formData.type,
+        targets: formData.targets,
+        providers: formData.providers,
+      };
+      
+      console.log('Starting scan with request:', scanRequest);
+      console.log('Axios instance:', axios);
+      console.log('Full request URL will be: http://localhost:8080/api/scans/start');
+      
+      const response = await axios.post('/scans/start', scanRequest);
+      const newScanId = response.data.scanId;
+      
+      setScanId(newScanId);
+      setScanStatus('RUNNING');
+      
+      // Add initial logs
+      setScanLogs([
+        { timestamp: Date.now(), message: `Starting scan: ${formData.name}` },
+        { timestamp: Date.now(), message: `Type: ${formData.type}` },
+        { timestamp: Date.now(), message: `Targets: ${formData.targets.join(', ')}` },
+        { timestamp: Date.now(), message: `Providers: ${formData.providers.join(', ')}` },
+        { timestamp: Date.now(), message: 'Initializing scan execution...' },
+      ]);
+      
+    } catch (error) {
+      console.error('Error starting scan:', error);
+      setIsScanning(false);
+      alert('Failed to start scan: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleViewResults = () => {
+    if (scanResult) {
+      // Navigate to results page or show results in a modal
+      navigate(`/scans/${scanId}`);
+    }
+  };
+
+  const handleCloseTerminal = () => {
+    setIsScanning(false);
+    setScanId(null);
+    setScanLogs([]);
+    setScanStatus(null);
+    setScanResult(null);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
   };
 
   const isStepValid = () => {
@@ -273,6 +376,140 @@ const NewScan = () => {
     { number: 2, title: 'Data Sources', icon: Globe },
     { number: 3, title: 'Settings', icon: Check },
   ];
+
+  // Show terminal view when scanning
+  if (isScanning || scanResult) {
+    return (
+      <div className="space-y-6">
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" onClick={handleCloseTerminal}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+                <Terminal className="h-8 w-8 text-primary-500" />
+                Scan Execution
+              </h1>
+              <p className="text-surface-muted">CLI-based automated scan in progress</p>
+            </div>
+          </div>
+          {scanStatus === 'COMPLETED' && (
+            <Button onClick={handleViewResults} className="bg-success hover:bg-success/80">
+              View Results
+            </Button>
+          )}
+        </div>
+
+        {/* Terminal Display */}
+        <Card>
+          <CardContent className="p-6">
+            <DisplayTerminal 
+              logs={scanLogs} 
+              scanId={scanId} 
+              status={scanStatus}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Results Summary */}
+        {scanResult && scanStatus === 'COMPLETED' && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Scan Results</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-success/10 border border-success/30 rounded-lg">
+                    <p className="text-success font-medium">✓ Scan completed successfully</p>
+                    <p className="text-sm text-surface-muted mt-1">
+                      Processed {scanResult.targets?.length || formData.targets.length} target(s) using {scanResult.providers?.length || formData.providers.length} provider(s)
+                    </p>
+                    <p className="text-sm text-surface-muted mt-1">
+                      Completed at: {scanResult.timestamp ? new Date(scanResult.timestamp).toLocaleString() : 'N/A'}
+                    </p>
+                  </div>
+
+                  {/* Display scan results data */}
+                  {scanResult.data && Object.keys(scanResult.data).length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white">Provider Results</h3>
+                      {Object.entries(scanResult.data).map(([key, value]) => {
+                        const hasError = value && typeof value === 'object' && 'error' in value;
+                        return (
+                          <Card key={key} className={hasError ? 'border-error' : ''}>
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center gap-2">
+                                {hasError ? (
+                                  <span className="text-error">✗</span>
+                                ) : (
+                                  <span className="text-success">✓</span>
+                                )}
+                                {key}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {hasError ? (
+                                <div className="p-3 bg-error/10 border border-error/30 rounded text-error">
+                                  <p className="font-medium">Error:</p>
+                                  <p className="text-sm mt-1">{value.error}</p>
+                                </div>
+                              ) : (
+                                <pre className="bg-surface-panel p-4 rounded-lg overflow-auto max-h-96 text-sm text-surface-muted">
+                                  {JSON.stringify(value, null, 2)}
+                                </pre>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {(!scanResult.data || Object.keys(scanResult.data).length === 0) && (
+                    <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
+                      <p className="text-warning">⚠ No data returned from providers. Check API keys configuration.</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <Button onClick={() => navigate('/scans')} variant="outline" className="flex-1">
+                      Back to Scans
+                    </Button>
+                    <Button onClick={handleCloseTerminal} variant="outline" className="flex-1">
+                      New Scan
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Error state */}
+        {scanResult && scanStatus === 'FAILED' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-error">Scan Failed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 bg-error/10 border border-error/30 rounded-lg">
+                <p className="text-error font-medium">✗ Scan execution failed</p>
+                {scanResult.error && (
+                  <p className="text-sm text-surface-muted mt-2">{scanResult.error}</p>
+                )}
+              </div>
+              <Button onClick={handleCloseTerminal} variant="outline" className="w-full mt-4">
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
