@@ -15,21 +15,21 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
   {
     name: 'Scans',
-    href: '/scans',
+    href: '/dashboard/scans',
     icon: Search,
     children: [
-      { name: 'New Scan', href: '/scans/new' },
-      { name: 'History', href: '/scans/history' },
+      { name: 'New Scan', href: '/dashboard/scans/new' },
+      { name: 'History', href: '/dashboard/scans/history' },
     ],
   },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'API Keys', href: '/apikeys', icon: Key },
-  { name: 'User Management', href: '/users', icon: UserCog },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
+  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
+  { name: 'API Keys', href: '/dashboard/apikeys', icon: Key },
+  { name: 'User Management', href: '/dashboard/users', icon: UserCog },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 const Sidebar = () => {
@@ -37,8 +37,8 @@ const Sidebar = () => {
   const location = useLocation();
 
   const isActive = (href) => {
-    if (href === '/') {
-      return location.pathname === '/';
+    if (href === '/dashboard') {
+      return location.pathname === '/dashboard';
     }
     return location.pathname.startsWith(href);
   };
@@ -52,7 +52,7 @@ const Sidebar = () => {
       <div className="flex h-16 items-center justify-between px-4 border-b border-surface-border">
         {!sidebarCollapsed && (
           <div className="flex items-center space-x-2">
-            <img src="/src/assets/logo.svg" alt="CyberScope" className="h-8 w-8" />
+            <img src="/logo.png" alt="CyberScope" className="h-8 w-8" />
             <span className="text-lg font-bold text-white">CyberScope</span>
           </div>
         )}

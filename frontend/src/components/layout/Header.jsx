@@ -53,7 +53,7 @@ const Header = () => {
 
         {/* Notifications */}
         <Link
-          to="/notifications"
+          to="/dashboard/notifications"
           className="relative rounded-lg p-2 text-surface-muted hover:bg-surface-border hover:text-white transition-colors"
         >
           <Bell className="h-5 w-5" />
@@ -84,14 +84,14 @@ const Header = () => {
             <div className="absolute right-0 top-full mt-2 w-48 rounded-lg bg-surface-panel border border-surface-border shadow-lg">
               <div className="p-2">
                 <Link
-                  to="/profile"
+                  to="/dashboard/settings"
                   className="block w-full rounded-lg px-3 py-2 text-sm text-white hover:bg-surface-border transition-colors"
                   onClick={() => setShowUserMenu(false)}
                 >
                   Profile
                 </Link>
                 <Link
-                  to="/settings"
+                  to="/dashboard/settings"
                   className="block w-full rounded-lg px-3 py-2 text-sm text-white hover:bg-surface-border transition-colors"
                   onClick={() => setShowUserMenu(false)}
                 >

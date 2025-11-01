@@ -57,8 +57,8 @@ const Login = () => {
         return;
       }
 
-      console.log('Navigating to /');
-      navigate('/');
+      console.log('Navigating to /dashboard');
+      navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       // Error is handled by the store
@@ -69,7 +69,7 @@ const Login = () => {
 
   const handleMFASuccess = (mfaResult) => {
     console.log('MFA verification successful:', mfaResult);
-    navigate('/');
+    navigate('/dashboard');
   };
 
   const handleMFABack = () => {
@@ -91,7 +91,7 @@ const Login = () => {
           {/* Logo and title */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <img src="/src/assets/logo.svg" alt="CyberScope" className="h-16 w-16" />
+              <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">CyberScope OSINT</h1>
             <p className="text-primary-200">Güvenlik tehditlerini keşfedin ve analiz edin</p>
@@ -219,8 +219,8 @@ const Login = () => {
                         const data = await resp.json();
                         // Store tokens
                         localStorage.setItem('authToken', data.token);
-                        // Basit yönlendirme
-                        navigate('/');
+                        // Redirect to dashboard
+                        navigate('/dashboard');
                       } catch (e) {
                         console.error(e);
                       } finally {

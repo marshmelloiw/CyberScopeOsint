@@ -101,7 +101,7 @@ const ScansList = () => {
           <h1 className="text-3xl font-bold text-white">Scans</h1>
           <p className="text-surface-muted">Monitor and manage your security scans</p>
         </div>
-        <Link to="/scans/new">
+        <Link to="/dashboard/scans/new">
           <Button className="flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>New Scan</span>

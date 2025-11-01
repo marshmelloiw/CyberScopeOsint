@@ -154,7 +154,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <button 
-                onClick={() => navigate('/scans/new')}
+                onClick={() => navigate('/dashboard/scans/new')}
                 className="w-full rounded-lg bg-primary-600 p-3 text-left text-white hover:bg-primary-700 transition-colors"
               >
                 <div className="flex items-center space-x-2">
@@ -163,7 +163,7 @@ const Dashboard = () => {
                 </div>
               </button>
               <button 
-                onClick={() => navigate('/reports')}
+                onClick={() => navigate('/dashboard/reports')}
                 className="w-full rounded-lg bg-surface-panel p-3 text-left text-white hover:bg-surface-border transition-colors border border-surface-border"
               >
                 <div className="flex items-center space-x-2">

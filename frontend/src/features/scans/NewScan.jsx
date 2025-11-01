@@ -475,7 +475,7 @@ const NewScan = () => {
                   )}
 
                   <div className="flex gap-3">
-                    <Button onClick={() => navigate('/scans')} variant="outline" className="flex-1">
+                    <Button onClick={() => navigate('/dashboard/scans')} variant="outline" className="flex-1">
                       Back to Scans
                     </Button>
                     <Button onClick={handleCloseTerminal} variant="outline" className="flex-1">
@@ -515,7 +515,7 @@ const NewScan = () => {
     <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" onClick={() => navigate('/scans')}>
+        <Button variant="ghost" onClick={() => navigate('/dashboard/scans')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

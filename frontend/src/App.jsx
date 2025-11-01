@@ -8,6 +8,9 @@ import useAuthStore from './store/auth';
 // Layout components
 import AppShell from './components/layout/AppShell';
 
+// Landing page
+import Landing from './features/landing/Landing';
+
 // Auth pages
 import Login from './features/auth/Login';
 import Register from './features/auth/Register';
@@ -57,7 +60,7 @@ const AuthRoute = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -75,22 +78,17 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
-            {/* Auth routes */}
+            {/* Landing page - root */}
+            <Route path="/" element={<Landing />} />
+            
+            {/* Auth routes - always accessible */}
             <Route
               path="/auth/login"
-              element={
-                <AuthRoute>
-                  <Login />
-                </AuthRoute>
-              }
+              element={<Login />}
             />
             <Route
               path="/auth/register"
-              element={
-                <AuthRoute>
-                  <Register />
-                </AuthRoute>
-              }
+              element={<Register />}
             />
             <Route
               path="/auth/forgot-password"
@@ -109,9 +107,9 @@ function App() {
               }
             />
 
-            {/* Protected routes */}
+            {/* Protected routes - Dashboard and app routes */}
             <Route
-              path="/"
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <AppShell />
