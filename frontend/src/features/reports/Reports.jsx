@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Search, Plus, FileText, Download, Eye, Calendar, Filter, BarChart3, Users, Globe, Mail, MapPin, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Search, FileText, Download, Eye, Calendar, BarChart3, Users, Globe, Mail, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const Reports = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [showReportBuilder, setShowReportBuilder] = useState(false);
 
   // Mock reports data
   const reports = [
@@ -113,122 +112,13 @@ const Reports = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const ReportBuilder = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create New Report</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <div>
-            <h4 className="font-medium text-white mb-3">Basic Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Report Title</label>
-                <Input placeholder="Enter report title..." />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Report Type</label>
-                <select className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                  <option value="">Select report type</option>
-                  {reportTypes.map((type) => (
-                    <option key={type.id} value={type.id}>{type.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Scope and Content */}
-          <div>
-            <h4 className="font-medium text-white mb-3">Scope and Content</h4>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Scope Description</label>
-                <textarea
-                  placeholder="Describe what this report covers..."
-                  className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Tags</label>
-                <Input placeholder="Enter tags separated by commas..." />
-              </div>
-            </div>
-          </div>
-
-          {/* Output Options */}
-          <div>
-            <h4 className="font-medium text-white mb-3">Output Options</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Format</label>
-                <select className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                  <option value="pdf">PDF</option>
-                  <option value="html">HTML</option>
-                  <option value="docx">Word Document</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Include Charts</label>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="includeCharts"
-                    defaultChecked
-                    className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
-                  />
-                  <label htmlFor="includeCharts" className="text-white">Yes</label>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Include Executive Summary</label>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="includeSummary"
-                    defaultChecked
-                    className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
-                  />
-                  <label htmlFor="includeSummary" className="text-white">Yes</label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end space-x-3">
-            <Button variant="outline" onClick={() => setShowReportBuilder(false)}>
-              Cancel
-            </Button>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Report
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Reports</h1>
-          <p className="text-surface-muted">Generate and manage security reports</p>
-        </div>
-        <Button onClick={() => setShowReportBuilder(true)} className="flex items-center space-x-2">
-          <Plus className="h-4 w-4" />
-          <span>New Report</span>
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-white">Reports</h1>
+        <p className="text-surface-muted">Generate and manage security reports</p>
       </div>
-
-      {/* Report Builder */}
-      {showReportBuilder && <ReportBuilder />}
 
       {/* Filters and search */}
       <Card>
