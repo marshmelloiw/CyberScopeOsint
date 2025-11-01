@@ -5,7 +5,6 @@ import useUIStore from '../../store/ui';
 import {
   Home,
   Search,
-  Users,
   BarChart3,
   Bell,
   Key,
@@ -24,18 +23,6 @@ const navigation = [
     children: [
       { name: 'New Scan', href: '/scans/new' },
       { name: 'History', href: '/scans/history' },
-    ],
-  },
-  {
-    name: 'Entities',
-    href: '/entities',
-    icon: Users,
-    children: [
-      { name: 'Email/Breach', href: '/entities/email' },
-      { name: 'Domain & IP', href: '/entities/domain' },
-      { name: 'Ports & Services', href: '/entities/ports' },
-      { name: 'Social Monitor', href: '/entities/social' },
-      { name: 'Links & Files', href: '/entities/links' },
     ],
   },
   { name: 'Reports', href: '/reports', icon: BarChart3 },

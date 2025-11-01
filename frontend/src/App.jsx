@@ -18,8 +18,6 @@ import ResetPassword from './features/auth/ResetPassword';
 import Dashboard from './features/dashboard/Dashboard';
 import ScansList from './features/scans/ScansList';
 import NewScan from './features/scans/NewScan';
-import EmailBreach from './features/entities/EmailBreach';
-import DomainIP from './features/entities/DomainIP';
 import Reports from './features/reports/Reports';
 import Notifications from './features/notifications/Notifications';
 import Settings from './features/settings/Settings';
@@ -125,14 +123,6 @@ function App() {
               {/* Scans routes */}
               <Route path="scans" element={<ScansList />} />
               <Route path="scans/new" element={<NewScan />} />
-
-              {/* Entities routes */}
-              <Route path="entities" element={<Navigate to="/entities/email" replace />} />
-              <Route path="entities/email" element={<EmailBreach />} />
-              <Route path="entities/domain" element={<DomainIP />} />
-              <Route path="entities/ports" element={<div className="p-6"><h1 className="text-2xl font-bold text-white mb-4">Ports & Services</h1><p className="text-surface-muted">Coming soon...</p></div>} />
-              <Route path="entities/social" element={<div className="p-6"><h1 className="text-2xl font-bold text-white mb-4">Social Monitor</h1><p className="text-surface-muted">Coming soon...</p></div>} />
-              <Route path="entities/links" element={<div className="p-6"><h1 className="text-2xl font-bold text-white mb-4">Links & Files</h1><p className="text-surface-muted">Coming soon...</p></div>} />
 
               {/* Reports routes */}
               <Route path="reports" element={<Reports />} />

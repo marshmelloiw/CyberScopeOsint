@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { User, Sun, Moon, Shield, Globe, Bell, Key, Building, Palette, Lock, Eye, EyeOff, Download, Upload } from 'lucide-react';
+import { User, Sun, Moon, Shield, Globe, Building, Palette, Eye, EyeOff, Upload } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import useUIStore from '../../store/ui';
 import useAuthStore from '../../store/auth';
@@ -59,8 +59,6 @@ const Settings = () => {
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'organization', label: 'Organization', icon: Building },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'integrations', label: 'Integrations', icon: Globe },
   ];
 
   const handleProfileUpdate = () => {
@@ -715,62 +713,7 @@ const Settings = () => {
     </div>
   );
 
-  const NotificationsTab = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification Preferences</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-surface-muted">
-            Notification settings are managed in the Notifications page.
-            <Button variant="link" className="p-0 h-auto text-primary">
-              Go to Notifications
-            </Button>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
 
-  const IntegrationsTab = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>API Integrations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Key className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium text-white">API Keys</p>
-                  <p className="text-sm text-surface-muted">Manage your API keys and integrations</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm">
-                Manage Keys
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Globe className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="font-medium text-white">Webhooks</p>
-                  <p className="text-sm text-surface-muted">Configure webhook endpoints</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm">
-                Configure
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -778,8 +721,6 @@ const Settings = () => {
       case 'security': return <SecurityTab />;
       case 'appearance': return <AppearanceTab />;
       case 'organization': return <OrganizationTab />;
-      case 'notifications': return <NotificationsTab />;
-      case 'integrations': return <IntegrationsTab />;
       default: return <ProfileTab />;
     }
   };

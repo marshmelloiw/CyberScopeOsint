@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import StatWidget from '../../components/common/StatWidget';
 import RiskBadge from '../../components/common/RiskBadge';
@@ -11,6 +12,7 @@ import {
 import { cn } from '../../lib/utils';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   // Mock data - in real app this would come from API
   const stats = [
     {
@@ -115,6 +117,7 @@ const Dashboard = () => {
                 {recentAlerts.map((alert) => (
                   <div
                     key={alert.id}
+                    onClick={() => navigate('/notifications')}
                     className="flex items-center justify-between rounded-lg border border-surface-border p-4 hover:bg-surface-panel/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">
@@ -132,7 +135,10 @@ const Dashboard = () => {
                 ))}
               </div>
               <div className="mt-4 text-center">
-                <button className="text-sm text-primary-500 hover:text-primary-400 transition-colors">
+                <button 
+                  onClick={() => navigate('/notifications')}
+                  className="text-sm text-primary-500 hover:text-primary-400 transition-colors"
+                >
                   View all alerts →
                 </button>
               </div>
@@ -147,22 +153,22 @@ const Dashboard = () => {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <button className="w-full rounded-lg bg-primary-600 p-3 text-left text-white hover:bg-primary-700 transition-colors">
+              <button 
+                onClick={() => navigate('/scans/new')}
+                className="w-full rounded-lg bg-primary-600 p-3 text-left text-white hover:bg-primary-700 transition-colors"
+              >
                 <div className="flex items-center space-x-2">
                   <Search className="h-5 w-5" />
                   <span>New Scan</span>
                 </div>
               </button>
-              <button className="w-full rounded-lg bg-surface-panel p-3 text-left text-white hover:bg-surface-border transition-colors border border-surface-border">
+              <button 
+                onClick={() => navigate('/reports')}
+                className="w-full rounded-lg bg-surface-panel p-3 text-left text-white hover:bg-surface-border transition-colors border border-surface-border"
+              >
                 <div className="flex items-center space-x-2">
                   <FileSearch className="h-5 w-5" />
                   <span>Generate Report</span>
-                </div>
-              </button>
-              <button className="w-full rounded-lg bg-surface-panel p-3 text-left text-white hover:bg-surface-border transition-colors border border-surface-border">
-                <div className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5" />
-                  <span>Security Check</span>
                 </div>
               </button>
             </CardContent>
