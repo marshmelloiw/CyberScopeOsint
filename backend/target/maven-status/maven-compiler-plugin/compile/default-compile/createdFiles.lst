@@ -1,3 +1,4 @@
+osint/dto/MfaSetupResponse.class
 osint/model/Role.class
 osint/model/PasswordResetToken.class
 osint/repository/ScanRepository.class
@@ -31,12 +32,14 @@ osint/dto/JwtResponse$Builder.class
 osint/repository/RoleRepository.class
 osint/dto/ForgotPasswordRequest.class
 osint/dto/SmsMfaSetupRequest.class
+osint/dto/MfaVerifyRequest.class
 osint/service/ScanService$LogEntry.class
 osint/model/ScanLog.class
 osint/controller/ApiKeysController.class
 osint/dto/SmsMfaVerifyRequest.class
 osint/service/ScanService$ScanStatus.class
 osint/service/SmsService.class
+osint/dto/MfaSetupRequest.class
 osint/controller/OsintController.class
 osint/model/User$Builder.class
 osint/controller/ScanController.class

@@ -14,7 +14,7 @@ const mfaSetupSchema = z.object({
 });
 
 const MFASetup = ({ onSetupComplete, onCancel }) => {
-  const [step, setStep] = useState('verification'); // 'verification', 'success'
+  const [step, setStep] = useState('setup'); // 'setup', 'verification', 'success'
   const [qrCodeData, setQrCodeData] = useState(null);
   const [qrCodeImage, setQrCodeImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,11 +31,6 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
   } = useForm({
     resolver: zodResolver(mfaSetupSchema),
   });
-
-  // Sayfa açılır açılmaz otomatik olarak QR/secret üretmek için
-  useEffect(() => {
-    initiateMFASetup();
-  }, []);
 
   const initiateMFASetup = async () => {
     setIsLoading(true);
@@ -59,9 +54,10 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
 
       const data = await response.json();
       setQrCodeData(data);
+      setError(null); // Başarılı olunca hatayı temizle
       // Başarılı yanıtta da QR görselini üret
-      if (data?.totp_uri) {
-        await generateQRCode(data.totp_uri);
+      if (data?.totpUri) {
+        await generateQRCode(data.totpUri);
       }
       setStep('verification');
     } catch (error) {
@@ -97,11 +93,12 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
       const response = await fetch('http://localhost:8080/api/auth/mfa/verify', {
         method: 'POST',
         headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           username: user?.email,
-          totp_token: data.totp_token,
+          totpToken: data.totp_token,
         }),
       });
 
@@ -150,6 +147,13 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
           <span>QR kodu tarayarak hesabınızı ekleyin</span>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center space-x-2 text-red-600 text-sm bg-red-50 p-3 rounded">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <Button
         onClick={initiateMFASetup}
@@ -205,7 +209,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
       <div className="text-center">
         <p className="text-sm text-gray-600 mb-2">Veya manuel olarak girin:</p>
         <div className="bg-gray-50 p-3 rounded font-mono text-sm">
-          {qrCodeData?.totp_secret}
+          {qrCodeData?.totpSecret}
         </div>
       </div>
 

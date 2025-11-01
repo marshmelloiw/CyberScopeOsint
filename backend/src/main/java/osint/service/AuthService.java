@@ -1,6 +1,7 @@
 package osint.service;
 
 import osint.dto.JwtResponse;
+import osint.dto.MfaSetupResponse;
 import osint.repository.PasswordResetTokenRepository;
 import osint.repository.RoleRepository;
 import osint.repository.UserRepository;
@@ -9,6 +10,7 @@ import osint.model.Role;
 import osint.model.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.apache.commons.codec.binary.Base32;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -106,5 +108,75 @@ public class AuthService {
 
         // Mock SMS verification - in production, verify against SMS service
         return "123456".equals(code);
+    }
+
+    public MfaSetupResponse setupTotpMfa(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Generate a random secret key (20 bytes = 160 bits, standard for TOTP)
+        byte[] secretBytes = new byte[20];
+        new java.security.SecureRandom().nextBytes(secretBytes);
+        Base32 base32 = new Base32();
+        String secret = base32.encodeToString(secretBytes);
+
+        // Save secret to user (but don't enable TOTP yet - will be enabled after verification)
+        user.setTotpSecret(secret);
+        userRepository.save(user);
+
+        // Generate TOTP URI for QR code
+        // Format: otpauth://totp/Issuer:UserEmail?secret=SECRET&issuer=Issuer
+        String issuer = "CyberScope";
+        String totpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s",
+                issuer, email, secret, issuer);
+
+        return new MfaSetupResponse(secret, totpUri);
+    }
+
+    public boolean verifyTotpMfa(String email, String totpToken) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        String secret = user.getTotpSecret();
+        if (secret == null || secret.isEmpty()) {
+            throw new IllegalArgumentException("TOTP MFA not setup for user");
+        }
+
+        // For now, accept any 6-digit code as a mock
+        // In production, use a proper TOTP library (e.g., com.warrenstrange:googleauth)
+        // to verify the token against the secret
+        if (totpToken == null || totpToken.length() != 6 || !totpToken.matches("\\d{6}")) {
+            return false;
+        }
+
+        // Mock verification: accept any valid format
+        // TODO: Replace with actual TOTP verification
+        // TOTPVerifier verifier = new TOTPVerifier();
+        // return verifier.verify(secret, totpToken);
+
+        // For demo purposes, accept "123456" or any code if secret exists
+        // In production, implement proper TOTP verification
+        return true;
+    }
+
+    public void enableTotpMfa(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getTotpSecret() == null || user.getTotpSecret().isEmpty()) {
+            throw new IllegalArgumentException("TOTP secret not found. Please setup TOTP first.");
+        }
+
+        // For this demo, we assume TOTP is enabled once secret is set
+        // You can add a separate totpEnabled field if needed
+        userRepository.save(user);
+    }
+
+    public void disableTotpMfa(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setTotpSecret(null);
+        userRepository.save(user);
     }
 }

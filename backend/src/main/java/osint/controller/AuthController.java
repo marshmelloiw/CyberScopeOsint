@@ -69,4 +69,40 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping("/mfa/setup")
+    public ResponseEntity<osint.dto.MfaSetupResponse> setupTotpMfa(
+            @Valid @RequestBody osint.dto.MfaSetupRequest request) {
+        try {
+            osint.dto.MfaSetupResponse response = authService.setupTotpMfa(request.getUsername());
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/mfa/verify")
+    public ResponseEntity<?> verifyTotpMfa(@Valid @RequestBody osint.dto.MfaVerifyRequest request) {
+        try {
+            boolean isValid = authService.verifyTotpMfa(request.getUsername(), request.getTotpToken());
+            if (isValid) {
+                authService.enableTotpMfa(request.getUsername());
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/mfa/disable")
+    public ResponseEntity<?> disableTotpMfa(@Valid @RequestBody osint.dto.MfaSetupRequest request) {
+        try {
+            authService.disableTotpMfa(request.getUsername());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

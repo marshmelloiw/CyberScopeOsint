@@ -115,10 +115,10 @@ const Reports = () => {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Reports</h1>
-        <p className="text-surface-muted">Generate and manage security reports</p>
-      </div>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Reports</h1>
+          <p className="text-surface-muted">Generate and manage security reports</p>
+        </div>
 
       {/* Filters and search */}
       <Card>
