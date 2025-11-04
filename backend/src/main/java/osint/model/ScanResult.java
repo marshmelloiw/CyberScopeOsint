@@ -39,6 +39,10 @@ public class ScanResult {
     @Column(name = "findings_count")
     private Integer findingsCount = 0;
     
+    @Column(name = "gemini_report", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> geminiReport;
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
@@ -126,6 +130,14 @@ public class ScanResult {
     
     public void setFindingsCount(Integer findingsCount) {
         this.findingsCount = findingsCount;
+    }
+    
+    public Map<String, Object> getGeminiReport() {
+        return geminiReport;
+    }
+    
+    public void setGeminiReport(Map<String, Object> geminiReport) {
+        this.geminiReport = geminiReport;
     }
     
     public LocalDateTime getCreatedAt() {

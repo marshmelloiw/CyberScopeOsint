@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ public class ScanService {
     private final ShodanService shodanService;
     private final VirusTotalService virusTotalService;
     private final HaveIBeenPwnedService hibpService;
+    private final GeminiService geminiService;
 
     private final ScanRepository scanRepository;
     private final ScanTargetRepository scanTargetRepository;
@@ -37,9 +39,11 @@ public class ScanService {
     private final Map<String, ScanStatus> scanStatuses = new ConcurrentHashMap<>();
 
     @Autowired
-    public ScanService(ShodanService shodanService,
+    public ScanService(
+            ShodanService shodanService,
             VirusTotalService virusTotalService,
             HaveIBeenPwnedService hibpService,
+            GeminiService geminiService,
             ScanRepository scanRepository,
             ScanTargetRepository scanTargetRepository,
             ScanProviderRepository scanProviderRepository,
@@ -49,6 +53,7 @@ public class ScanService {
         this.shodanService = shodanService;
         this.virusTotalService = virusTotalService;
         this.hibpService = hibpService;
+        this.geminiService = geminiService;
         this.scanRepository = scanRepository;
         this.scanTargetRepository = scanTargetRepository;
         this.scanProviderRepository = scanProviderRepository;
@@ -98,7 +103,6 @@ public class ScanService {
     }
 
     @Async("taskExecutor")
-    @Transactional
     private void executeScanAsync(String scanId, ScanRequest request) {
         Optional<Scan> scanOpt = scanRepository.findByScanId(scanId);
         if (scanOpt.isEmpty()) {
@@ -124,6 +128,7 @@ public class ScanService {
             Map<String, Object> providerResults = new HashMap<>();
             List<ScanTarget> targets = scanTargetRepository.findByScanId(scan.getId());
             List<ScanProvider> providers = scanProviderRepository.findByScanId(scan.getId());
+            List<osint.model.ScanResult> savedResults = new ArrayList<>();
 
             // Process each target
             for (ScanTarget scanTarget : targets) {
@@ -176,7 +181,8 @@ public class ScanService {
                                     addLogToDB(scan, "INFO", successMsg);
 
                                     // Save result to DB
-                                    saveScanResult(scan, scanTarget, scanProvider, result);
+                                    osint.model.ScanResult scanResult = saveScanResult(scan, scanTarget, scanProvider, result);
+                                    savedResults.add(scanResult);
 
                                     scanProvider.setStatus("COMPLETED");
                                     scanProvider.setCompletedAt(LocalDateTime.now());
@@ -209,7 +215,8 @@ public class ScanService {
                                     addLogToDB(scan, "INFO", successMsg);
 
                                     // Save result to DB
-                                    saveScanResult(scan, scanTarget, scanProvider, result);
+                                    osint.model.ScanResult scanResult = saveScanResult(scan, scanTarget, scanProvider, result);
+                                    savedResults.add(scanResult);
 
                                     scanProvider.setStatus("COMPLETED");
                                     scanProvider.setCompletedAt(LocalDateTime.now());
@@ -235,7 +242,8 @@ public class ScanService {
                                         addLogToDB(scan, "INFO", successMsg);
 
                                         // Save result to DB
-                                        saveScanResult(scan, scanTarget, scanProvider, result);
+                                        osint.model.ScanResult scanResult = saveScanResult(scan, scanTarget, scanProvider, result);
+                                        savedResults.add(scanResult);
 
                                         scanProvider.setStatus("COMPLETED");
                                         scanProvider.setCompletedAt(LocalDateTime.now());
@@ -284,17 +292,35 @@ public class ScanService {
 
             results.put("data", providerResults);
 
-            // Update scan status
-            scan.setStatus("COMPLETED");
-            scan.setCompletedAt(LocalDateTime.now());
-            scanRepository.save(scan);
-
+            // Generate Gemini AI analysis asynchronously for each provider-target combination
+            addLog(status, "Initializing AI analysis generation...");
+            addLogToDB(scan, "INFO", "Initializing AI analysis generation...");
+            
+            // Mark scan as completed first (don't wait for Gemini reports)
+            // Use separate transaction for scan completion
+            markScanCompleted(scan.getId(), results);
+            
             status.setStatus("COMPLETED");
             status.setResult(results);
 
             String successMsg = "Scan completed successfully";
             addLog(status, successMsg);
             addLogToDB(scan, "INFO", successMsg);
+
+            // Start async Gemini report generation for each successful scan result
+            // Extract target and provider values before async call (while transaction is active)
+            for (osint.model.ScanResult scanResult : savedResults) {
+                if (scanResult.getResultData() != null && !scanResult.getResultData().containsKey("error")) {
+                    // Extract values while still in transaction context
+                    String target = scanResult.getScanTarget() != null ? scanResult.getScanTarget().getTarget() : "unknown";
+                    String provider = scanResult.getProviderName();
+                    Long scanResultId = scanResult.getId();
+                    String scanIdStr = scan.getScanId();
+                    Map<String, Object> resultData = scanResult.getResultData();
+                    
+                    generateGeminiReportAsync(scanIdStr, scanResultId, provider, target, resultData, request.getType());
+                }
+            }
 
         } catch (Exception e) {
             logger.error("Error executing scan", e);
@@ -312,15 +338,157 @@ public class ScanService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public ScanStatus getScanStatus(String scanId) {
-        // Try cache first
-        ScanStatus cached = scanStatuses.get(scanId);
-        if (cached != null) {
-            return cached;
+    /**
+     * Generate Gemini report asynchronously for a specific provider-target combination
+     * Note: All entity values must be extracted before calling this method to avoid lazy loading issues
+     */
+    @Async("taskExecutor")
+    private void generateGeminiReportAsync(String scanIdStr, Long scanResultId, String provider, String target, Map<String, Object> resultData, String scanType) {
+        // Mark as generating (in a separate transaction)
+        saveGeneratingStatus(scanResultId, provider, target);
+        
+        // Log start
+        final String initialLogMsg = "🤖 Generating AI analysis for " + provider + " - " + target + "...";
+        addLogToDBAsync(scanIdStr, "INFO", initialLogMsg);
+        
+        // Prepare data for this specific provider-target
+        Map<String, Object> providerData = new HashMap<>();
+        providerData.put(provider + "_" + target, resultData);
+        
+        // Generate report asynchronously (non-blocking)
+        geminiService.analyzeScanResults(providerData, scanType)
+            .publishOn(Schedulers.boundedElastic()) // Run on a separate thread pool
+            .subscribe(
+                geminiAnalysis -> {
+                    // Success callback
+                    try {
+                        if (geminiAnalysis != null && !geminiAnalysis.containsKey("error")) {
+                            // Add provider and target info to the report
+                            geminiAnalysis.put("provider", provider);
+                            geminiAnalysis.put("target", target);
+                            geminiAnalysis.put("status", "completed");
+                            
+                            saveCompletedReport(scanResultId, geminiAnalysis);
+                            
+                            final String successLogMsg = "✓ AI analysis completed for " + provider + " - " + target;
+                            addLogToDBAsync(scanIdStr, "INFO", successLogMsg);
+                            
+                            // Update cache if exists
+                            updateScanStatusCache(scanIdStr);
+                        } else {
+                            final String errorMsg = "⚠ AI analysis failed for " + provider + " - " + target + ": " + 
+                                (geminiAnalysis != null ? geminiAnalysis.get("error") : "Unknown error");
+                            
+                            Map<String, Object> errorReport = new HashMap<>();
+                            errorReport.put("status", "failed");
+                            errorReport.put("provider", provider);
+                            errorReport.put("target", target);
+                            errorReport.put("error", errorMsg);
+                            errorReport.put("has_error", true);
+                            
+                            saveFailedReport(scanResultId, errorReport);
+                            addLogToDBAsync(scanIdStr, "WARNING", errorMsg);
+                            updateScanStatusCache(scanIdStr);
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error processing Gemini analysis result for " + provider + " - " + target, e);
+                        handleGeminiError(scanResultId, scanIdStr, provider, target, e.getMessage());
+                    }
+                },
+                error -> {
+                    // Error callback
+                    logger.error("Error generating Gemini analysis for " + provider + " - " + target, error);
+                    handleGeminiError(scanResultId, scanIdStr, provider, target, error.getMessage());
+                }
+            );
+    }
+    
+    @Transactional
+    private void saveGeneratingStatus(Long scanResultId, String provider, String target) {
+        Optional<osint.model.ScanResult> resultOpt = scanResultRepository.findById(scanResultId);
+        if (resultOpt.isPresent()) {
+            osint.model.ScanResult result = resultOpt.get();
+            Map<String, Object> generatingStatus = new HashMap<>();
+            generatingStatus.put("status", "generating");
+            generatingStatus.put("provider", provider);
+            generatingStatus.put("target", target);
+            result.setGeminiReport(generatingStatus);
+            scanResultRepository.save(result);
         }
+    }
+    
+    @Transactional
+    private void saveCompletedReport(Long scanResultId, Map<String, Object> report) {
+        Optional<osint.model.ScanResult> resultOpt = scanResultRepository.findById(scanResultId);
+        if (resultOpt.isPresent()) {
+            osint.model.ScanResult result = resultOpt.get();
+            result.setGeminiReport(report);
+            scanResultRepository.save(result);
+        }
+    }
+    
+    @Transactional
+    private void saveFailedReport(Long scanResultId, Map<String, Object> report) {
+        Optional<osint.model.ScanResult> resultOpt = scanResultRepository.findById(scanResultId);
+        if (resultOpt.isPresent()) {
+            osint.model.ScanResult result = resultOpt.get();
+            result.setGeminiReport(report);
+            scanResultRepository.save(result);
+        }
+    }
+    
+    private void handleGeminiError(Long scanResultId, String scanIdStr, String provider, String target, String errorMessage) {
+        String errorMsg = "⚠ AI analysis error for " + provider + " - " + target + ": " + errorMessage;
+        
+        Map<String, Object> errorReport = new HashMap<>();
+        errorReport.put("status", "failed");
+        errorReport.put("provider", provider);
+        errorReport.put("target", target);
+        errorReport.put("error", errorMsg);
+        errorReport.put("has_error", true);
+        
+        saveFailedReport(scanResultId, errorReport);
+        addLogToDBAsync(scanIdStr, "WARNING", errorMsg);
+        updateScanStatusCache(scanIdStr);
+    }
+    
+    @Transactional
+    private void markScanCompleted(Long scanId, Map<String, Object> results) {
+        Optional<Scan> scanOpt = scanRepository.findById(scanId);
+        if (scanOpt.isPresent()) {
+            Scan scan = scanOpt.get();
+            scan.setStatus("COMPLETED");
+            scan.setCompletedAt(LocalDateTime.now());
+            scanRepository.save(scan);
+        }
+    }
+    
+    @Async("taskExecutor")
+    @Transactional
+    private void addLogToDBAsync(String scanId, String level, String message) {
+        Optional<Scan> scanOpt = scanRepository.findByScanId(scanId);
+        if (scanOpt.isPresent()) {
+            ScanLog log = new ScanLog(scanOpt.get(), level, message);
+            scanLogRepository.save(log);
+        }
+    }
 
-        // Load from DB
+    /**
+     * Update the cached scan status with latest data from DB
+     */
+    @Transactional(readOnly = true)
+    private void updateScanStatusCache(String scanId) {
+        ScanStatus status = getScanStatusFromDB(scanId);
+        if (status != null) {
+            scanStatuses.put(scanId, status);
+        }
+    }
+
+    /**
+     * Get scan status from database (used for cache updates)
+     */
+    @Transactional(readOnly = true)
+    private ScanStatus getScanStatusFromDB(String scanId) {
         Optional<Scan> scanOpt = scanRepository.findByScanId(scanId);
         if (scanOpt.isEmpty()) {
             return null;
@@ -329,27 +497,69 @@ public class ScanService {
         Scan scan = scanOpt.get();
         List<ScanLog> dbLogs = scanLogRepository.findByScanIdOrderByTimestampAsc(scan.getId());
 
-        // Convert DB logs to LogEntry
         List<LogEntry> logs = dbLogs.stream()
                 .map(log -> new LogEntry(
                         log.getTimestamp().toEpochSecond(ZoneOffset.UTC) * 1000,
                         log.getMessage()))
                 .collect(Collectors.toList());
 
-        // Build result map from scan results
+        Map<String, Object> result = buildScanResultMap(scan);
+        return new ScanStatus(scanId, scan.getStatus(), logs, result);
+    }
+
+    /**
+     * Build result map with provider-specific Gemini reports
+     */
+    private Map<String, Object> buildScanResultMap(Scan scan) {
         Map<String, Object> result = new HashMap<>();
-        List<osint.model.ScanResult> scanResults = scanResultRepository.findByScanId(scan.getId());
+        // Use fetch join to eagerly load ScanTarget to avoid lazy loading issues
+        List<osint.model.ScanResult> scanResults = scanResultRepository.findByScanIdWithTarget(scan.getId());
+        
+        // Build data map
         Map<String, Object> data = new HashMap<>();
+        Map<String, Map<String, Object>> geminiReports = new HashMap<>();
+        
         for (osint.model.ScanResult sr : scanResults) {
             if (sr.getScanTarget() != null) {
-                data.put(sr.getProviderName() + "_" + sr.getScanTarget().getTarget(), sr.getResultData());
+                String key = sr.getProviderName() + "_" + sr.getScanTarget().getTarget();
+                data.put(key, sr.getResultData());
+                
+                // Add Gemini report if available (even if generating)
+                if (sr.getGeminiReport() != null) {
+                    String reportKey = sr.getProviderName() + "_" + sr.getScanTarget().getTarget();
+                    geminiReports.put(reportKey, sr.getGeminiReport());
+                }
             }
         }
+        
         result.put("data", data);
+        result.put("gemini_reports", geminiReports);
+        
+        return result;
+    }
 
-        ScanStatus status = new ScanStatus(scanId, scan.getStatus(), logs, result);
-        scanStatuses.put(scanId, status); // Cache it
-        return status;
+    @Transactional(readOnly = true)
+    public ScanStatus getScanStatus(String scanId) {
+        // Try cache first
+        ScanStatus cached = scanStatuses.get(scanId);
+        if (cached != null) {
+            // Still refresh from DB to get latest Gemini reports
+            ScanStatus dbStatus = getScanStatusFromDB(scanId);
+            if (dbStatus != null) {
+                scanStatuses.put(scanId, dbStatus);
+                return dbStatus;
+            }
+            return cached;
+        }
+
+        // Load from DB
+        ScanStatus dbStatus = getScanStatusFromDB(scanId);
+        if (dbStatus != null) {
+            scanStatuses.put(scanId, dbStatus);
+            return dbStatus;
+        }
+
+        return null;
     }
 
     private void addLog(ScanStatus status, String message) {
@@ -357,12 +567,14 @@ public class ScanService {
         logger.info("[Scan {}] {}", status.getScanId(), message);
     }
 
+    @Transactional
     private void addLogToDB(Scan scan, String level, String message) {
         ScanLog log = new ScanLog(scan, level, message);
         scanLogRepository.save(log);
         logger.info("[Scan {}] {}", scan.getScanId(), message);
     }
 
+    @Transactional
     private Entity updateOrCreateEntity(String entityType, String entityValue, Scan scan) {
         Optional<Entity> entityOpt = entityRepository.findByEntityTypeAndEntityValue(entityType, entityValue);
         Entity entity;
@@ -380,7 +592,8 @@ public class ScanService {
         return entityRepository.save(entity);
     }
 
-    private void saveScanResult(Scan scan, ScanTarget scanTarget, ScanProvider scanProvider,
+    @Transactional
+    private osint.model.ScanResult saveScanResult(Scan scan, ScanTarget scanTarget, ScanProvider scanProvider,
             Map<String, Object> result) {
         osint.model.ScanResult scanResult = new osint.model.ScanResult();
         scanResult.setScan(scan);
@@ -400,7 +613,7 @@ public class ScanService {
             scanResult.setRiskLevel(String.valueOf(result.get("risk_level")));
         }
 
-        scanResultRepository.save(scanResult);
+        return scanResultRepository.save(scanResult);
     }
 
     // Inner classes

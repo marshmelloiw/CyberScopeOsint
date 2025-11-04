@@ -43,28 +43,5 @@ public class ScanController {
         
         return ResponseEntity.ok(status);
     }
-    
-    @PostMapping("/cli-simulate")
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
-    public ResponseEntity<Map<String, Object>> simulateCliCommand(@RequestBody Map<String, Object> request) {
-        String command = (String) request.get("command");
-        String target = (String) request.get("target");
-        String type = (String) request.getOrDefault("type", "domain");
-        
-        // Start async scan
-        ScanService.ScanRequest scanRequest = new ScanService.ScanRequest();
-        scanRequest.setType(type);
-        scanRequest.setTargets(java.util.List.of(target));
-        scanRequest.setProviders(java.util.List.of("Shodan", "VirusTotal"));
-        scanRequest.setName("CLI: " + command);
-        
-        String scanId = scanService.startScan(scanRequest);
-        
-        return ResponseEntity.ok(Map.of(
-            "scanId", scanId,
-            "command", command,
-            "status", "executed"
-        ));
-    }
 }
 

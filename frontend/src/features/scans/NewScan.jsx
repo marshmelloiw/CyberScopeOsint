@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import DisplayTerminal from '../../components/cli/DisplayTerminal';
 import axios from '../../lib/axios';
-import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText, Terminal } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText, Terminal, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const NewScan = () => {
@@ -85,7 +84,7 @@ const NewScan = () => {
 
     const pollStatus = async () => {
       try {
-        const response = await axios.get(`/scans/status/${scanId}`);
+        const response = await axios.get(`/scans/status/${scanId}`, { timeout: 60000 });
         const status = response.data;
         
         setScanStatus(status.status);
@@ -95,11 +94,33 @@ const NewScan = () => {
           setScanResult(status.result);
         }
         
-        if (status.status === 'COMPLETED' || status.status === 'FAILED') {
+        if (status.status === 'FAILED') {
           setIsScanning(false);
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
+          }
+          return;
+        }
+        // Continue polling even after COMPLETED to get Gemini reports
+        if (status.status === 'COMPLETED') {
+          // Check if all reports are ready (not generating)
+          const reports = status.result?.gemini_reports || {};
+          const dataKeys = Object.keys(status.result?.data || {});
+          
+          // Check if there are any reports still generating
+          const hasGeneratingReports = dataKeys.some(key => {
+            const report = reports[key];
+            return !report || report.status === 'generating';
+          });
+          
+          // Only stop polling if all reports are ready (completed or failed)
+          if (!hasGeneratingReports && dataKeys.length > 0) {
+            setIsScanning(false);
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
           }
         }
       } catch (error) {
@@ -138,7 +159,7 @@ const NewScan = () => {
       console.log('Axios instance:', axios);
       console.log('Full request URL will be: http://localhost:8080/api/scans/start');
       
-      const response = await axios.post('/scans/start', scanRequest);
+      const response = await axios.post('/scans/start', scanRequest, { timeout: 60000 });
       const newScanId = response.data.scanId;
       
       setScanId(newScanId);
@@ -377,7 +398,18 @@ const NewScan = () => {
     { number: 3, title: 'Settings', icon: Check },
   ];
 
-  // Show terminal view when scanning
+  // Helper to check if reports are still generating
+  const areReportsGenerating = () => {
+    if (!scanResult || scanStatus !== 'COMPLETED') return false;
+    const reports = scanResult.gemini_reports || {};
+    const dataKeys = Object.keys(scanResult.data || {});
+    return dataKeys.some(key => !reports[key] || reports[key]?.status === 'generating');
+  };
+
+  const stillGenerating = areReportsGenerating();
+  const showLoading = isScanning && (scanStatus === 'RUNNING' || (scanStatus === 'COMPLETED' && stillGenerating));
+
+  // Show scanning or results view
   if (isScanning || scanResult) {
     return (
       <div className="space-y-6">
@@ -389,29 +421,62 @@ const NewScan = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                <Terminal className="h-8 w-8 text-primary-500" />
-                Scan Execution
+                {showLoading ? (
+                  <Loader2 className="h-8 w-8 text-primary-500 animate-spin" />
+                ) : (
+                  <Terminal className="h-8 w-8 text-primary-500" />
+                )}
+                {isScanning && scanStatus === 'RUNNING' ? 'Running Scan...' 
+                  : stillGenerating ? 'Scan Completed - Generating Reports...'
+                  : 'Scan Results'}
               </h1>
-              <p className="text-surface-muted">CLI-based automated scan in progress</p>
+              <p className="text-surface-muted">
+                {isScanning && scanStatus === 'RUNNING' 
+                  ? 'Please wait while we analyze your targets' 
+                  : stillGenerating
+                  ? 'AI analysis reports are being generated...'
+                  : 'Scan completed successfully'}
+              </p>
             </div>
           </div>
-          {scanStatus === 'COMPLETED' && (
+          {scanStatus === 'COMPLETED' && !stillGenerating && (
             <Button onClick={handleViewResults} className="bg-success hover:bg-success/80">
               View Results
             </Button>
           )}
         </div>
 
-        {/* Terminal Display */}
-        <Card>
-          <CardContent className="p-6">
-            <DisplayTerminal 
-              logs={scanLogs} 
-              scanId={scanId} 
-              status={scanStatus}
-            />
-          </CardContent>
-        </Card>
+        {/* Loading State */}
+        {showLoading && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Loader2 className="h-16 w-16 mx-auto mb-4 text-primary-500 animate-spin" />
+              <h3 className="text-xl font-semibold text-white mb-2">
+                {scanLogs.some(log => log.message.includes('Generating AI analysis') || log.message.includes('AI analysis') || log.message.includes('🤖')) 
+                  ? '🤖 Generating AI Analysis...' 
+                  : scanStatus === 'COMPLETED'
+                  ? 'Scan Completed - Generating AI Reports...'
+                  : 'Scanning in Progress'}
+              </h3>
+              <p className="text-surface-muted">
+                {scanLogs.some(log => log.message.includes('Generating AI analysis') || log.message.includes('AI analysis') || log.message.includes('🤖'))
+                  ? 'Gemini AI is analyzing your scan results. Separate reports are being generated for each provider...'
+                  : scanStatus === 'COMPLETED'
+                  ? 'Scan completed! AI analysis reports are being generated in the background...'
+                  : `Analyzing targets with ${formData.providers.join(', ')}...`}
+              </p>
+              {scanLogs.length > 0 && (
+                <div className="mt-6 space-y-2 text-left max-h-64 overflow-y-auto bg-surface-panel p-4 rounded-lg">
+                  {scanLogs.slice(-10).map((log, idx) => (
+                    <div key={idx} className="text-sm text-surface-muted">
+                      <span className="text-primary-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span> {log.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Results Summary */}
         {scanResult && scanStatus === 'COMPLETED' && (
@@ -422,17 +487,7 @@ const NewScan = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 bg-success/10 border border-success/30 rounded-lg">
-                    <p className="text-success font-medium">✓ Scan completed successfully</p>
-                    <p className="text-sm text-surface-muted mt-1">
-                      Processed {scanResult.targets?.length || formData.targets.length} target(s) using {scanResult.providers?.length || formData.providers.length} provider(s)
-                    </p>
-                    <p className="text-sm text-surface-muted mt-1">
-                      Completed at: {scanResult.timestamp ? new Date(scanResult.timestamp).toLocaleString() : 'N/A'}
-                    </p>
-                  </div>
-
-                  {/* Display scan results data */}
+                  {/* Display Provider Results */}
                   {scanResult.data && Object.keys(scanResult.data).length > 0 && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-white">Provider Results</h3>
@@ -468,11 +523,229 @@ const NewScan = () => {
                     </div>
                   )}
 
-                  {(!scanResult.data || Object.keys(scanResult.data).length === 0) && (
-                    <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
-                      <p className="text-warning">⚠ No data returned from providers. Check API keys configuration.</p>
-                    </div>
-                  )}
+                  {/* Display Gemini AI Analysis - Provider-specific reports */}
+                  <div className="space-y-4 mt-6">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <span className="text-primary-500">🤖</span>
+                      AI Security Analysis Reports
+                    </h3>
+                    
+                    {scanResult.data && Object.keys(scanResult.data).map((dataKey) => {
+                      const reports = scanResult.gemini_reports || {};
+                      const report = reports[dataKey];
+                      
+                      // Check if report exists and its status
+                      if (!report) {
+                        return (
+                          <Card key={dataKey} className="border-warning/30">
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 text-warning animate-spin" />
+                                {dataKey} - AI Analysis Pending
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
+                                <p className="text-warning">⏳ AI analysis is queued. Please wait...</p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                      
+                      if (report.status === 'generating') {
+                        return (
+                          <Card key={dataKey} className="border-warning/30">
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 text-warning animate-spin" />
+                                {report.provider || dataKey} - {report.target || ''} - Generating AI Analysis...
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
+                                <p className="text-warning flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Gemini AI is analyzing the scan results. This may take a moment...
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                      
+                      if (report.status === 'failed' || report.has_error) {
+                        return (
+                          <Card key={dataKey} className="border-error">
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center gap-2 text-error">
+                                <span>⚠️</span>
+                                {report.provider || dataKey} - {report.target || ''} - AI Analysis Failed
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="p-4 bg-error/10 border border-error/30 rounded-lg">
+                                <p className="text-error font-medium mb-1">AI Analysis Failed</p>
+                                <p className="text-sm text-surface-muted">{report.error || 'Unknown error occurred'}</p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                      
+                      if (report.status === 'completed') {
+                        return (
+                          <Card key={dataKey} className="border-primary/30">
+                            <CardHeader>
+                              <CardTitle className="text-base flex items-center gap-2">
+                                <span className="text-primary-500">🤖</span>
+                                {report.provider || dataKey} - {report.target || ''} - AI Security Analysis
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {report.analysis ? (
+                                <div className="space-y-4">
+                                  {/* Summary */}
+                                  {report.analysis.summary && (
+                                    <Card className="bg-primary/5 border-primary/30">
+                                      <CardHeader>
+                                        <CardTitle className="text-base">Executive Summary</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <p className="text-surface-muted">{report.analysis.summary}</p>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+
+                                  {/* Risk Assessment */}
+                                  {report.analysis.risk_level && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle className="text-base">Risk Level</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <span className={`text-2xl font-bold ${
+                                            report.analysis.risk_level === 'CRITICAL' ? 'text-error' :
+                                            report.analysis.risk_level === 'HIGH' ? 'text-danger' :
+                                            report.analysis.risk_level === 'MEDIUM' ? 'text-warning' :
+                                            'text-success'
+                                          }`}>
+                                            {report.analysis.risk_level}
+                                          </span>
+                                        </CardContent>
+                                      </Card>
+                                      {report.analysis.risk_score && (
+                                        <Card>
+                                          <CardHeader>
+                                            <CardTitle className="text-base">Risk Score</CardTitle>
+                                          </CardHeader>
+                                          <CardContent>
+                                            <span className="text-2xl font-bold text-white">
+                                              {report.analysis.risk_score}/10
+                                            </span>
+                                          </CardContent>
+                                        </Card>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Key Findings */}
+                                  {report.analysis.key_findings && Array.isArray(report.analysis.key_findings) && report.analysis.key_findings.length > 0 && (
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle className="text-base">Key Findings</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <ul className="space-y-2">
+                                          {report.analysis.key_findings.map((finding, idx) => (
+                                            <li key={idx} className="flex items-start gap-2 text-surface-muted">
+                                              <span className="text-primary-500">•</span>
+                                              <span>{finding}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+
+                                  {/* Vulnerabilities */}
+                                  {report.analysis.vulnerabilities && Array.isArray(report.analysis.vulnerabilities) && report.analysis.vulnerabilities.length > 0 && (
+                                    <Card className="border-danger">
+                                      <CardHeader>
+                                        <CardTitle className="text-base text-danger">Identified Vulnerabilities</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <ul className="space-y-2">
+                                          {report.analysis.vulnerabilities.map((vuln, idx) => (
+                                            <li key={idx} className="flex items-start gap-2 text-surface-muted">
+                                              <span className="text-danger">⚠</span>
+                                              <span>{vuln}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+
+                                  {/* Recommendations */}
+                                  {report.analysis.recommendations && Array.isArray(report.analysis.recommendations) && report.analysis.recommendations.length > 0 && (
+                                    <Card className="bg-success/5 border-success/30">
+                                      <CardHeader>
+                                        <CardTitle className="text-base text-success">Security Recommendations</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <ul className="space-y-2">
+                                          {report.analysis.recommendations.map((rec, idx) => (
+                                            <li key={idx} className="flex items-start gap-2 text-surface-muted">
+                                              <span className="text-success">✓</span>
+                                              <span>{rec}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+
+                                  {/* Threat Indicators */}
+                                  {report.analysis.threat_indicators && Array.isArray(report.analysis.threat_indicators) && report.analysis.threat_indicators.length > 0 && (
+                                    <Card className="border-warning">
+                                      <CardHeader>
+                                        <CardTitle className="text-base text-warning">Threat Indicators</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <ul className="space-y-2">
+                                          {report.analysis.threat_indicators.map((indicator, idx) => (
+                                            <li key={idx} className="flex items-start gap-2 text-surface-muted">
+                                              <span className="text-warning">🔍</span>
+                                              <span>{indicator}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </CardContent>
+                                    </Card>
+                                  )}
+                                </div>
+                              ) : report.raw_text ? (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-base">AI Analysis</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
+                                      {report.raw_text}
+                                    </pre>
+                                  </CardContent>
+                                </Card>
+                              ) : null}
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+                      
+                      return null;
+                    })}
+                  </div>
 
                   <div className="flex gap-3">
                     <Button onClick={() => navigate('/dashboard/scans')} variant="outline" className="flex-1">

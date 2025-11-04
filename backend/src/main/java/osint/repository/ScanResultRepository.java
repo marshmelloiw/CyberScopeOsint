@@ -14,6 +14,9 @@ public interface ScanResultRepository extends JpaRepository<ScanResult, Long> {
     
     List<ScanResult> findByScanId(Long scanId);
     
+    @Query("SELECT sr FROM ScanResult sr LEFT JOIN FETCH sr.scanTarget WHERE sr.scan.id = :scanId")
+    List<ScanResult> findByScanIdWithTarget(@Param("scanId") Long scanId);
+    
     List<ScanResult> findByScanTargetId(Long scanTargetId);
     
     List<ScanResult> findByProviderName(String providerName);

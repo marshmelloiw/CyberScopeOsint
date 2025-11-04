@@ -69,7 +69,7 @@ const DisplayTerminal = ({ logs, scanId, status }) => {
 
     // Write initial content
     terminal.writeln('\x1b[1;32m╔═══════════════════════════════════════════════════════╗\x1b[0m');
-    terminal.writeln('\x1b[1;32m║\x1b[0m  \x1b[1;36mCyberScope CLI - Automated Scan Execution\x1b[0m           \x1b[1;32m║\x1b[0m');
+    terminal.writeln('\x1b[1;32m║\x1b[0m  \x1b[1;36mCyberScope - Security Scan Execution\x1b[0m              \x1b[1;32m║\x1b[0m');
     terminal.writeln('\x1b[1;32m╚═══════════════════════════════════════════════════════╝\x1b[0m');
     terminal.writeln('');
 
@@ -107,7 +107,7 @@ const DisplayTerminal = ({ logs, scanId, status }) => {
     // Clear and rewrite all logs
     terminal.clear();
     terminal.writeln('\x1b[1;32m╔═══════════════════════════════════════════════════════╗\x1b[0m');
-    terminal.writeln('\x1b[1;32m║\x1b[0m  \x1b[1;36mCyberScope CLI - Automated Scan Execution\x1b[0m           \x1b[1;32m║\x1b[0m');
+    terminal.writeln('\x1b[1;32m║\x1b[0m  \x1b[1;36mCyberScope - Security Scan Execution\x1b[0m              \x1b[1;32m║\x1b[0m');
     terminal.writeln('\x1b[1;32m╚═══════════════════════════════════════════════════════╝\x1b[0m');
     terminal.writeln('');
     terminal.writeln(`\x1b[33mScan ID:\x1b[0m ${scanId || 'N/A'}`);
@@ -150,7 +150,7 @@ const DisplayTerminal = ({ logs, scanId, status }) => {
           <div className="w-3 h-3 rounded-full bg-red-500"></div>
           <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          <span className="ml-3 text-sm text-surface-muted font-mono">CyberScope CLI</span>
+          <span className="ml-3 text-sm text-surface-muted font-mono">CyberScope Scanner</span>
         </div>
         {status && (
           <span className={`text-xs px-2 py-1 rounded ${
