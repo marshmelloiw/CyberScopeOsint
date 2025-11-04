@@ -32,7 +32,7 @@ public class User {
     @Column(name = "mfa_enabled")
     private Boolean mfaEnabled = false;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "last_login")
@@ -44,7 +44,7 @@ public class User {
 
     // Constructors
     public User() {
-        this.createdAt = LocalDateTime.now();
+        // createdAt will be set by database default
     }
 
     public User(Long id, String email, String passwordHash, Set<Role> roles) {

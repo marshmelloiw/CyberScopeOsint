@@ -6,9 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Value;
 
-import osint.model.Role;
 import osint.service.AuthService;
-import osint.repository.RoleRepository;
 import osint.repository.UserRepository;
 import osint.model.User;
 
@@ -21,30 +19,33 @@ public class OsintBackendApplication {
 
     @Bean
     CommandLineRunner seedDefaults(
-            RoleRepository roleRepository,
             UserRepository userRepository,
             AuthService authService,
             @Value("${ADMIN_EMAIL:admin@example.com}") String adminEmail,
             @Value("${ADMIN_PASSWORD:Admin123!}") String adminPassword) {
         return args -> {
-            roleRepository.findByName("BIREYSEL").orElseGet(() -> roleRepository.save(Role.builder().name("BIREYSEL").build()));
-            roleRepository.findByName("KURUMSAL").orElseGet(() -> roleRepository.save(Role.builder().name("KURUMSAL").build()));
-            roleRepository.findByName("ADMIN").orElseGet(() -> roleRepository.save(Role.builder().name("ADMIN").build()));
-
+            // Create admin user if it doesn't exist
             User admin = userRepository.findByEmail(adminEmail).orElseGet(() -> {
                 try {
                     authService.register(adminEmail, adminPassword);
-                } catch (IllegalArgumentException ignored) {}
-                return userRepository.findByEmail(adminEmail).orElse(null);
+                    User newAdmin = userRepository.findByEmail(adminEmail).orElse(null);
+                    if (newAdmin != null) {
+                        // Set admin role
+                        newAdmin.setRole("ADMIN");
+                        newAdmin.setIsVerified(true);
+                        return userRepository.save(newAdmin);
+                    }
+                    return null;
+                } catch (IllegalArgumentException ignored) {
+                    return null;
+                }
             });
 
-            if (admin != null) {
-                roleRepository.findByName("ADMIN").ifPresent(adminRole -> {
-                    if (!admin.getRoles().contains(adminRole)) {
-                        admin.getRoles().add(adminRole);
-                        userRepository.save(admin);
-                    }
-                });
+            // Update existing admin user role if needed
+            if (admin != null && !"ADMIN".equals(admin.getRole())) {
+                admin.setRole("ADMIN");
+                admin.setIsVerified(true);
+                userRepository.save(admin);
             }
         };
     }

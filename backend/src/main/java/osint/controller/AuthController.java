@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,9 +28,17 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
-        JwtResponse jwt = authService.login(request.getEmail(), request.getPassword());
-        return ResponseEntity.ok(jwt);
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            JwtResponse jwt = authService.login(request.getEmail(), request.getPassword());
+            return ResponseEntity.ok(jwt);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Login failed: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/forgot-password")
