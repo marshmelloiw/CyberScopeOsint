@@ -19,9 +19,13 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: validate  # Flyway kullanıyoruz, validate yeterli
-    show-sql: true
+      ddl-auto: none  # Flyway kullanıyoruz, DB yapısı zaten mevcut
+    show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
   
   flyway:
     enabled: true

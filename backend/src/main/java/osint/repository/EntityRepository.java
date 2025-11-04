@@ -16,12 +16,16 @@ public interface EntityRepository extends JpaRepository<Entity, Long> {
     
     List<Entity> findByEntityType(String entityType);
     
-    List<Entity> findByRiskLevel(String riskLevel);
+    @Query("SELECT e FROM Entity e WHERE e.user.id = :userId")
+    List<Entity> findByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT e FROM Entity e WHERE e.riskScore >= :minScore ORDER BY e.riskScore DESC")
-    List<Entity> findByRiskScoreGreaterThanEqual(@Param("minScore") java.math.BigDecimal minScore);
+    // Note: riskLevel and riskScore are now transient fields, queries removed
+    // If needed, these can be calculated from threat_events table
     
     @Query("SELECT COUNT(e) FROM Entity e WHERE e.entityType = :type")
     long countByEntityType(@Param("type") String type);
+    
+    @Query("SELECT COUNT(e) FROM Entity e WHERE e.user.id = :userId")
+    long countByUserId(@Param("userId") Long userId);
 }
 

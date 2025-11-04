@@ -3,10 +3,8 @@ package osint.service;
 import osint.dto.JwtResponse;
 import osint.dto.MfaSetupResponse;
 import osint.repository.PasswordResetTokenRepository;
-import osint.repository.RoleRepository;
 import osint.repository.UserRepository;
 import osint.model.PasswordResetToken;
-import osint.model.Role;
 import osint.model.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,21 +12,23 @@ import org.apache.commons.codec.binary.Base32;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    
+    // In-memory storage for TOTP secrets (not in DB schema)
+    // In production, consider using Redis or another external storage
+    private final Map<String, String> totpSecrets = new ConcurrentHashMap<>();
 
     public AuthService(UserRepository userRepository,
-            RoleRepository roleRepository,
             PasswordResetTokenRepository passwordResetTokenRepository) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
@@ -37,12 +37,12 @@ public class AuthService {
             throw new IllegalArgumentException("Email already in use");
         }
         String hash = passwordEncoder.encode(rawPassword);
-        Role userRole = roleRepository.findByName("BIREYSEL")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("BIREYSEL").build()));
         User user = User.builder()
                 .email(email)
                 .passwordHash(hash)
-                .roles(Set.of(userRole))
+                .role("USER") // Default role: USER, ADMIN, or CORPORATE
+                .isVerified(false)
+                .mfaEnabled(false)
                 .build();
         userRepository.save(user);
     }
@@ -93,8 +93,8 @@ public class AuthService {
     public void setupSmsMfa(String email, String phoneNumber) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setPhoneNumber(phoneNumber);
-        user.setSmsMfaEnabled(true);
+        // phoneNumber is not stored in DB schema, only enable MFA
+        user.setMfaEnabled(true);
         userRepository.save(user);
     }
 
@@ -102,8 +102,8 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (!Boolean.TRUE.equals(user.getSmsMfaEnabled())) {
-            throw new IllegalArgumentException("SMS MFA not enabled for user");
+        if (!Boolean.TRUE.equals(user.getMfaEnabled())) {
+            throw new IllegalArgumentException("MFA not enabled for user");
         }
 
         // Mock SMS verification - in production, verify against SMS service
@@ -120,8 +120,10 @@ public class AuthService {
         Base32 base32 = new Base32();
         String secret = base32.encodeToString(secretBytes);
 
-        // Save secret to user (but don't enable TOTP yet - will be enabled after verification)
-        user.setTotpSecret(secret);
+        // Save secret in memory (not in DB schema)
+        // In production, consider using Redis or another external storage
+        totpSecrets.put(email, secret);
+        user.setMfaEnabled(true);
         userRepository.save(user);
 
         // Generate TOTP URI for QR code
@@ -137,7 +139,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String secret = user.getTotpSecret();
+        String secret = totpSecrets.get(email);
         if (secret == null || secret.isEmpty()) {
             throw new IllegalArgumentException("TOTP MFA not setup for user");
         }
@@ -163,12 +165,11 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (user.getTotpSecret() == null || user.getTotpSecret().isEmpty()) {
+        if (!totpSecrets.containsKey(email)) {
             throw new IllegalArgumentException("TOTP secret not found. Please setup TOTP first.");
         }
 
-        // For this demo, we assume TOTP is enabled once secret is set
-        // You can add a separate totpEnabled field if needed
+        user.setMfaEnabled(true);
         userRepository.save(user);
     }
 
@@ -176,7 +177,8 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        user.setTotpSecret(null);
+        totpSecrets.remove(email);
+        user.setMfaEnabled(false);
         userRepository.save(user);
     }
 }

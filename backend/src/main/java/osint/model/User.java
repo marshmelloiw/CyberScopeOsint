@@ -2,6 +2,7 @@ package osint.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -10,37 +11,49 @@ import java.util.Set;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "role", length = 50)
+    private String role; // ADMIN, USER, CORPORATE
+
+    @Column(name = "is_verified")
+    private Boolean isVerified = false;
+
+    @Column(name = "mfa_enabled")
+    private Boolean mfaEnabled = false;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+
+    // For backward compatibility - keep roles but map to role field
+    @Transient
     private Set<Role> roles = new HashSet<>();
-
-    @Column(name = "phone_number")
-    private String phoneNumber;
-
-    @Column(name = "sms_mfa_enabled")
-    private Boolean smsMfaEnabled = false;
-
-    @Column(name = "totp_secret")
-    private String totpSecret;
 
     // Constructors
     public User() {
+        this.createdAt = LocalDateTime.now();
     }
 
     public User(Long id, String email, String passwordHash, Set<Role> roles) {
+        this();
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
         this.roles = roles != null ? roles : new HashSet<>();
-        this.smsMfaEnabled = false;
+        this.mfaEnabled = false;
     }
 
     // Getters and Setters
@@ -76,28 +89,77 @@ public class User {
         this.roles = roles != null ? roles : new HashSet<>();
     }
 
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public Boolean getIsVerified() {
+        return isVerified;
+    }
+
+    public void setIsVerified(Boolean isVerified) {
+        this.isVerified = isVerified;
+    }
+
+    public Boolean getMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    public void setMfaEnabled(Boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getLastLogin() {
+        return lastLogin;
+    }
+
+    public void setLastLogin(LocalDateTime lastLogin) {
+        this.lastLogin = lastLogin;
+    }
+
+    // Backward compatibility methods
     public String getPhoneNumber() {
-        return phoneNumber;
+        return null; // Not in DB schema
     }
 
     public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+        // Not in DB schema
     }
 
     public Boolean getSmsMfaEnabled() {
-        return smsMfaEnabled;
+        return mfaEnabled;
     }
 
     public void setSmsMfaEnabled(Boolean smsMfaEnabled) {
-        this.smsMfaEnabled = smsMfaEnabled;
+        this.mfaEnabled = smsMfaEnabled;
     }
 
     public String getTotpSecret() {
-        return totpSecret;
+        return null; // Not in DB schema
     }
 
     public void setTotpSecret(String totpSecret) {
-        this.totpSecret = totpSecret;
+        // Not in DB schema
     }
 
     // Builder pattern
@@ -109,10 +171,13 @@ public class User {
         private Long id;
         private String email;
         private String passwordHash;
+        private String fullName;
+        private String role;
+        private Boolean isVerified = false;
+        private Boolean mfaEnabled = false;
+        private LocalDateTime createdAt;
+        private LocalDateTime lastLogin;
         private Set<Role> roles = new HashSet<>();
-        private String phoneNumber;
-        private Boolean smsMfaEnabled = false;
-        private String totpSecret;
 
         public Builder id(Long id) {
             this.id = id;
@@ -134,26 +199,44 @@ public class User {
             return this;
         }
 
-        public Builder phoneNumber(String phoneNumber) {
-            this.phoneNumber = phoneNumber;
+        public Builder fullName(String fullName) {
+            this.fullName = fullName;
             return this;
         }
 
-        public Builder smsMfaEnabled(Boolean smsMfaEnabled) {
-            this.smsMfaEnabled = smsMfaEnabled;
+        public Builder role(String role) {
+            this.role = role;
             return this;
         }
 
-        public Builder totpSecret(String totpSecret) {
-            this.totpSecret = totpSecret;
+        public Builder isVerified(Boolean isVerified) {
+            this.isVerified = isVerified;
+            return this;
+        }
+
+        public Builder mfaEnabled(Boolean mfaEnabled) {
+            this.mfaEnabled = mfaEnabled;
+            return this;
+        }
+
+        public Builder createdAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder lastLogin(LocalDateTime lastLogin) {
+            this.lastLogin = lastLogin;
             return this;
         }
 
         public User build() {
             User user = new User(id, email, passwordHash, roles);
-            user.setPhoneNumber(phoneNumber);
-            user.setSmsMfaEnabled(smsMfaEnabled);
-            user.setTotpSecret(totpSecret);
+            user.setFullName(fullName);
+            user.setRole(role);
+            user.setIsVerified(isVerified);
+            user.setMfaEnabled(mfaEnabled);
+            if (createdAt != null) user.setCreatedAt(createdAt);
+            if (lastLogin != null) user.setLastLogin(lastLogin);
             return user;
         }
     }
