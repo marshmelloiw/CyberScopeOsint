@@ -348,7 +348,7 @@ public class ScanService {
         saveGeneratingStatus(scanResultId, provider, target);
         
         // Log start
-        final String initialLogMsg = "🤖 Generating AI analysis for " + provider + " - " + target + "...";
+        final String initialLogMsg = "Generating AI analysis for " + provider + " - " + target + "...";
         addLogToDBAsync(scanIdStr, "INFO", initialLogMsg);
         
         // Prepare data for this specific provider-target

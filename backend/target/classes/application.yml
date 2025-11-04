@@ -28,13 +28,6 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
-  
-  shell:
-    interactive:
-      enabled: false  # CLI disabled for web mode
-    command:
-      stacktrace:
-        enabled: true
 
 # OSINT API Keys Configuration
 osint:
@@ -44,6 +37,8 @@ osint:
     api-key: ${VIRUSTOTAL_API_KEY:5f8038cb6237695af7d6b01f508fff4d1512782710d924ac6df87b07ffe2219b}
   hibp:
     api-key: ${HIBP_API_KEY:your_actual_hibp_api_key_here}
+  gemini:
+    api-key: ${GEMINI_API_KEY:AIzaSyCE7kdwhNHHY0htwf_BHIoQ53LLs8WExH4}
 
 logging:
   level:

@@ -28,7 +28,6 @@ osint\service\AuthService.class
 osint\dto\RegisterRequest.class
 osint\model\User.class
 osint\repository\ScanLogRepository.class
-osint\shell\command\OsintScanCommands.class
 osint\model\PasswordResetToken$Builder.class
 osint\repository\RoleRepository.class
 osint\service\VirusTotalService.class
