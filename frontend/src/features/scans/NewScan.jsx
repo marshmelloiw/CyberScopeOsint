@@ -35,7 +35,7 @@ const NewScan = () => {
   ];
 
   const providers = {
-    domain: ['VirusTotal', 'Shodan', 'Whois', 'AbuseIPDB', 'URLVoid'],
+    domain: ['VirusTotal', 'Shodan', 'Whois', 'AbuseIPDB', 'URLVoid', 'Zap'],
     email: ['HaveIBeenPwned', 'DeHashed', 'Intelligence X', 'LeakCheck'],
     ip: ['Shodan', 'VirusTotal', 'AbuseIPDB', 'IPQualityScore', 'IP2Location'],
     social: ['Twitter', 'LinkedIn', 'GitHub', 'Reddit', 'Telegram'],

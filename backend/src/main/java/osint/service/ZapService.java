@@ -88,6 +88,64 @@ public class ZapService {
                 .onErrorReturn(createErrorMap("Failed to get alerts from ZAP"));
     }
 
+    /**
+     * Comprehensive ZAP scan that retrieves alerts
+     * Returns full scan results with all ZAP data
+     */
+    public Mono<Map<String, Object>> performComprehensiveScan(String url) {
+        if (apiKey == null || apiKey.isEmpty()) {
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("error", "ZAP API key not configured");
+            errorResult.put("url", url);
+            return Mono.just(errorResult);
+        }
+
+        logger.info("Starting ZAP scan for URL: {}", url);
+
+        // Get alerts - return everything ZAP gives us
+        return getAlerts(url)
+                .map(alertsResponse -> {
+                    Map<String, Object> result = new HashMap<>();
+                    
+                    // Add URL and timestamp
+                    result.put("url", url);
+                    result.put("scanned_at", System.currentTimeMillis());
+                    
+                    // Add the entire alerts response - preserve all fields
+                    if (alertsResponse != null) {
+                        if (alertsResponse instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> alertsMap = (Map<String, Object>) alertsResponse;
+                            // Add every field from alerts response
+                            for (Map.Entry<String, Object> entry : alertsMap.entrySet()) {
+                                result.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        // Always keep the full response as well
+                        result.put("zap_response", alertsResponse);
+                    }
+                    
+                    // Also try to start a spider scan
+                    scanUrl(url).subscribe(
+                        scanResponse -> logger.debug("ZAP spider scan started: {}", scanResponse),
+                        error -> logger.debug("ZAP spider scan failed: {}", error.getMessage())
+                    );
+                    
+                    result.put("status", "completed");
+                    logger.info("ZAP scan result for {} contains {} fields", url, result.size());
+                    return result;
+                })
+                .onErrorResume(error -> {
+                    logger.error("ZAP scan error for {}: {}", url, error.getMessage());
+                    Map<String, Object> errorResult = new HashMap<>();
+                    errorResult.put("error", "ZAP scan failed: " + error.getMessage());
+                    errorResult.put("url", url);
+                    errorResult.put("timestamp", System.currentTimeMillis());
+                    return Mono.just(errorResult);
+                });
+    }
+
+
     private Map<String, Object> createErrorMap(String message) {
         Map<String, Object> error = new HashMap<>();
         error.put("error", message);

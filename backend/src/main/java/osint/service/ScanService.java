@@ -128,8 +128,29 @@ public class ScanService {
                                 break;
                             case "ZAP":
                                 logger.info("Matched ZAP for type: {}", request.getType());
-                                if (request.getType().equals("url")) {
-                                    providerResult = zapService.scanUrl(target).block();
+                                try {
+                                    if (request.getType().equals("url")) {
+                                        providerResult = zapService.performComprehensiveScan(target).block();
+                                    } else if (request.getType().equals("domain")) {
+                                        // Convert domain to URL format for ZAP scanning
+                                        String url = target.startsWith("http://") || target.startsWith("https://")
+                                                ? target
+                                                : "https://" + target;
+                                        logger.info("Starting ZAP scan for domain {} converted to URL: {}", target,
+                                                url);
+                                        providerResult = zapService.performComprehensiveScan(url).block();
+                                    }
+                                    if (providerResult != null) {
+                                        logger.info("ZAP scan result for {}: keys={}, hasError={}", target,
+                                                providerResult.keySet(), providerResult.containsKey("error"));
+                                    } else {
+                                        logger.warn("ZAP scan result is null for target: {}", target);
+                                        providerResult = Map.of("error", "ZAP scan returned null result");
+                                    }
+                                } catch (Exception zapError) {
+                                    logger.error("ZAP scan exception for {}: {}", target, zapError.getMessage(),
+                                            zapError);
+                                    providerResult = Map.of("error", "ZAP scan failed: " + zapError.getMessage());
                                 }
                                 break;
                             default:
@@ -138,11 +159,16 @@ public class ScanService {
                                 break;
                         }
 
-                        if (providerResult != null && !providerResult.containsKey("error")) {
-                            providerResult.put("provider", provider); // Keep original name for frontend
+                        // Always add provider result, even if it has errors
+                        if (providerResult != null) {
+                            // Add provider name for frontend identification
+                            providerResult.put("provider", provider);
                             targetResult.put(provider, providerResult);
-                        } else if (providerResult != null) {
-                            targetResult.put(provider, providerResult);
+                            logger.debug("Added provider result for {}: keys={}", provider, providerResult.keySet());
+                        } else {
+                            logger.warn("Provider result is null for provider: {}", provider);
+                            targetResult.put(provider,
+                                    Map.of("error", "Provider returned null result", "provider", provider));
                         }
                     } catch (Exception e) {
                         logger.error("Error processing provider {} for target {}: {}", provider, target, e.getMessage(),
