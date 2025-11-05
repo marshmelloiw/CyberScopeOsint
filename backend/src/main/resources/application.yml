@@ -12,7 +12,7 @@ spring:
     import: optional:file:.env
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/osint_db
+    url: jdbc:postgresql://192.168.1.49:5432/osint_db
     driver-class-name: org.postgresql.Driver
     username: osint_user
     password: osint_password
@@ -43,6 +43,9 @@ osint:
     api-key: ${HIBP_API_KEY:your_actual_hibp_api_key_here}
   gemini:
     api-key: ${GEMINI_API_KEY:AIzaSyCE7kdwhNHHY0htwf_BHIoQ53LLs8WExH4}
+  zap:
+    api-key: ${ZAP_API_KEY:1ucgq9qu0b6tdgcl4914if6icc}
+    base-url: ${ZAP_BASE_URL:http://localhost:8090}
 
 logging:
   level:
@@ -56,4 +59,3 @@ management:
     web:
       exposure:
         include: health,info
-

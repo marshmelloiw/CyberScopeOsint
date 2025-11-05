@@ -63,7 +63,7 @@ public class GeminiService {
             logger.debug("Request body: {}", requestBody);
 
             return webClient.post()
-                    .uri("/models/gemini-1.5-pro:generateContent?key=" + apiKey)
+                    .uri("/models/gemini-2.5-pro:generateContent?key=" + apiKey)
                     .bodyValue(requestBody)
                     .retrieve()
                     .onStatus(status -> status.isError(), response -> {
@@ -155,10 +155,12 @@ public class GeminiService {
                                                 result.put("analysis", parsed);
                                                 result.put("raw_text", text);
                                             } catch (Exception e) {
-                                                // If JSON parsing fails, return raw text
-                                                logger.warn("Failed to parse Gemini JSON response, returning raw text");
+                                                // If JSON parsing fails, return raw text as analysis
+                                                logger.warn("Failed to parse Gemini JSON response, returning raw text as analysis");
+                                                // Always provide analysis field - use raw_text if JSON parsing fails
+                                                result.put("analysis", text);
                                                 result.put("raw_text", text);
-                                                result.put("note", "Response could not be parsed as JSON");
+                                                result.put("note", "Response format is plain text, not JSON");
                                             }
                                             return result;
                                         }

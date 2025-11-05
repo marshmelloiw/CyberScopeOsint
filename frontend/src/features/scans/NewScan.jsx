@@ -538,18 +538,24 @@ const NewScan = () => {
                       AI Security Analysis Reports
                     </h3>
                     
-                    {scanResult.data && Object.keys(scanResult.data).map((dataKey) => {
+                    {scanResult.data && Object.entries(scanResult.data).flatMap(([target, providersMap]) => {
                       const reports = scanResult.gemini_reports || {};
-                      const report = reports[dataKey];
+                      
+                      // Iterate through each provider for this target
+                      if (!providersMap || typeof providersMap !== 'object') return [];
+                      
+                      return Object.keys(providersMap).map((provider) => {
+                        const reportKey = `${provider}_${target}`;
+                        const report = reports[reportKey];
                       
                       // Check if report exists and its status
                       if (!report) {
                         return (
-                          <Card key={dataKey} className="border-warning/30">
+                          <Card key={reportKey} className="border-warning/30">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 text-warning animate-spin" />
-                                {dataKey} - AI Analysis Pending
+                                {provider} - {target} - AI Analysis Pending
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -563,11 +569,11 @@ const NewScan = () => {
                       
                       if (report.status === 'generating') {
                         return (
-                          <Card key={dataKey} className="border-warning/30">
+                          <Card key={reportKey} className="border-warning/30">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 text-warning animate-spin" />
-                                {report.provider || dataKey} - {report.target || ''} - Generating AI Analysis...
+                                {report.provider || provider} - {report.target || target} - Generating AI Analysis...
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -584,11 +590,11 @@ const NewScan = () => {
                       
                       if (report.status === 'failed' || report.has_error) {
                         return (
-                          <Card key={dataKey} className="border-error">
+                          <Card key={reportKey} className="border-error">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 text-error">
                                 <span>⚠️</span>
-                                {report.provider || dataKey} - {report.target || ''} - AI Analysis Failed
+                                {report.provider || provider} - {report.target || target} - AI Analysis Failed
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -603,15 +609,38 @@ const NewScan = () => {
                       
                       if (report.status === 'completed') {
                         return (
-                          <Card key={dataKey} className="border-primary/30">
+                          <Card key={reportKey} className="border-primary/30">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <span className="text-primary-500">🤖</span>
-                                {report.provider || dataKey} - {report.target || ''} - AI Security Analysis
+                                {report.provider || provider} - {report.target || target} - AI Security Analysis
                               </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              {report.analysis ? (
+                              {/* Show analysis text if available (raw_text or analysis as string) */}
+                              {typeof report.analysis === 'string' ? (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-base">AI Analysis Report</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
+                                      {report.analysis}
+                                    </pre>
+                                  </CardContent>
+                                </Card>
+                              ) : report.raw_text ? (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-base">AI Analysis Report</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
+                                      {report.raw_text}
+                                    </pre>
+                                  </CardContent>
+                                </Card>
+                              ) : report.analysis && typeof report.analysis === 'object' ? (
                                 <div className="space-y-4">
                                   {/* Summary */}
                                   {report.analysis.summary && (
@@ -734,17 +763,6 @@ const NewScan = () => {
                                     </Card>
                                   )}
                                 </div>
-                              ) : report.raw_text ? (
-                                <Card>
-                                  <CardHeader>
-                                    <CardTitle className="text-base">AI Analysis</CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
-                                      {report.raw_text}
-                                    </pre>
-                                  </CardContent>
-                                </Card>
                               ) : null}
                             </CardContent>
                           </Card>
@@ -752,7 +770,8 @@ const NewScan = () => {
                       }
                       
                       return null;
-                    })}
+                      });
+                    }).flat()}
                   </div>
 
                   <div className="flex gap-3">

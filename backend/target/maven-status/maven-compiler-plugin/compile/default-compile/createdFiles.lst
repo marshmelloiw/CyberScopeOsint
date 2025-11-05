@@ -38,6 +38,7 @@ osint\repository\EntityRepository.class
 osint\repository\ScanResultRepository.class
 osint\dto\SmsMfaVerifyRequest.class
 osint\util\JwtUtil.class
+osint\service\ZapService.class
 osint\model\Scan.class
 osint\model\ScanTarget.class
 osint\repository\PasswordResetTokenRepository.class
