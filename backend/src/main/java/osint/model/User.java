@@ -20,23 +20,29 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Transient  // May not exist in database schema
+    @Column(name = "full_name")
     private String fullName;
 
-    @Transient  // May not exist in database schema
-    private String role; // ADMIN, USER, CORPORATE
+    @Column(name = "role")
+    private String role; // admin, analyst, viewer
 
-    @Transient  // May not exist in database schema
+    @Column(name = "is_verified")
     private Boolean isVerified = false;
 
-    @Transient  // May not exist in database schema
+    @Column(name = "mfa_enabled")
     private Boolean mfaEnabled = false;
 
-    @Transient  // Not in database schema
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Transient  // May not exist in database schema
+    @Column(name = "last_login")
     private LocalDateTime lastLogin;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "user_file")
+    private String userFile;
 
     // For backward compatibility - keep roles but map to role field
     @Transient
@@ -137,13 +143,20 @@ public class User {
         this.lastLogin = lastLogin;
     }
 
-    // Backward compatibility methods
     public String getPhoneNumber() {
-        return null; // Not in DB schema
+        return phoneNumber;
     }
 
     public void setPhoneNumber(String phoneNumber) {
-        // Not in DB schema
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getUserFile() {
+        return userFile;
+    }
+
+    public void setUserFile(String userFile) {
+        this.userFile = userFile;
     }
 
     public Boolean getSmsMfaEnabled() {
@@ -177,6 +190,8 @@ public class User {
         private Boolean mfaEnabled = false;
         private LocalDateTime createdAt;
         private LocalDateTime lastLogin;
+        private String phoneNumber;
+        private String userFile;
         private Set<Role> roles = new HashSet<>();
 
         public Builder id(Long id) {
@@ -229,12 +244,24 @@ public class User {
             return this;
         }
 
+        public Builder phoneNumber(String phoneNumber) {
+            this.phoneNumber = phoneNumber;
+            return this;
+        }
+
+        public Builder userFile(String userFile) {
+            this.userFile = userFile;
+            return this;
+        }
+
         public User build() {
             User user = new User(id, email, passwordHash, roles);
             user.setFullName(fullName);
             user.setRole(role);
             user.setIsVerified(isVerified);
             user.setMfaEnabled(mfaEnabled);
+            user.setPhoneNumber(phoneNumber);
+            user.setUserFile(userFile);
             if (createdAt != null) user.setCreatedAt(createdAt);
             if (lastLogin != null) user.setLastLogin(lastLogin);
             return user;

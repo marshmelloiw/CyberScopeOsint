@@ -53,6 +53,16 @@ public class AuthService {
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid credentials");
         }
+        
+        // Check if user is active (isVerified = true means active)
+        if (user.getIsVerified() == null || !user.getIsVerified()) {
+            throw new IllegalArgumentException("Hesabınız aktif değil. Lütfen yöneticinizle iletişime geçin.");
+        }
+        
+        // Update last login timestamp
+        user.setLastLogin(java.time.LocalDateTime.now());
+        userRepository.save(user);
+        
         String mockJwt = "mock-" + UUID.randomUUID();
         return JwtResponse.builder()
                 .token(mockJwt)

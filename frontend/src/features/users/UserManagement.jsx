@@ -1,97 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Users, Plus, Mail, Shield, Eye, Edit, Trash2, Search, Filter, Calendar, Activity, UserPlus, Key, Building, Download } from 'lucide-react';
+import { Users, Plus, Mail, Shield, Edit, Trash2, Search, Filter, Calendar, Activity, UserPlus, Key, Building, Download, Loader2, AlertCircle, FileText, X, Eye } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import api, { endpoints } from '../../lib/axios';
 
 const UserManagement = () => {
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [showRoleEditor, setShowRoleEditor] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-
-  // Mock users data
-  const users = [
-    {
-      id: 1,
-      name: 'Melisa Bayramoğlu',
-      email: 'melisa@cyberscope.com',
-      role: 'admin',
-      status: 'active',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=melisa',
-      lastActive: '2024-01-15T14:30:00Z',
-      createdAt: '2024-01-01T08:00:00Z',
-      permissions: ['read', 'write', 'scan', 'reports', 'admin'],
-      twoFactorEnabled: true,
-      loginCount: 156,
-      lastLogin: '2024-01-15T14:30:00Z',
-    },
-    {
-      id: 2,
-      name: 'Ahmet Yılmaz',
-      email: 'ahmet@cyberscope.com',
-      role: 'analyst',
-      status: 'active',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ahmet',
-      lastActive: '2024-01-15T12:15:00Z',
-      createdAt: '2024-01-05T10:00:00Z',
-      permissions: ['read', 'write', 'scan', 'reports'],
-      twoFactorEnabled: false,
-      loginCount: 89,
-      lastLogin: '2024-01-15T12:15:00Z',
-    },
-    {
-      id: 3,
-      name: 'Zeynep Kaya',
-      email: 'zeynep@cyberscope.com',
-      role: 'viewer',
-      status: 'active',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zeynep',
-      lastActive: '2024-01-15T09:45:00Z',
-      createdAt: '2024-01-08T14:00:00Z',
-      permissions: ['read'],
-      twoFactorEnabled: true,
-      loginCount: 45,
-      lastLogin: '2024-01-15T09:45:00Z',
-    },
-    {
-      id: 4,
-      name: 'Mehmet Demir',
-      email: 'mehmet@cyberscope.com',
-      role: 'analyst',
-      status: 'inactive',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mehmet',
-      lastActive: '2024-01-10T16:20:00Z',
-      createdAt: '2024-01-03T11:00:00Z',
-      permissions: ['read', 'write', 'scan'],
-      twoFactorEnabled: false,
-      loginCount: 67,
-      lastLogin: '2024-01-10T16:20:00Z',
-    },
-    {
-      id: 5,
-      name: 'Ayşe Özkan',
-      email: 'ayse@cyberscope.com',
-      role: 'viewer',
-      status: 'pending',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ayse',
-      lastActive: null,
-      createdAt: '2024-01-15T08:00:00Z',
-      permissions: ['read'],
-      twoFactorEnabled: false,
-      loginCount: 0,
-      lastLogin: null,
-    },
-  ];
-
+  const [statusFilter, setStatusFilter] = useState('active');
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [inviteData, setInviteData] = useState({
     email: '',
     role: 'viewer',
     firstName: '',
     lastName: '',
-    message: '',
+    password: '',
+    phoneNumber: '',
+    userFile: null,
+    selectedFile: null, // For file input display
   });
 
   const roles = [
@@ -115,96 +49,464 @@ const UserManagement = () => {
     return roleData ? roleData.color : 'bg-surface-muted/20 text-surface-muted';
   };
 
+  const [editData, setEditData] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    role: 'viewer',
+    status: 'active',
+    phoneNumber: '',
+    userFile: null,
+    selectedFile: null, // For file input display
+    deleteFile: false, // Flag to delete existing file
+    mfaEnabled: false,
+  });
+
+  // Fetch users from backend
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get(endpoints.users.list);
+      const usersData = response.data.users || [];
+      setUsers(usersData);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError(err.response?.data?.error || 'Kullanıcılar yüklenemedi');
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    const matchesStatus = user.status === statusFilter;
     
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const handleInviteUser = () => {
-    if (!inviteData.email || !inviteData.firstName || !inviteData.lastName) {
-      alert('Please fill in all required fields');
+  const handleFileUpload = async (file) => {
+    if (!file) return null;
+
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Sadece PDF dosyası yüklenebilir');
+      return null;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Axios will automatically set Content-Type with boundary for FormData
+      const response = await api.post('/users/upload-file', formData);
+
+      return response.data.filePath;
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      alert('Dosya yüklenirken hata oluştu: ' + (err.response?.data?.error || err.message));
+      return null;
+    }
+  };
+
+  const handleInviteUser = async () => {
+    if (!inviteData.email || !inviteData.firstName || !inviteData.lastName || !inviteData.password) {
+      alert('Lütfen tüm zorunlu alanları doldurun (Email, Ad, Soyad, Şifre)');
       return;
     }
 
-    // Mock API call
-    console.log('Inviting user:', inviteData);
-    
-    // Reset form
-    setInviteData({
-      email: '',
-      role: 'viewer',
-      firstName: '',
-      lastName: '',
-      message: '',
-    });
-    setShowInviteForm(false);
+    // Password validation
+    if (inviteData.password.length < 6) {
+      alert('Şifre en az 6 karakter olmalıdır');
+      return;
+    }
+
+    try {
+      // Upload file if selected
+      let filePath = null;
+      if (inviteData.selectedFile) {
+        filePath = await handleFileUpload(inviteData.selectedFile);
+        if (!filePath) {
+          return; // Upload failed, stop here
+        }
+      }
+
+      await api.post(endpoints.users.create, {
+        email: inviteData.email,
+        firstName: inviteData.firstName,
+        lastName: inviteData.lastName,
+        role: inviteData.role,
+        password: inviteData.password,
+        phoneNumber: inviteData.phoneNumber || null,
+        userFile: filePath,
+      });
+      
+      alert('Kullanıcı başarıyla oluşturuldu! Kullanıcı belirtilen email ve şifre ile giriş yapabilir.');
+      
+      // Reset form
+      setInviteData({
+        email: '',
+        role: 'viewer',
+        firstName: '',
+        lastName: '',
+        password: '',
+        phoneNumber: '',
+        userFile: null,
+        selectedFile: null,
+      });
+      setShowInviteForm(false);
+      
+      // Refresh users list
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error creating user:', err);
+      alert('Kullanıcı oluşturulamadı: ' + (err.response?.data?.error || err.message));
+    }
   };
 
-  const handleUserAction = (action, userId) => {
+  const handleEditUser = useCallback((user) => {
+    console.log('handleEditUser called with user object:', user);
+    console.log('user.phoneNumber value:', user.phoneNumber);
+    // Parse name into firstName and lastName
+    const nameParts = (user.name || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    const editDataNew = {
+      email: user.email || '',
+      firstName: firstName,
+      lastName: lastName,
+      role: user.role || 'viewer',
+      status: user.status || 'active',
+      phoneNumber: user.phoneNumber || '',
+      userFile: user.userFile || null,
+      selectedFile: null,
+      deleteFile: false,
+      mfaEnabled: user.twoFactorEnabled || false,
+    };
+    
+    console.log('Setting edit data:', editDataNew);
+    console.log('editDataNew.phoneNumber:', editDataNew.phoneNumber);
+    console.log('editDataNew.userFile:', editDataNew.userFile);
+    console.log('user object from backend:', user);
+    setEditData(editDataNew);
+    setEditingUserId(user.id);
+    setShowEditForm(true);
+  }, []);
+
+  const handleUpdateUser = async () => {
+    if (!editingUserId) {
+      alert('Düzenlenecek kullanıcı bulunamadı');
+      return;
+    }
+
+    if (!editData.email || !editData.firstName || !editData.lastName) {
+      alert('Lütfen tüm zorunlu alanları doldurun');
+      return;
+    }
+
+    try {
+      console.log('Updating user:', editingUserId, 'with data:', editData);
+      console.log('Phone number being sent:', editData.phoneNumber);
+      
+      // Handle file operations
+      let filePath = editData.userFile; // Keep existing file path by default
+      
+      // If user wants to delete file
+      if (editData.deleteFile) {
+        filePath = null; // Set to null to delete file
+      }
+      // If new file is selected, upload it
+      else if (editData.selectedFile) {
+        filePath = await handleFileUpload(editData.selectedFile);
+        if (!filePath) {
+          return; // Upload failed, stop here
+        }
+      }
+      
+      const response = await api.put(endpoints.users.update(editingUserId), {
+        email: editData.email,
+        firstName: editData.firstName,
+        lastName: editData.lastName,
+        role: editData.role,
+        status: editData.status,
+        phoneNumber: editData.phoneNumber || null,
+        userFile: filePath, // Can be null to delete, existing path, or new path
+        mfaEnabled: editData.mfaEnabled,
+      });
+      
+      console.log('Update response:', response.data);
+      console.log('Updated phone number:', response.data.phoneNumber);
+      alert('Kullanıcı başarıyla güncellendi!');
+      
+      // Reset form
+      setShowEditForm(false);
+      setEditingUserId(null);
+      setEditData({
+        email: '',
+        firstName: '',
+        lastName: '',
+        role: 'viewer',
+        status: 'active',
+        phoneNumber: '',
+        userFile: null,
+        selectedFile: null,
+        deleteFile: false,
+        mfaEnabled: false,
+      });
+      
+      // Refresh users list
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error updating user:', err);
+      const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
+      alert('Kullanıcı güncellenemedi: ' + errorMsg);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+      return;
+    }
+
+    try {
+      await api.delete(endpoints.users.delete(userId));
+      alert('Kullanıcı başarıyla silindi!');
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      alert('Kullanıcı silinemedi: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleSuspendUser = async (userId) => {
+    if (!window.confirm('Bu kullanıcıyı askıya almak istediğinize emin misiniz?')) {
+      return;
+    }
+
+    try {
+      await api.put(`/users/${userId}/suspend`);
+      alert('Kullanıcı başarıyla askıya alındı!');
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error suspending user:', err);
+      alert('Kullanıcı askıya alınamadı: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleActivateUser = async (userId) => {
+    try {
+      await api.put(`/users/${userId}/activate`);
+      alert('Kullanıcı başarıyla aktifleştirildi!');
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error activating user:', err);
+      alert('Kullanıcı aktifleştirilemedi: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleExportUsers = async (format = 'csv') => {
+    try {
+      const response = await api.get(`/users/export?format=${format}`, {
+        responseType: format === 'csv' ? 'blob' : 'json',
+      });
+      
+      if (format === 'csv') {
+        // Download CSV file
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'users_export.csv');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        alert('Kullanıcılar CSV formatında başarıyla export edildi!');
+      } else {
+        // Download JSON file
+        const dataStr = JSON.stringify(response.data, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'users_export.json');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        alert('Kullanıcılar JSON formatında başarıyla export edildi!');
+      }
+    } catch (err) {
+      console.error('Error exporting users:', err);
+      alert('Export işlemi başarısız: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const [showSecurityAudit, setShowSecurityAudit] = useState(false);
+  const [securityAuditData, setSecurityAuditData] = useState(null);
+
+  const handleSecurityAudit = async () => {
+    try {
+      const response = await api.get('/users/security-audit');
+      setSecurityAuditData(response.data);
+      setShowSecurityAudit(true);
+    } catch (err) {
+      console.error('Error fetching security audit:', err);
+      alert('Güvenlik denetimi raporu alınamadı: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const [showBulkOperations, setShowBulkOperations] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+
+  const handleBulkOperations = () => {
+    setShowBulkOperations(true);
+  };
+
+  const handleBulkAction = async (action) => {
+    if (selectedUsers.length === 0) {
+      alert('Lütfen en az bir kullanıcı seçin');
+      return;
+    }
+
+    if (!window.confirm(`${selectedUsers.length} kullanıcı üzerinde ${action} işlemini yapmak istediğinize emin misiniz?`)) {
+      return;
+    }
+
+    try {
+      const promises = selectedUsers.map(userId => {
+        switch (action) {
+          case 'activate':
+            return api.put(`/users/${userId}/activate`);
+          case 'suspend':
+            return api.put(`/users/${userId}/suspend`);
+          case 'delete':
+            return api.delete(`/users/${userId}`);
+          default:
+            return Promise.resolve();
+        }
+      });
+
+      await Promise.all(promises);
+      alert(`${selectedUsers.length} kullanıcı üzerinde ${action} işlemi başarıyla tamamlandı!`);
+      setSelectedUsers([]);
+      setShowBulkOperations(false);
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error performing bulk action:', err);
+      alert('Toplu işlem başarısız: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleUserAction = useCallback((action, userId) => {
     switch (action) {
-      case 'view':
-        console.log('Viewing user:', userId);
-        break;
       case 'edit':
-        console.log('Editing user:', userId);
+        const user = users.find(u => u.id === userId);
+        if (user) {
+          console.log('Editing user:', user);
+          handleEditUser(user);
+        } else {
+          console.error('User not found:', userId);
+          alert('Kullanıcı bulunamadı');
+        }
         break;
       case 'delete':
-        if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-          console.log('Deleting user:', userId);
-        }
+        handleDeleteUser(userId);
         break;
       case 'suspend':
-        if (confirm('Are you sure you want to suspend this user?')) {
-          console.log('Suspending user:', userId);
-        }
+        handleSuspendUser(userId);
         break;
       case 'activate':
-        console.log('Activating user:', userId);
+        handleActivateUser(userId);
         break;
       default:
         break;
     }
-  };
+  }, [users]);
 
-  const InviteUserForm = () => (
+  const InviteUserForm = useMemo(() => (
     <Card>
       <CardHeader>
-        <CardTitle>Invite New User</CardTitle>
+        <CardTitle>Yeni Kullanıcı Oluştur</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-white mb-2">First Name *</label>
+              <label className="block text-sm font-medium text-white mb-2">Ad *</label>
               <Input
-                placeholder="Enter first name"
+                placeholder="Ad girin"
                 value={inviteData.firstName}
-                onChange={(e) => setInviteData(prev => ({ ...prev, firstName: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setInviteData(prev => ({ ...prev, firstName: value }));
+                }}
+                style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Last Name *</label>
+              <label className="block text-sm font-medium text-white mb-2">Soyad *</label>
               <Input
-                placeholder="Enter last name"
+                placeholder="Soyad girin"
                 value={inviteData.lastName}
-                onChange={(e) => setInviteData(prev => ({ ...prev, lastName: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setInviteData(prev => ({ ...prev, lastName: value }));
+                }}
+                style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Email Address *</label>
+            <label className="block text-sm font-medium text-white mb-2">Email Adresi *</label>
             <Input
               type="email"
-              placeholder="Enter email address"
+              placeholder="Email adresi girin"
               value={inviteData.email}
-              onChange={(e) => setInviteData(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value;
+                setInviteData(prev => ({ ...prev, email: value }));
+              }}
+              style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Şifre *</label>
+            <Input
+              type="password"
+              placeholder="Şifre girin (en az 6 karakter)"
+              value={inviteData.password}
+              onChange={(e) => {
+                const value = e.target.value;
+                setInviteData(prev => ({ ...prev, password: value }));
+              }}
+              style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
+            />
+            <p className="text-xs text-surface-muted mt-1">Kullanıcı bu email ve şifre ile giriş yapabilecek</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Telefon Numarası</label>
+            <Input
+              type="tel"
+              placeholder="Telefon numarası girin (örn: +905551234567)"
+              value={inviteData.phoneNumber}
+              onChange={(e) => {
+                const value = e.target.value;
+                setInviteData(prev => ({ ...prev, phoneNumber: value }));
+              }}
+              style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
             />
           </div>
 
@@ -222,30 +524,247 @@ const UserManagement = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Personal Message (Optional)</label>
-            <textarea
-              placeholder="Add a personal message to the invitation..."
-              value={inviteData.message}
-              onChange={(e) => setInviteData(prev => ({ ...prev, message: e.target.value }))}
-              className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-              rows={3}
-            />
+            <label className="block text-sm font-medium text-white mb-2">Dosya Yükle (PDF)</label>
+            <div className="space-y-2">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setInviteData(prev => ({ ...prev, selectedFile: file }));
+                }}
+                className="w-full text-sm text-white
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-primary-600 file:text-white
+                  hover:file:bg-primary-700
+                  file:cursor-pointer
+                  bg-surface-panel border border-surface-border rounded-lg
+                  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              {inviteData.selectedFile && (
+                <div className="flex items-center justify-between p-2 bg-surface-panel border border-surface-border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-white">{inviteData.selectedFile.name}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInviteData(prev => ({ ...prev, selectedFile: null }))}
+                    className="text-danger hover:text-danger"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-surface-muted mt-1">Sadece PDF dosyası yüklenebilir</p>
           </div>
 
           {/* Actions */}
           <div className="flex justify-end space-x-3">
             <Button variant="outline" onClick={() => setShowInviteForm(false)}>
-              Cancel
+              İptal
             </Button>
             <Button onClick={handleInviteUser}>
               <Mail className="h-4 w-4 mr-2" />
-              Send Invitation
+              Kullanıcı Oluştur
             </Button>
           </div>
         </div>
       </CardContent>
     </Card>
-  );
+  ), [inviteData, roles, handleInviteUser]);
+
+  const EditUserForm = useMemo(() => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Düzenle Kullanıcı</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">Ad *</label>
+              <Input
+                placeholder="Ad girin"
+                value={editData.firstName}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setEditData(prev => ({ ...prev, firstName: value }));
+                }}
+                style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">Soyad *</label>
+              <Input
+                placeholder="Soyad girin"
+                value={editData.lastName}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setEditData(prev => ({ ...prev, lastName: value }));
+                }}
+                style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Email *</label>
+            <Input
+              type="email"
+              placeholder="Email adresi"
+              value={editData.email}
+              onChange={(e) => {
+                const value = e.target.value;
+                setEditData(prev => ({ ...prev, email: value }));
+              }}
+              style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Rol</label>
+            <select
+              value={editData.role}
+              onChange={(e) => setEditData(prev => ({ ...prev, role: e.target.value }))}
+              className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>{role.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Durum</label>
+            <select
+              value={editData.status}
+              onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
+              className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="active">Aktif</option>
+              <option value="inactive">Pasif</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Telefon Numarası</label>
+            <Input
+              type="tel"
+              placeholder="Telefon numarası girin (örn: +905551234567)"
+              value={editData.phoneNumber}
+              onChange={(e) => {
+                const value = e.target.value;
+                setEditData(prev => ({ ...prev, phoneNumber: value }));
+              }}
+              style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Dosya Yükle (PDF)</label>
+            <div className="space-y-2">
+              {editData.userFile && !editData.selectedFile && (
+                <div className="flex items-center justify-between p-2 bg-surface-panel border border-surface-border rounded-lg mb-2">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-white" title={editData.userFile}>
+                      {editData.userFile.includes('/') ? editData.userFile.split('/').pop() : editData.userFile}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (window.confirm('Mevcut dosyayı silmek istediğinize emin misiniz?')) {
+                          setEditData(prev => ({ ...prev, userFile: null, deleteFile: true }));
+                        }
+                      }}
+                      className="text-danger hover:text-danger"
+                      title="Dosyayı Sil"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-surface-muted">Mevcut dosya</span>
+                  </div>
+                </div>
+              )}
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setEditData(prev => ({ ...prev, selectedFile: file }));
+                }}
+                className="w-full text-sm text-white
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-primary-600 file:text-white
+                  hover:file:bg-primary-700
+                  file:cursor-pointer
+                  bg-surface-panel border border-surface-border rounded-lg
+                  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              {editData.selectedFile && (
+                <div className="flex items-center justify-between p-2 bg-surface-panel border border-surface-border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-white">{editData.selectedFile.name}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditData(prev => ({ ...prev, selectedFile: null }))}
+                    className="text-danger hover:text-danger"
+                    title="Dosya seçimini iptal et"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-surface-muted mt-1">
+              {editData.userFile 
+                ? 'Yeni dosya seçerseniz mevcut dosya değiştirilecek veya sil butonuna basarak mevcut dosyayı silebilirsiniz'
+                : 'PDF dosyası seçin'}
+            </p>
+          </div>
+
+          <div>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={editData.mfaEnabled}
+                onChange={(e) => setEditData(prev => ({ ...prev, mfaEnabled: e.target.checked }))}
+                className="rounded border-surface-border bg-surface-panel text-primary-600"
+              />
+              <span className="text-sm text-white">İki Faktörlü Doğrulama (2FA)</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <Button variant="outline" onClick={() => {
+              setShowEditForm(false);
+              setEditingUserId(null);
+            }}>
+              İptal
+            </Button>
+            <Button onClick={handleUpdateUser}>
+              <Edit className="h-4 w-4 mr-2" />
+              Kaydet
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  ), [editData, roles, handleUpdateUser, setShowEditForm, setEditingUserId]);
 
   const RoleEditor = () => (
     <Card>
@@ -342,17 +861,6 @@ const UserManagement = () => {
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex flex-col space-y-2 ml-4">
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Key className="h-4 w-4 mr-2" />
-                    Permissions
-                  </Button>
-                </div>
               </div>
             </div>
           ))}
@@ -376,16 +884,40 @@ const UserManagement = () => {
           </Button>
           <Button onClick={() => setShowInviteForm(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
-            Invite User
+            Kullanıcı Oluştur
           </Button>
         </div>
       </div>
 
       {/* Invite User Form */}
-      {showInviteForm && <InviteUserForm />}
+      {showInviteForm && InviteUserForm}
+
+      {/* Edit User Form */}
+      {showEditForm && EditUserForm}
 
       {/* Role Editor */}
       {showRoleEditor && <RoleEditor />}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <span className="ml-3 text-surface-muted">Kullanıcılar yükleniyor...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <AlertCircle className="h-16 w-16 mx-auto mb-4 text-danger" />
+            <p className="text-danger mb-2">{error}</p>
+            <Button onClick={fetchUsers} variant="outline">
+              Tekrar Dene
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters and search */}
       <Card>
@@ -422,11 +954,8 @@ const UserManagement = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
-              <option value="pending">Pending</option>
-              <option value="suspended">Suspended</option>
             </select>
           </div>
         </CardContent>
@@ -511,17 +1040,25 @@ const UserManagement = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleUserAction('view', user.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
                           onClick={() => handleUserAction('edit', user.id)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {user.userFile && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+                              const fileUrl = `${baseURL}/users/user-file/${user.id}`;
+                              window.open(fileUrl, '_blank');
+                            }}
+                            className="text-primary hover:text-primary"
+                            title="Dosyayı Görüntüle"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        )}
                         {user.status === 'active' ? (
                           <Button
                             variant="ghost"
@@ -566,21 +1103,187 @@ const UserManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => handleExportUsers('csv')}
+            >
               <Download className="h-6 w-6" />
               <span>Export Users</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={handleBulkOperations}
+            >
               <Building className="h-6 w-6" />
               <span>Bulk Operations</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={handleSecurityAudit}
+            >
               <Shield className="h-6 w-6" />
               <span>Security Audit</span>
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Operations Modal */}
+      {showBulkOperations && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Operations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-surface-muted">Toplu işlem yapmak için kullanıcıları seçin:</p>
+              
+              <div className="max-h-60 overflow-y-auto border border-surface-border rounded-lg p-4">
+                {users.map(user => (
+                  <label key={user.id} className="flex items-center space-x-2 p-2 hover:bg-surface-panel rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.includes(user.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUsers([...selectedUsers, user.id]);
+                        } else {
+                          setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                        }
+                      }}
+                      className="rounded border-surface-border bg-surface-panel text-primary-600"
+                    />
+                    <span className="text-white">{user.name} ({user.email})</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-surface-muted">
+                  {selectedUsers.length} kullanıcı seçildi
+                </span>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowBulkOperations(false);
+                      setSelectedUsers([]);
+                    }}
+                  >
+                    İptal
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleBulkAction('activate')}
+                    disabled={selectedUsers.length === 0}
+                  >
+                    Aktifleştir
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleBulkAction('suspend')}
+                    disabled={selectedUsers.length === 0}
+                  >
+                    Askıya Al
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleBulkAction('delete')}
+                    disabled={selectedUsers.length === 0}
+                    className="text-danger hover:text-danger"
+                  >
+                    Sil
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Security Audit Modal */}
+      {showSecurityAudit && securityAuditData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Security Audit Report</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted">Total Users</p>
+                  <p className="text-2xl font-bold text-white">{securityAuditData.totalUsers}</p>
+                </div>
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted">Active Users</p>
+                  <p className="text-2xl font-bold text-success">{securityAuditData.activeUsers}</p>
+                </div>
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted">Inactive Users</p>
+                  <p className="text-2xl font-bold text-danger">{securityAuditData.inactiveUsers}</p>
+                </div>
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted">Users with 2FA</p>
+                  <p className="text-2xl font-bold text-white">{securityAuditData.usersWithMfa}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted mb-2">Users Never Logged In</p>
+                  <p className="text-xl font-semibold text-warning">{securityAuditData.usersNeverLoggedIn}</p>
+                </div>
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted mb-2">Users Inactive 30+ Days</p>
+                  <p className="text-xl font-semibold text-warning">{securityAuditData.usersInactive30Days}</p>
+                </div>
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted mb-2">Users Active Last 7 Days</p>
+                  <p className="text-xl font-semibold text-success">{securityAuditData.usersActive7Days}</p>
+                </div>
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted mb-2">Users Without 2FA</p>
+                  <p className="text-xl font-semibold text-danger">{securityAuditData.usersWithoutMfa}</p>
+                </div>
+              </div>
+
+              {securityAuditData.roleDistribution && (
+                <div className="p-4 bg-surface-panel rounded-lg">
+                  <p className="text-sm text-surface-muted mb-2">Role Distribution</p>
+                  <div className="space-y-1">
+                    {Object.entries(securityAuditData.roleDistribution).map(([role, count]) => (
+                      <div key={role} className="flex justify-between">
+                        <span className="text-white capitalize">{role}</span>
+                        <span className="text-surface-muted">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {securityAuditData.recommendations && securityAuditData.recommendations.length > 0 && (
+                <div className="p-4 bg-warning/20 border border-warning/30 rounded-lg">
+                  <p className="text-sm font-semibold text-warning mb-2">Security Recommendations</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-warning">
+                    {securityAuditData.recommendations.map((rec, idx) => (
+                      <li key={idx}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setShowSecurityAudit(false)}>
+                  Kapat
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

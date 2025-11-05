@@ -41,11 +41,20 @@ public class OsintBackendApplication {
                 }
             });
 
-            // Update existing admin user role if needed
-            if (admin != null && !"ADMIN".equals(admin.getRole())) {
-                admin.setRole("ADMIN");
-                admin.setIsVerified(true);
-                userRepository.save(admin);
+            // Update existing admin user role and verification status if needed
+            if (admin != null) {
+                boolean needsUpdate = false;
+                if (!"ADMIN".equals(admin.getRole())) {
+                    admin.setRole("ADMIN");
+                    needsUpdate = true;
+                }
+                if (admin.getIsVerified() == null || !admin.getIsVerified()) {
+                    admin.setIsVerified(true);
+                    needsUpdate = true;
+                }
+                if (needsUpdate) {
+                    userRepository.save(admin);
+                }
             }
         };
     }

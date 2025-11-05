@@ -158,19 +158,19 @@ const APIKeys = () => {
         await api.post(endpoints.userApiKeys.create, requestData);
         alert('API key başarıyla oluşturuldu!');
       }
-      
-      // Reset form
-      setNewKeyData({
-        name: '',
-        description: '',
-        permissions: [],
-        expiresAt: '',
-        rateLimit: '1000/hour',
+    
+    // Reset form
+    setNewKeyData({
+      name: '',
+      description: '',
+      permissions: [],
+      expiresAt: '',
+      rateLimit: '1000/hour',
         apiKey: '',
         secretKey: '',
-      });
+    });
       setEditingKeyId(null);
-      setShowCreateForm(false);
+    setShowCreateForm(false);
       
       // Refresh list
       await fetchApiKeys(false);
@@ -298,53 +298,53 @@ const APIKeys = () => {
 
       {/* Create Key Form */}
       {showCreateForm && (
-        <Card>
-          <CardHeader>
+    <Card>
+      <CardHeader>
             <CardTitle>{editingKeyId ? 'API Key Düzenle' : 'Yeni API Key Oluştur'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
                   <label className="block text-sm font-medium text-white mb-2">Key İsmi *</label>
                   <input
                     type="text"
                     placeholder="örn: Production API Key"
-                    value={newKeyData.name}
+                value={newKeyData.name}
                     onChange={(e) => {
                       setNewKeyData(prev => ({ ...prev, name: e.target.value }));
                     }}
                     className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">Rate Limit</label>
-                  <select
-                    value={newKeyData.rateLimit}
-                    onChange={(e) => setNewKeyData(prev => ({ ...prev, rateLimit: e.target.value }))}
-                    className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    {rateLimits.map((limit) => (
-                      <option key={limit} value={limit}>{limit}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">Rate Limit</label>
+              <select
+                value={newKeyData.rateLimit}
+                onChange={(e) => setNewKeyData(prev => ({ ...prev, rateLimit: e.target.value }))}
+                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                {rateLimits.map((limit) => (
+                  <option key={limit} value={limit}>{limit}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-              <div>
+          <div>
                 <label className="block text-sm font-medium text-white mb-2">Açıklama</label>
-                <textarea
+            <textarea
                   placeholder="Bu API key'in ne için kullanılacağını açıklayın..."
-                  value={newKeyData.description}
+              value={newKeyData.description}
                   onChange={(e) => {
                     setNewKeyData(prev => ({ ...prev, description: e.target.value }));
                   }}
                   className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[80px]"
                   rows={4}
-                />
-              </div>
+            />
+          </div>
 
               {/* API Key ve Secret Key - Her zaman göster */}
               <div className="border-t border-surface-border pt-4">
@@ -390,49 +390,49 @@ const APIKeys = () => {
                 </div>
               </div>
 
-              <div>
+          <div>
                 <label className="block text-sm font-medium text-white mb-2">Son Kullanma Tarihi (Opsiyonel)</label>
-                <Input
-                  type="datetime-local"
-                  value={newKeyData.expiresAt}
-                  onChange={(e) => setNewKeyData(prev => ({ ...prev, expiresAt: e.target.value }))}
-                />
-              </div>
+            <Input
+              type="datetime-local"
+              value={newKeyData.expiresAt}
+              onChange={(e) => setNewKeyData(prev => ({ ...prev, expiresAt: e.target.value }))}
+            />
+          </div>
 
-              {/* Permissions */}
-              <div>
+          {/* Permissions */}
+          <div>
                 <label className="block text-sm font-medium text-white mb-3">Yetkiler *</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {permissions.map((permission) => (
-                    <div
-                      key={permission.id}
-                      className={cn(
-                        'p-3 border rounded-lg cursor-pointer transition-all',
-                        newKeyData.permissions.includes(permission.id)
-                          ? 'border-primary-500 bg-primary-500/10'
-                          : 'border-surface-border hover:border-primary-400'
-                      )}
-                      onClick={() => handlePermissionToggle(permission.id)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={newKeyData.permissions.includes(permission.id)}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {permissions.map((permission) => (
+                <div
+                  key={permission.id}
+                  className={cn(
+                    'p-3 border rounded-lg cursor-pointer transition-all',
+                    newKeyData.permissions.includes(permission.id)
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-surface-border hover:border-primary-400'
+                  )}
+                  onClick={() => handlePermissionToggle(permission.id)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={newKeyData.permissions.includes(permission.id)}
                           onChange={() => {}}
-                          className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
-                        />
-                        <div>
-                          <p className="font-medium text-white">{permission.label}</p>
-                          <p className="text-sm text-surface-muted">{permission.description}</p>
-                        </div>
-                      </div>
+                      className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
+                    />
+                    <div>
+                      <p className="font-medium text-white">{permission.label}</p>
+                      <p className="text-sm text-surface-muted">{permission.description}</p>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              {/* Actions */}
-              <div className="flex justify-end space-x-3">
+          {/* Actions */}
+          <div className="flex justify-end space-x-3">
                 <Button variant="outline" onClick={() => {
                   setShowCreateForm(false);
                   setEditingKeyId(null);
@@ -447,8 +447,8 @@ const APIKeys = () => {
                   });
                 }}>
                   İptal
-                </Button>
-                <Button onClick={handleCreateKey}>
+            </Button>
+            <Button onClick={handleCreateKey}>
                   {editingKeyId ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2" />
@@ -456,15 +456,15 @@ const APIKeys = () => {
                     </>
                   ) : (
                     <>
-                      <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" />
                       API Key Oluştur
                     </>
                   )}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
       )}
 
       {/* Filters and search */}
@@ -548,138 +548,138 @@ const APIKeys = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredKeys.map((key) => (
-                <div
-                  key={key.id}
-                  className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Key className="h-5 w-5 text-primary" />
-                        <h3 className="text-lg font-semibold text-white">{key.name}</h3>
-                        <span className={cn(
-                          'px-2 py-1 rounded-full text-xs font-medium border',
-                          getStatusColor(key.status)
-                        )}>
-                          {key.status.toUpperCase()}
-                        </span>
-                      </div>
-                      
+          <div className="space-y-4">
+            {filteredKeys.map((key) => (
+              <div
+                key={key.id}
+                className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <Key className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold text-white">{key.name}</h3>
+                      <span className={cn(
+                        'px-2 py-1 rounded-full text-xs font-medium border',
+                        getStatusColor(key.status)
+                      )}>
+                        {key.status.toUpperCase()}
+                      </span>
+                    </div>
+                    
                       {key.description && (
-                        <p className="text-surface-muted mb-3">{key.description}</p>
+                    <p className="text-surface-muted mb-3">{key.description}</p>
                       )}
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-surface-muted">API Key:</span>
-                          <div className="flex items-center space-x-2 mt-1">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-surface-muted">API Key:</span>
+                        <div className="flex items-center space-x-2 mt-1">
                             <span className="font-mono text-white text-xs">{key.key}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(key.key)}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(key.key)}
                               title="Kopyala"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <span className="text-surface-muted">Secret:</span>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className="font-mono text-white text-xs">
-                              {showSecret[key.id] ? key.secret : '••••••••••••••••••••'}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setShowSecret(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
-                              title={showSecret[key.id] ? 'Gizle' : 'Göster'}
-                            >
-                              {showSecret[key.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(key.secret)}
-                              title="Kopyala"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <span className="text-surface-muted">Rate Limit:</span>
-                          <span className="text-white ml-2">{key.rateLimit}</span>
-                        </div>
-                        
-                        <div>
-                          <span className="text-surface-muted">Kullanım:</span>
-                          <span className="text-white ml-2">{key.usageCount.toLocaleString()}</span>
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-4 mt-3 text-sm text-surface-muted">
+                      <div>
+                        <span className="text-surface-muted">Secret:</span>
+                        <div className="flex items-center space-x-2 mt-1">
+                            <span className="font-mono text-white text-xs">
+                            {showSecret[key.id] ? key.secret : '••••••••••••••••••••'}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowSecret(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
+                              title={showSecret[key.id] ? 'Gizle' : 'Göster'}
+                          >
+                            {showSecret[key.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(key.secret)}
+                              title="Kopyala"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <span className="text-surface-muted">Rate Limit:</span>
+                        <span className="text-white ml-2">{key.rateLimit}</span>
+                      </div>
+                      
+                      <div>
+                          <span className="text-surface-muted">Kullanım:</span>
+                        <span className="text-white ml-2">{key.usageCount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4 mt-3 text-sm text-surface-muted">
                         {key.createdAt && (
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="h-4 w-4" />
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4" />
                             <span>Oluşturuldu: {new Date(key.createdAt).toLocaleDateString('tr-TR')}</span>
-                          </div>
+                      </div>
                         )}
                         {key.lastUsed && (
-                          <div className="flex items-center space-x-1">
-                            <Activity className="h-4 w-4" />
+                      <div className="flex items-center space-x-1">
+                        <Activity className="h-4 w-4" />
                             <span>Son Kullanım: {new Date(key.lastUsed).toLocaleDateString('tr-TR')}</span>
-                          </div>
-                        )}
-                        {key.expiresAt && (
-                          <div className="flex items-center space-x-1">
-                            <Globe className="h-4 w-4" />
-                            <span>Bitiş: {key.expiresAt.includes('T') ? new Date(key.expiresAt).toLocaleDateString('tr-TR') : new Date(key.expiresAt + 'T00:00:00').toLocaleDateString('tr-TR')}</span>
-                          </div>
-                        )}
                       </div>
-                      
-                      {key.permissions && key.permissions.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-3">
-                          {key.permissions.map((permission) => (
-                            <span
-                              key={permission}
-                              className={cn(
-                                'px-2 py-1 text-xs rounded',
-                                getPermissionColor(permission)
-                              )}
-                            >
-                              {permission}
-                            </span>
-                          ))}
+                        )}
+                      {key.expiresAt && (
+                        <div className="flex items-center space-x-1">
+                          <Globe className="h-4 w-4" />
+                            <span>Bitiş: {key.expiresAt.includes('T') ? new Date(key.expiresAt).toLocaleDateString('tr-TR') : new Date(key.expiresAt + 'T00:00:00').toLocaleDateString('tr-TR')}</span>
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex flex-col space-y-2 ml-4">
-                      <Button variant="outline" size="sm" onClick={() => editKey(key)}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Düzenle
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-danger hover:text-danger"
-                        onClick={() => revokeKey(key.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Sil
-                      </Button>
+                      {key.permissions && key.permissions.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {key.permissions.map((permission) => (
+                        <span
+                          key={permission}
+                          className={cn(
+                            'px-2 py-1 text-xs rounded',
+                            getPermissionColor(permission)
+                          )}
+                        >
+                          {permission}
+                        </span>
+                      ))}
                     </div>
+                      )}
+                  </div>
+                  
+                  <div className="flex flex-col space-y-2 ml-4">
+                      <Button variant="outline" size="sm" onClick={() => editKey(key)}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                        Düzenle
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-danger hover:text-danger"
+                      onClick={() => revokeKey(key.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                        Sil
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           )}
         </CardContent>
       </Card>

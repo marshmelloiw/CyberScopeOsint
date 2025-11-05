@@ -33,6 +33,14 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: false
     baseline-version: 1  # Start from V1 since V1 is just a placeholder
+  
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+      file-size-threshold: 2KB
+      location: ${java.io.tmpdir}
 
 # OSINT API Keys Configuration
 osint:

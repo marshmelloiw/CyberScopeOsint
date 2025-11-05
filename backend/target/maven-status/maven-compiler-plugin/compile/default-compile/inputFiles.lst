@@ -3,6 +3,8 @@
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/ScanTarget.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/util/TOTPVerifier.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/HealthController.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/UserManagementController.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/UserManagementService.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/repository/PasswordResetTokenRepository.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/ApiKeysController.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/repository/ScanTargetRepository.java
