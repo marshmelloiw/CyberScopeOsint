@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input';
 import axios from '../../lib/axios';
 import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText, Terminal, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import ReactMarkdown from 'react-markdown';
 
 const NewScan = () => {
   const navigate = useNavigate();
@@ -617,16 +618,39 @@ const NewScan = () => {
                               </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              {/* Show analysis text if available (raw_text or analysis as string) */}
+                              {/* Show analysis text if available (raw_text or analysis as string) - Render as Markdown */}
                               {typeof report.analysis === 'string' ? (
                                 <Card>
                                   <CardHeader>
                                     <CardTitle className="text-base">AI Analysis Report</CardTitle>
                                   </CardHeader>
                                   <CardContent>
-                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
-                                      {report.analysis}
-                                    </pre>
+                                    <div className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted prose prose-invert prose-sm max-w-none">
+                                      <ReactMarkdown
+                                        components={{
+                                          h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-white mb-4 mt-6" {...props} />,
+                                          h2: ({node, ...props}) => <h2 className="text-xl font-bold text-white mb-3 mt-5" {...props} />,
+                                          h3: ({node, ...props}) => <h3 className="text-lg font-semibold text-white mb-2 mt-4" {...props} />,
+                                          h4: ({node, ...props}) => <h4 className="text-base font-semibold text-white mb-2 mt-3" {...props} />,
+                                          p: ({node, ...props}) => <p className="text-surface-muted mb-3 leading-relaxed" {...props} />,
+                                          ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 text-surface-muted space-y-1" {...props} />,
+                                          ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 text-surface-muted space-y-1" {...props} />,
+                                          li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                                          strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                                          em: ({node, ...props}) => <em className="italic" {...props} />,
+                                          code: ({node, inline, ...props}) => inline ? (
+                                            <code className="bg-surface-dark px-1.5 py-0.5 rounded text-primary-400 text-xs font-mono" {...props} />
+                                          ) : (
+                                            <code className="block bg-surface-dark p-3 rounded text-surface-muted text-xs font-mono overflow-x-auto mb-3" {...props} />
+                                          ),
+                                          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-primary-500 pl-4 italic text-surface-muted mb-3" {...props} />,
+                                          hr: ({node, ...props}) => <hr className="border-surface-border my-4" {...props} />,
+                                          a: ({node, ...props}) => <a className="text-primary-400 hover:text-primary-300 underline" {...props} />,
+                                        }}
+                                      >
+                                        {report.analysis}
+                                      </ReactMarkdown>
+                                    </div>
                                   </CardContent>
                                 </Card>
                               ) : report.raw_text ? (
@@ -635,9 +659,32 @@ const NewScan = () => {
                                     <CardTitle className="text-base">AI Analysis Report</CardTitle>
                                   </CardHeader>
                                   <CardContent>
-                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
-                                      {report.raw_text}
-                                    </pre>
+                                    <div className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted prose prose-invert prose-sm max-w-none">
+                                      <ReactMarkdown
+                                        components={{
+                                          h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-white mb-4 mt-6" {...props} />,
+                                          h2: ({node, ...props}) => <h2 className="text-xl font-bold text-white mb-3 mt-5" {...props} />,
+                                          h3: ({node, ...props}) => <h3 className="text-lg font-semibold text-white mb-2 mt-4" {...props} />,
+                                          h4: ({node, ...props}) => <h4 className="text-base font-semibold text-white mb-2 mt-3" {...props} />,
+                                          p: ({node, ...props}) => <p className="text-surface-muted mb-3 leading-relaxed" {...props} />,
+                                          ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 text-surface-muted space-y-1" {...props} />,
+                                          ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 text-surface-muted space-y-1" {...props} />,
+                                          li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                                          strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                                          em: ({node, ...props}) => <em className="italic" {...props} />,
+                                          code: ({node, inline, ...props}) => inline ? (
+                                            <code className="bg-surface-dark px-1.5 py-0.5 rounded text-primary-400 text-xs font-mono" {...props} />
+                                          ) : (
+                                            <code className="block bg-surface-dark p-3 rounded text-surface-muted text-xs font-mono overflow-x-auto mb-3" {...props} />
+                                          ),
+                                          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-primary-500 pl-4 italic text-surface-muted mb-3" {...props} />,
+                                          hr: ({node, ...props}) => <hr className="border-surface-border my-4" {...props} />,
+                                          a: ({node, ...props}) => <a className="text-primary-400 hover:text-primary-300 underline" {...props} />,
+                                        }}
+                                      >
+                                        {report.raw_text}
+                                      </ReactMarkdown>
+                                    </div>
                                   </CardContent>
                                 </Card>
                               ) : report.analysis && typeof report.analysis === 'object' ? (
