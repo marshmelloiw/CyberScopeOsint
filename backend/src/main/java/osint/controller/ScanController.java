@@ -89,5 +89,23 @@ public class ScanController {
             ));
         }
     }
+    
+    @GetMapping("/reports")
+    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    public ResponseEntity<?> getGeminiReports() {
+        try {
+            java.util.List<java.util.Map<String, Object>> reports = scanService.getScansWithGeminiReports();
+            return ResponseEntity.ok(java.util.Map.of(
+                "reports", reports,
+                "total", reports.size()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error getting Gemini reports: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "Raporlar alınamadı: " + e.getMessage()
+            ));
+        }
+    }
 }
 

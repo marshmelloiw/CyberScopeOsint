@@ -23,6 +23,7 @@ import ScansList from './features/scans/ScansList';
 import NewScan from './features/scans/NewScan';
 import ScanDetail from './features/scans/ScanDetail';
 import Reports from './features/reports/Reports';
+import GeminiReportDetail from './features/reports/GeminiReportDetail';
 import Notifications from './features/notifications/Notifications';
 import Settings from './features/settings/Settings';
 import APIKeys from './features/apikeys/APIKeys';
@@ -127,6 +128,7 @@ function App() {
 
               {/* Reports routes */}
               <Route path="reports" element={<Reports />} />
+              <Route path="reports/:scanId" element={<GeminiReportDetail />} />
 
               {/* Notifications routes */}
               <Route path="notifications" element={<Notifications />} />

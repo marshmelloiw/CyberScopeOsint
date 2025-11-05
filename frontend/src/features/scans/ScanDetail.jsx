@@ -13,7 +13,7 @@ const ScanDetail = () => {
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('gemini');
 
   useEffect(() => {
     const fetchScanDetails = async () => {
@@ -212,7 +212,7 @@ const ScanDetail = () => {
       {/* Tabs */}
       <div className="border-b border-surface-border">
         <nav className="flex space-x-8">
-          {['overview', 'results', 'gemini', 'logs'].map((tab) => (
+          {['gemini', 'overview', 'results', 'logs'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -223,9 +223,9 @@ const ScanDetail = () => {
                   : 'border-transparent text-surface-muted hover:text-white hover:border-surface-border'
               )}
             >
+              {tab === 'gemini' && 'AI Analiz'}
               {tab === 'overview' && 'Genel Bakış'}
               {tab === 'results' && 'Sonuçlar'}
-              {tab === 'gemini' && 'AI Analiz'}
               {tab === 'logs' && 'Loglar'}
             </button>
           ))}
@@ -234,6 +234,87 @@ const ScanDetail = () => {
 
       {/* Tab Content */}
       <div className="mt-6">
+        {activeTab === 'gemini' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Analiz Raporları (Gemini)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(geminiReports).length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-surface-muted mb-2">
+                    {scan.status === 'RUNNING' 
+                      ? 'AI analiz raporları hala oluşturuluyor...'
+                      : 'Henüz AI analiz raporu yok'}
+                  </p>
+                  {scan.status === 'RUNNING' && (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mt-4" />
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {Object.entries(geminiReports).map(([key, report]) => {
+                    const [provider, target] = key.split('_');
+                    return (
+                      <div key={key} className="border border-surface-border rounded-lg p-6 bg-surface-panel/50">
+                        <div className="mb-4 pb-4 border-b border-surface-border">
+                          <h3 className="text-lg font-semibold text-white mb-2">
+                            {provider} - {target}
+                          </h3>
+                          <span className="text-sm text-surface-muted">
+                            {report.status === 'completed' ? '✓ Tamamlandı' : '⏳ Oluşturuluyor...'}
+                          </span>
+                        </div>
+                        {report && typeof report === 'object' && (
+                          <div className="prose prose-invert max-w-none space-y-4">
+                            {report.summary && (
+                              <div>
+                                <h4 className="text-white font-semibold mb-2 text-lg">Özet</h4>
+                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
+                                  {report.summary}
+                                </div>
+                              </div>
+                            )}
+                            {report.analysis && (
+                              <div>
+                                <h4 className="text-white font-semibold mb-2 text-lg">Detaylı Analiz</h4>
+                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
+                                  {report.analysis}
+                                </div>
+                              </div>
+                            )}
+                            {report.recommendations && (
+                              <div>
+                                <h4 className="text-white font-semibold mb-2 text-lg">Öneriler</h4>
+                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
+                                  {report.recommendations}
+                                </div>
+                              </div>
+                            )}
+                            {report.keyFindings && (
+                              <div>
+                                <h4 className="text-white font-semibold mb-2 text-lg">Önemli Bulgular</h4>
+                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
+                                  {report.keyFindings}
+                                </div>
+                              </div>
+                            )}
+                            {!report.summary && !report.analysis && !report.recommendations && !report.keyFindings && (
+                              <pre className="text-xs text-surface-muted overflow-x-auto bg-surface-border p-4 rounded">
+                                {JSON.stringify(report, null, 2)}
+                              </pre>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {activeTab === 'overview' && (
           <Card>
             <CardHeader>
@@ -297,57 +378,6 @@ const ScanDetail = () => {
           </Card>
         )}
 
-        {activeTab === 'gemini' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Analiz Raporları (Gemini)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {Object.keys(geminiReports).length === 0 ? (
-                <p className="text-surface-muted">
-                  {scan.status === 'RUNNING' 
-                    ? 'AI analiz raporları hala oluşturuluyor...'
-                    : 'Henüz AI analiz raporu yok'}
-                </p>
-              ) : (
-                <div className="space-y-6">
-                  {Object.entries(geminiReports).map(([key, report]) => (
-                    <div key={key} className="border border-surface-border rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-white mb-4">{key}</h3>
-                      {report && typeof report === 'object' && (
-                        <div className="prose prose-invert max-w-none">
-                          {report.summary && (
-                            <div className="mb-4">
-                              <h4 className="text-white font-medium mb-2">Özet</h4>
-                              <p className="text-surface-muted whitespace-pre-wrap">{report.summary}</p>
-                            </div>
-                          )}
-                          {report.analysis && (
-                            <div className="mb-4">
-                              <h4 className="text-white font-medium mb-2">Analiz</h4>
-                              <p className="text-surface-muted whitespace-pre-wrap">{report.analysis}</p>
-                            </div>
-                          )}
-                          {report.recommendations && (
-                            <div>
-                              <h4 className="text-white font-medium mb-2">Öneriler</h4>
-                              <p className="text-surface-muted whitespace-pre-wrap">{report.recommendations}</p>
-                            </div>
-                          )}
-                          {!report.summary && !report.analysis && !report.recommendations && (
-                            <pre className="text-xs text-surface-muted overflow-x-auto bg-surface-border p-3 rounded">
-                              {JSON.stringify(report, null, 2)}
-                            </pre>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
 
         {activeTab === 'logs' && (
           <Card>

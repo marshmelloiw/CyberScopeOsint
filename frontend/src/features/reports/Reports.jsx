@@ -1,124 +1,140 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Search, FileText, Download, Eye, Calendar, BarChart3, Users, Globe, Mail, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import RiskBadge from '../../components/common/RiskBadge';
+import { Search, FileText, Eye, Trash2, Globe, Mail, MapPin, Users, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import api, { endpoints } from '../../lib/axios';
 
 const Reports = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Mock reports data
-  const reports = [
-    {
-      id: 1,
-      title: 'Monthly Security Assessment - January 2024',
-      type: 'security-assessment',
-      status: 'completed',
-      createdAt: '2024-01-15T08:00:00Z',
-      updatedAt: '2024-01-15T10:00:00Z',
-      author: 'Melisa Bayramoğlu',
-      scope: 'All company domains',
-      findings: 23,
-      riskScore: 6,
-      format: 'PDF',
-      size: '2.4 MB',
-      tags: ['monthly', 'security', 'assessment'],
-    },
-    {
-      id: 2,
-      title: 'Domain Security Report - google.com',
-      type: 'domain-analysis',
-      status: 'completed',
-      createdAt: '2024-01-14T14:00:00Z',
-      updatedAt: '2024-01-14T14:30:00Z',
-      author: 'Melisa Bayramoğlu',
-      scope: 'google.com',
-      findings: 12,
-      riskScore: 3,
-      format: 'HTML',
-      size: '1.8 MB',
-      tags: ['domain', 'google', 'security'],
-    },
-    {
-      id: 3,
-      title: 'Email Breach Analysis - Q4 2023',
-      type: 'breach-analysis',
-      status: 'draft',
-      createdAt: '2024-01-13T09:00:00Z',
-      updatedAt: '2024-01-13T09:00:00Z',
-      author: 'Melisa Bayramoğlu',
-      scope: 'Employee emails',
-      findings: 45,
-      riskScore: 8,
-      format: 'PDF',
-      size: '3.1 MB',
-      tags: ['quarterly', 'breach', 'email'],
-    },
-    {
-      id: 4,
-      title: 'IP Threat Intelligence Report',
-      type: 'threat-intel',
-      status: 'in-progress',
-      createdAt: '2024-01-12T11:00:00Z',
-      updatedAt: '2024-01-15T09:00:00Z',
-      author: 'Melisa Bayramoğlu',
-      scope: 'Network IPs',
-      findings: 18,
-      riskScore: 4,
-      format: 'PDF',
-      size: '2.7 MB',
-      tags: ['threat', 'intelligence', 'network'],
-    },
-  ];
+  // Fetch scan reports from API
+  const fetchReports = useCallback(async (showRefreshing = false) => {
+    try {
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+      
+      // Get scans with Gemini reports from dedicated endpoint
+      const response = await api.get('/scans/reports');
+      const scansData = response.data.reports || [];
+      
+      const completedScans = scansData;
+      
+      const transformedReports = completedScans.map((scan) => {
+        const targets = scan.targets || [];
+        const providers = scan.providers || [];
+        const timestamp = scan.timestamp || scan.createdAt || 0;
+        const completedAt = scan.completedAt || scan.createdAt;
+        const geminiReports = scan.geminiReports || {};
+        
+        // Generate title if not provided
+        let title = scan.name;
+        if (!title && targets.length > 0) {
+          const typeName = scan.type ? scan.type.charAt(0).toUpperCase() + scan.type.slice(1) : 'Scan';
+          title = `${typeName} AI Report - ${targets.join(', ')}`;
+        }
+        
+        // Count Gemini reports
+        const geminiReportCount = Object.keys(geminiReports).length;
+        
+        return {
+          id: scan.scanId,
+          scanId: scan.scanId,
+          title: title || 'Unnamed AI Report',
+          type: scan.type || 'unknown',
+          status: 'completed',
+          createdAt: timestamp ? new Date(timestamp).toISOString() : completedAt,
+          updatedAt: completedAt || new Date().toISOString(),
+          targets: Array.isArray(targets) ? targets : [],
+          providers: Array.isArray(providers) ? providers : [],
+          findings: scan.findings || 0,
+          riskScore: scan.findings > 20 ? 8 : scan.findings > 10 ? 5 : scan.findings > 5 ? 3 : 1,
+          geminiReportCount,
+        };
+      });
+      
+      setReports(transformedReports);
+    } catch (err) {
+      console.error('Error fetching reports:', err);
+      setError(err.response?.data?.error || 'Rapor listesi yüklenemedi');
+      setReports([]);
+    } finally {
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }, []);
 
-  const reportTypes = [
-    { id: 'security-assessment', name: 'Security Assessment', icon: Shield, description: 'Comprehensive security evaluation' },
-    { id: 'domain-analysis', name: 'Domain Analysis', icon: Globe, description: 'Domain security and reputation analysis' },
-    { id: 'breach-analysis', name: 'Breach Analysis', icon: Mail, description: 'Data breach investigation and findings' },
-    { id: 'threat-intel', name: 'Threat Intelligence', icon: AlertTriangle, description: 'Threat intelligence and indicators' },
-    { id: 'vulnerability-scan', name: 'Vulnerability Scan', icon: Search, description: 'Vulnerability assessment results' },
-    { id: 'compliance-report', name: 'Compliance Report', icon: CheckCircle, description: 'Regulatory compliance assessment' },
-  ];
+  useEffect(() => {
+    fetchReports();
+    
+    // Refresh every 10 seconds
+    const interval = setInterval(() => fetchReports(false), 10000);
+    return () => clearInterval(interval);
+  }, [fetchReports]);
+
+  const getTypeIcon = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'domain': return <Globe className="h-5 w-5" />;
+      case 'email': return <Mail className="h-5 w-5" />;
+      case 'ip': return <MapPin className="h-5 w-5" />;
+      case 'social': return <Users className="h-5 w-5" />;
+      default: return <FileText className="h-5 w-5" />;
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'bg-success text-white';
-      case 'in-progress': return 'bg-info text-white';
-      case 'draft': return 'bg-warning text-white';
+      case 'running': return 'bg-info text-white';
       case 'failed': return 'bg-danger text-white';
       default: return 'bg-surface-muted text-white';
     }
   };
 
-  const getTypeIcon = (type) => {
-    const reportType = reportTypes.find(t => t.id === type);
-    if (reportType) {
-      const IconComponent = reportType.icon;
-      return <IconComponent className="h-5 w-5" />;
-    }
-    return <FileText className="h-5 w-5" />;
-  };
-
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      report.targets.some(target => target.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     const matchesType = typeFilter === 'all' || report.type === typeFilter;
-
+    
     return matchesSearch && matchesStatus && matchesType;
   });
 
   return (
     <div className="space-y-6">
       {/* Page header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Reports</h1>
-          <p className="text-surface-muted">Generate and manage security reports</p>
+          <h1 className="text-3xl font-bold text-white">AI Reports</h1>
+          <p className="text-surface-muted">View and manage your Gemini AI analysis reports</p>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={() => fetchReports(true)}
+          disabled={refreshing || loading}
+          className="flex items-center space-x-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </Button>
+      </div>
 
       {/* Filters and search */}
       <Card>
@@ -129,7 +145,7 @@ const Reports = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-muted" />
                 <Input
-                  placeholder="Search reports by title, author, or tags..."
+                  placeholder="Search reports by title or target..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -145,8 +161,7 @@ const Reports = () => {
             >
               <option value="all">All Status</option>
               <option value="completed">Completed</option>
-              <option value="in-progress">In Progress</option>
-              <option value="draft">Draft</option>
+              <option value="running">Running</option>
               <option value="failed">Failed</option>
             </select>
 
@@ -157,9 +172,10 @@ const Reports = () => {
               className="px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="all">All Types</option>
-              {reportTypes.map((type) => (
-                <option key={type.id} value={type.id}>{type.name}</option>
-              ))}
+              <option value="domain">Domain</option>
+              <option value="email">Email</option>
+              <option value="ip">IP Address</option>
+              <option value="social">Social Media</option>
             </select>
           </div>
         </CardContent>
@@ -168,107 +184,132 @@ const Reports = () => {
       {/* Reports list */}
       <Card>
         <CardHeader>
-          <CardTitle>Reports ({filteredReports.length})</CardTitle>
+          <CardTitle>Gemini AI Reports ({reports.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredReports.map((report) => (
-              <div
-                key={report.id}
-                className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      {getTypeIcon(report.type)}
-                      <h3 className="text-lg font-semibold text-white">{report.title}</h3>
-                      <span className={cn(
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        getStatusColor(report.status)
-                      )}>
-                        {report.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-surface-muted">Author:</span>
-                        <span className="text-white ml-2">{report.author}</span>
-                      </div>
-                      <div>
-                        <span className="text-surface-muted">Scope:</span>
-                        <span className="text-white ml-2">{report.scope}</span>
-                      </div>
-                      <div>
-                        <span className="text-surface-muted">Findings:</span>
-                        <span className="text-white ml-2">{report.findings}</span>
-                      </div>
-                      <div>
-                        <span className="text-surface-muted">Risk Score:</span>
-                        <span className="text-white ml-2">{report.riskScore}/10</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4 mt-3 text-sm text-surface-muted">
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>Created: {new Date(report.createdAt).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <FileText className="h-4 w-4" />
-                        <span>{report.format} • {report.size}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1 mt-3">
-                      {report.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 bg-surface-panel text-xs text-surface-muted rounded"
-                        >
-                          {tag}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+              <span className="ml-3 text-surface-muted">Raporlar yükleniyor...</span>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <AlertCircle className="h-16 w-16 mx-auto mb-4 text-danger" />
+                <p className="text-danger mb-2">{error}</p>
+                <Button onClick={() => fetchReports(false)} variant="outline">
+                  Tekrar Dene
+                </Button>
+              </div>
+            </div>
+          ) : filteredReports.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <p className="text-surface-muted mb-4">
+                  {reports.length === 0 
+                    ? 'Henüz Gemini AI raporu yok. Tamamlanan scan\'lerin AI analiz raporları burada görünecek.'
+                    : 'Arama kriterlerinize uygun rapor bulunamadı.'}
+                </p>
+                <Link to="/dashboard/scans/new">
+                  <Button>
+                    Yeni Scan Oluştur
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        {getTypeIcon(report.type)}
+                        <h3 className="text-lg font-semibold text-white">{report.title}</h3>
+                        <span className={cn(
+                          'px-2 py-1 rounded-full text-xs font-medium capitalize',
+                          getStatusColor(report.status)
+                        )}>
+                          {report.status}
                         </span>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
 
-                  <div className="flex flex-col space-y-2 ml-4">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
+                        <div>
+                          <span className="text-surface-muted">Targets:</span>
+                          <span className="text-white ml-2">
+                            {report.targets.length > 0 ? report.targets.join(', ') : 'N/A'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-surface-muted">Providers:</span>
+                          <span className="text-white ml-2">
+                            {report.providers.length > 0 ? report.providers.join(', ') : 'N/A'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-surface-muted">AI Reports:</span>
+                          <span className="text-white ml-2">{report.geminiReportCount || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-surface-muted">Risk:</span>
+                          <span className="ml-2">
+                            <RiskBadge score={report.riskScore} />
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-4 text-sm text-surface-muted">
+                        <div className="flex items-center space-x-1">
+                          <span>Created: {new Date(report.createdAt).toLocaleDateString('tr-TR')}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="capitalize">{report.type}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-2 ml-4">
+                      <Link to={`/dashboard/reports/${report.scanId}`}>
+                        <Button variant="ghost" size="sm" className="w-full">
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-danger hover:text-danger w-full"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (window.confirm(`"${report.title}" raporunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+                            try {
+                              console.log('Deleting report/scan:', report.scanId);
+                              await api.delete(`/scans/${report.scanId}`);
+                              console.log('Report/scan deleted successfully');
+                              await fetchReports(false);
+                              alert('Rapor başarıyla silindi');
+                            } catch (err) {
+                              console.error('Error deleting report:', err);
+                              const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
+                              alert('Rapor silinirken hata oluştu: ' + errorMsg);
+                            }
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <BarChart3 className="h-6 w-6" />
-              <span>Generate Monthly Report</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Users className="h-6 w-6" />
-              <span>Team Activity Report</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Globe className="h-6 w-6" />
-              <span>Domain Security Summary</span>
-            </Button>
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

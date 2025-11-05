@@ -76,29 +76,30 @@ public class ScanService {
             scan.setStartedAt(LocalDateTime.now());
             scan.setPriority("NORMAL");
             // Note: user_id is set to null for now (authentication context not available)
-            // In production, get from SecurityContext: SecurityContextHolder.getContext().getAuthentication()
-            
+            // In production, get from SecurityContext:
+            // SecurityContextHolder.getContext().getAuthentication()
+
             scan = scanRepository.save(scan);
 
-        // Create ScanTarget entities
-        for (String target : request.getTargets()) {
-            ScanTarget scanTarget = new ScanTarget(scan, target, request.getType());
-            scanTargetRepository.save(scanTarget);
-        }
+            // Create ScanTarget entities
+            for (String target : request.getTargets()) {
+                ScanTarget scanTarget = new ScanTarget(scan, target, request.getType());
+                scanTargetRepository.save(scanTarget);
+            }
 
-        // Create ScanProvider entities
-        for (String provider : request.getProviders()) {
-            ScanProvider scanProvider = new ScanProvider(scan, provider);
-            scanProvider.setStatus("PENDING");
-            scanProviderRepository.save(scanProvider);
-        }
+            // Create ScanProvider entities
+            for (String provider : request.getProviders()) {
+                ScanProvider scanProvider = new ScanProvider(scan, provider);
+                scanProvider.setStatus("PENDING");
+                scanProviderRepository.save(scanProvider);
+            }
 
-        // Create in-memory status for API compatibility
-        ScanStatus status = new ScanStatus(scanId, "RUNNING", new ArrayList<>(), null);
-        scanStatuses.put(scanId, status);
+            // Create in-memory status for API compatibility
+            ScanStatus status = new ScanStatus(scanId, "RUNNING", new ArrayList<>(), null);
+            scanStatuses.put(scanId, status);
 
-        // Log scan start
-        addLogToDB(scan.getId(), "INFO", "Scan started: " + request.getName());
+            // Log scan start
+            addLogToDB(scan.getId(), "INFO", "Scan started: " + request.getName());
 
             // Execute async with DB persistence
             executeScanAsyncWithDB(scan.getId(), scanId, request);
@@ -329,27 +330,27 @@ public class ScanService {
                 if (targetResultObj instanceof Map) {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> targetResult = (Map<String, Object>) targetResultObj;
-                    
+
                     for (ScanProvider scanProvider : scanProviders) {
                         String provider = scanProvider.getProviderName();
                         Object providerData = targetResult.get(provider);
-                        
+
                         if (providerData instanceof Map) {
                             @SuppressWarnings("unchecked")
                             Map<String, Object> providerResult = (Map<String, Object>) providerData;
-                            
+
                             // Create ScanResult
                             ScanResult scanResult = new ScanResult(scan, provider, providerResult);
                             scanResult.setScanTarget(scanTarget);
-                            
+
                             // Calculate findings count
                             int findingsCount = calculateFindingsCount(providerResult);
                             scanResult.setFindingsCount(findingsCount);
-                            
+
                             // Save to DB
                             scanResult = scanResultRepository.save(scanResult);
                             scanResultIds.put(provider + "_" + target, scanResult.getId());
-                            
+
                             // Update provider status
                             scanProvider.setStatus(providerResult.containsKey("error") ? "FAILED" : "COMPLETED");
                             scanProvider.setCompletedAt(LocalDateTime.now());
@@ -357,12 +358,12 @@ public class ScanService {
                                 scanProvider.setErrorMessage(providerResult.get("error").toString());
                             }
                             scanProviderRepository.save(scanProvider);
-                            
+
                             // Update target status
                             scanTarget.setStatus("COMPLETED");
                             scanTarget.setProcessedAt(LocalDateTime.now());
                             scanTargetRepository.save(scanTarget);
-                            
+
                             // Generate Gemini report asynchronously if no error
                             if (!providerResult.containsKey("error")) {
                                 generateGeminiReportAsync(scanId, scanResult.getId(), provider, target, providerResult,
@@ -387,7 +388,7 @@ public class ScanService {
 
         } catch (Exception e) {
             logger.error("Error executing scan {}: {}", scanId, e.getMessage(), e);
-            
+
             // Update scan status to FAILED in DB
             Optional<Scan> scanOpt = scanRepository.findById(scanDbId);
             if (scanOpt.isPresent()) {
@@ -398,7 +399,7 @@ public class ScanService {
                 scanRepository.save(scan);
                 addLogToDB(scanDbId, "ERROR", "Scan failed: " + e.getMessage());
             }
-            
+
             status.setStatus("FAILED");
             status.setErrorMessage(e.getMessage());
         }
@@ -463,7 +464,8 @@ public class ScanService {
 
                                     // Save Gemini report to DB
                                     if (scanResultId != null) {
-                                        Optional<ScanResult> scanResultOpt = scanResultRepository.findById(scanResultId);
+                                        Optional<ScanResult> scanResultOpt = scanResultRepository
+                                                .findById(scanResultId);
                                         if (scanResultOpt.isPresent()) {
                                             ScanResult scanResult = scanResultOpt.get();
                                             scanResult.setGeminiReport(geminiAnalysis);
@@ -553,8 +555,112 @@ public class ScanService {
     }
 
     public ScanStatus getScanStatus(String scanId) {
-        // Return from in-memory cache only (DB tables don't exist)
-        return scanStatuses.get(scanId);
+        // First try in-memory cache
+        ScanStatus status = scanStatuses.get(scanId);
+        if (status != null) {
+            return status;
+        }
+
+        // If not in cache, try to load from database
+        try {
+            Optional<Scan> scanOpt = scanRepository.findByScanId(scanId);
+            if (!scanOpt.isPresent()) {
+                logger.warn("Scan {} not found in database", scanId);
+                return null;
+            }
+
+            Scan scan = scanOpt.get();
+
+            // Build results map first (required for constructor)
+            Map<String, Object> results = new HashMap<>();
+            results.put("scanId", scan.getScanId());
+            results.put("type", scan.getType());
+            results.put("name", scan.getName());
+            results.put("timestamp",
+                    scan.getCreatedAt() != null
+                            ? scan.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                            : System.currentTimeMillis());
+
+            // Get targets
+            List<ScanTarget> targets = scanTargetRepository.findByScanId(scan.getId());
+            List<String> targetList = new ArrayList<>();
+            for (ScanTarget target : targets) {
+                targetList.add(target.getTarget());
+            }
+            results.put("targets", targetList);
+
+            // Get providers
+            List<ScanProvider> providers = scanProviderRepository.findByScanId(scan.getId());
+            List<String> providerList = new ArrayList<>();
+            for (ScanProvider provider : providers) {
+                providerList.add(provider.getProviderName());
+            }
+            results.put("providers", providerList);
+
+            // Get results and build provider results map
+            Map<String, Object> providerResults = new HashMap<>();
+            Map<String, Object> geminiReports = new HashMap<>();
+
+            List<ScanResult> scanResults = scanResultRepository.findByScanId(scan.getId());
+            for (ScanResult scanResult : scanResults) {
+                String provider = scanResult.getProviderName();
+                String target = scanResult.getScanTarget() != null ? scanResult.getScanTarget().getTarget() : "unknown";
+
+                // Get raw result data
+                Map<String, Object> providerResult = scanResult.getResultData();
+                if (providerResult == null) {
+                    providerResult = new HashMap<>();
+                }
+
+                // Add provider to result
+                providerResult.put("provider", provider);
+
+                // Build target result map
+                if (!providerResults.containsKey(target)) {
+                    providerResults.put(target, new HashMap<>());
+                }
+                @SuppressWarnings("unchecked")
+                Map<String, Object> targetResult = (Map<String, Object>) providerResults.get(target);
+                targetResult.put(provider, providerResult);
+
+                // Get Gemini report if exists
+                if (scanResult.getGeminiReport() != null && !scanResult.getGeminiReport().isEmpty()) {
+                    String key = provider + "_" + target;
+                    geminiReports.put(key, scanResult.getGeminiReport());
+                }
+            }
+
+            results.put("results", providerResults);
+            results.put("data", providerResults);
+            results.put("gemini_reports", geminiReports);
+
+            // Build ScanStatus from database
+            ScanStatus dbStatus = new ScanStatus(
+                    scan.getScanId(),
+                    scan.getStatus(),
+                    new ArrayList<>(),
+                    results);
+
+            if (scan.getErrorMessage() != null) {
+                dbStatus.setErrorMessage(scan.getErrorMessage());
+            }
+
+            if (scan.getCompletedAt() != null) {
+                dbStatus.setCompletedAt(scan.getCompletedAt());
+            }
+
+            dbStatus.setResults(results);
+
+            // Cache it for future requests
+            scanStatuses.put(scanId, dbStatus);
+
+            logger.debug("Loaded scan {} from database", scanId);
+            return dbStatus;
+
+        } catch (Exception e) {
+            logger.error("Error loading scan {} from database: {}", scanId, e.getMessage(), e);
+            return null;
+        }
     }
 
     /**
@@ -571,7 +677,7 @@ public class ScanService {
                 scanRepository.delete(scan);
                 logger.info("Scan {} deleted from database", scanId);
             }
-            
+
             // Remove from in-memory cache
             scanStatuses.remove(scanId);
             logger.info("Scan {} removed from memory cache", scanId);
@@ -582,73 +688,159 @@ public class ScanService {
     }
 
     /**
+     * Get scans that have Gemini reports
+     * Returns a list of scan summaries with Gemini reports
+     */
+    public List<Map<String, Object>> getScansWithGeminiReports() {
+        List<Map<String, Object>> scanList = new ArrayList<>();
+
+        try {
+            // Get all completed scans from DB
+            List<Scan> scans = scanRepository.findByStatus("COMPLETED");
+
+            logger.debug("Found {} completed scans", scans.size());
+
+            for (Scan scan : scans) {
+                // Get scan results with Gemini reports
+                List<ScanResult> results = scanResultRepository.findByScanId(scan.getId());
+                boolean hasGeminiReport = false;
+                Map<String, Object> geminiReportsMap = new HashMap<>();
+
+                for (ScanResult result : results) {
+                    if (result.getGeminiReport() != null && !result.getGeminiReport().isEmpty()) {
+                        hasGeminiReport = true;
+                        String key = result.getProviderName() + "_" +
+                                (result.getScanTarget() != null ? result.getScanTarget().getTarget() : "unknown");
+                        geminiReportsMap.put(key, result.getGeminiReport());
+                    }
+                }
+
+                // Only include scans with Gemini reports
+                if (hasGeminiReport) {
+                    Map<String, Object> scanSummary = new HashMap<>();
+                    scanSummary.put("scanId", scan.getScanId());
+                    scanSummary.put("name", scan.getName());
+                    scanSummary.put("type", scan.getType());
+                    scanSummary.put("status", scan.getStatus().toLowerCase());
+                    scanSummary.put("createdAt", scan.getCreatedAt());
+                    scanSummary.put("startedAt", scan.getStartedAt());
+                    scanSummary.put("completedAt", scan.getCompletedAt());
+                    scanSummary.put("errorMessage", scan.getErrorMessage());
+
+                    // Get targets
+                    List<ScanTarget> targets = scanTargetRepository.findByScanId(scan.getId());
+                    List<String> targetList = new ArrayList<>();
+                    for (ScanTarget target : targets) {
+                        targetList.add(target.getTarget());
+                    }
+                    scanSummary.put("targets", targetList);
+
+                    // Get providers
+                    List<ScanProvider> providers = scanProviderRepository.findByScanId(scan.getId());
+                    List<String> providerList = new ArrayList<>();
+                    for (ScanProvider provider : providers) {
+                        providerList.add(provider.getProviderName());
+                    }
+                    scanSummary.put("providers", providerList);
+
+                    // Calculate findings count
+                    int findingsCount = 0;
+                    for (ScanResult result : results) {
+                        if (result.getFindingsCount() != null) {
+                            findingsCount += result.getFindingsCount();
+                        }
+                    }
+                    scanSummary.put("findings", findingsCount);
+
+                    // Add Gemini reports
+                    scanSummary.put("geminiReports", geminiReportsMap);
+
+                    // Convert timestamp
+                    if (scan.getCreatedAt() != null) {
+                        scanSummary.put("timestamp", scan.getCreatedAt().atZone(java.time.ZoneId.systemDefault())
+                                .toInstant().toEpochMilli());
+                    }
+
+                    scanList.add(scanSummary);
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Error getting scans with Gemini reports: {}", e.getMessage(), e);
+            return scanList;
+        }
+
+        return scanList;
+    }
+
+    /**
      * Get all scans from database
      * Returns a list of scan summaries for history display
      */
     public List<Map<String, Object>> getAllScans() {
         List<Map<String, Object>> scanList = new ArrayList<>();
-        
+
         try {
             // Get all scans from DB, ordered by creation date descending
             List<Scan> scans = scanRepository.findAll(
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt")
-            );
-            
+                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+                            "createdAt"));
+
             logger.debug("Found {} scans in database", scans.size());
-        
-        for (Scan scan : scans) {
-            Map<String, Object> scanSummary = new HashMap<>();
-            scanSummary.put("scanId", scan.getScanId());
-            scanSummary.put("name", scan.getName());
-            scanSummary.put("type", scan.getType());
-            scanSummary.put("status", scan.getStatus().toLowerCase());
-            scanSummary.put("createdAt", scan.getCreatedAt());
-            scanSummary.put("startedAt", scan.getStartedAt());
-            scanSummary.put("completedAt", scan.getCompletedAt());
-            scanSummary.put("errorMessage", scan.getErrorMessage());
-            
-            // Get targets
-            List<ScanTarget> targets = scanTargetRepository.findByScanId(scan.getId());
-            List<String> targetList = new ArrayList<>();
-            for (ScanTarget target : targets) {
-                targetList.add(target.getTarget());
-            }
-            scanSummary.put("targets", targetList);
-            
-            // Get providers
-            List<ScanProvider> providers = scanProviderRepository.findByScanId(scan.getId());
-            List<String> providerList = new ArrayList<>();
-            for (ScanProvider provider : providers) {
-                providerList.add(provider.getProviderName());
-            }
-            scanSummary.put("providers", providerList);
-            
-            // Calculate findings count from scan results
-            List<ScanResult> results = scanResultRepository.findByScanId(scan.getId());
-            int findingsCount = 0;
-            for (ScanResult result : results) {
-                if (result.getFindingsCount() != null) {
-                    findingsCount += result.getFindingsCount();
+
+            for (Scan scan : scans) {
+                Map<String, Object> scanSummary = new HashMap<>();
+                scanSummary.put("scanId", scan.getScanId());
+                scanSummary.put("name", scan.getName());
+                scanSummary.put("type", scan.getType());
+                scanSummary.put("status", scan.getStatus().toLowerCase());
+                scanSummary.put("createdAt", scan.getCreatedAt());
+                scanSummary.put("startedAt", scan.getStartedAt());
+                scanSummary.put("completedAt", scan.getCompletedAt());
+                scanSummary.put("errorMessage", scan.getErrorMessage());
+
+                // Get targets
+                List<ScanTarget> targets = scanTargetRepository.findByScanId(scan.getId());
+                List<String> targetList = new ArrayList<>();
+                for (ScanTarget target : targets) {
+                    targetList.add(target.getTarget());
                 }
+                scanSummary.put("targets", targetList);
+
+                // Get providers
+                List<ScanProvider> providers = scanProviderRepository.findByScanId(scan.getId());
+                List<String> providerList = new ArrayList<>();
+                for (ScanProvider provider : providers) {
+                    providerList.add(provider.getProviderName());
+                }
+                scanSummary.put("providers", providerList);
+
+                // Calculate findings count from scan results
+                List<ScanResult> results = scanResultRepository.findByScanId(scan.getId());
+                int findingsCount = 0;
+                for (ScanResult result : results) {
+                    if (result.getFindingsCount() != null) {
+                        findingsCount += result.getFindingsCount();
+                    }
+                }
+                scanSummary.put("findings", findingsCount);
+
+                // Convert timestamp
+                if (scan.getCreatedAt() != null) {
+                    scanSummary.put("timestamp", scan.getCreatedAt().atZone(java.time.ZoneId.systemDefault())
+                            .toInstant().toEpochMilli());
+                }
+
+                scanList.add(scanSummary);
             }
-            scanSummary.put("findings", findingsCount);
-            
-            // Convert timestamp
-            if (scan.getCreatedAt() != null) {
-                scanSummary.put("timestamp", scan.getCreatedAt().atZone(java.time.ZoneId.systemDefault())
-                    .toInstant().toEpochMilli());
-            }
-            
-            scanList.add(scanSummary);
-        }
-        
+
         } catch (Exception e) {
             logger.error("Error getting scans from database: {}", e.getMessage(), e);
             // Return empty list instead of throwing exception
             // This allows the frontend to show the page even if DB has issues
             return scanList;
         }
-        
+
         return scanList;
     }
 
