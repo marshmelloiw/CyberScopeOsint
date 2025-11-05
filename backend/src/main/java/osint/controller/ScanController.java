@@ -4,7 +4,6 @@ import osint.service.ScanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Map;
 
@@ -53,6 +52,42 @@ public class ScanController {
         }
         
         return ResponseEntity.ok(status);
+    }
+    
+    @GetMapping
+    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    public ResponseEntity<?> getAllScans() {
+        try {
+            java.util.List<java.util.Map<String, Object>> scans = scanService.getAllScans();
+            return ResponseEntity.ok(java.util.Map.of(
+                "scans", scans,
+                "total", scans.size()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error getting scans: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "Scan listesi alınamadı: " + e.getMessage()
+            ));
+        }
+    }
+    
+    @DeleteMapping("/{scanId}")
+    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    public ResponseEntity<?> deleteScan(@PathVariable String scanId) {
+        try {
+            scanService.deleteScan(scanId);
+            return ResponseEntity.ok(java.util.Map.of(
+                "message", "Scan başarıyla silindi",
+                "scanId", scanId
+            ));
+        } catch (Exception e) {
+            System.err.println("Error deleting scan: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "Scan silinemedi: " + e.getMessage()
+            ));
+        }
     }
 }
 

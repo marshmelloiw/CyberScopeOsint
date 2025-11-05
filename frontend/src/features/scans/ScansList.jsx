@@ -1,68 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import RiskBadge from '../../components/common/RiskBadge';
-import { Search, Plus, Filter, Download, Eye, Play, Pause, Trash2 } from 'lucide-react';
+import { Search, Plus, Filter, Eye, Play, Pause, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import api, { endpoints } from '../../lib/axios';
 
 const ScansList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [scans, setScans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Mock data
-  const scans = [
-    {
-      id: 1,
-      name: 'Domain Security Assessment - google.com',
-      type: 'domain',
-      targets: ['google.com'],
-      status: 'completed',
-      risk: 3,
-      startedAt: '2024-01-15T08:00:00Z',
-      finishedAt: '2024-01-15T08:05:00Z',
-      findings: 12,
-      providers: ['VirusTotal', 'Shodan', 'Whois'],
-    },
-    {
-      id: 2,
-      name: 'Email Breach Check - test@example.com',
-      type: 'email',
-      targets: ['test@example.com'],
-      status: 'completed',
-      risk: 7,
-      startedAt: '2024-01-15T07:00:00Z',
-      finishedAt: '2024-01-15T07:02:00Z',
-      findings: 3,
-      providers: ['HaveIBeenPwned'],
-    },
-    {
-      id: 3,
-      name: 'IP Address Analysis - 8.8.8.8',
-      type: 'ip',
-      targets: ['8.8.8.8'],
-      status: 'running',
-      risk: 2,
-      startedAt: '2024-01-15T09:00:00Z',
-      finishedAt: null,
-      findings: 0,
-      providers: ['Shodan', 'VirusTotal'],
-    },
-    {
-      id: 4,
-      name: 'Social Media Monitor - @cyberscope',
-      type: 'social',
-      targets: ['@cyberscope'],
-      status: 'queued',
-      risk: 0,
-      startedAt: null,
-      finishedAt: null,
-      findings: 0,
-      providers: ['Twitter', 'LinkedIn'],
-    },
-  ];
+  // Fetch scans from API
+  const fetchScans = useCallback(async (showRefreshing = false) => {
+    try {
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+      const response = await api.get(endpoints.scans.list);
+      const scansData = response.data.scans || [];
+      
+      // Transform API data to match component format
+      const transformedScans = scansData.map((scan) => {
+        const targets = scan.targets || [];
+        const providers = scan.providers || [];
+        const timestamp = scan.timestamp || 0;
+        const completedAt = scan.completedAt;
+        
+        // Generate name if not provided
+        let name = scan.name;
+        if (!name && targets.length > 0) {
+          const typeName = scan.type ? scan.type.charAt(0).toUpperCase() + scan.type.slice(1) : 'Scan';
+          name = `${typeName} - ${targets.join(', ')}`;
+        }
+        
+        return {
+          id: scan.scanId,
+          scanId: scan.scanId,
+          name: name || 'Unnamed Scan',
+          type: scan.type || 'unknown',
+          targets: Array.isArray(targets) ? targets : [],
+          status: (scan.status || 'unknown').toLowerCase(),
+          startedAt: timestamp ? new Date(timestamp).toISOString() : null,
+          finishedAt: completedAt ? completedAt : null,
+          findings: scan.findings || 0,
+          providers: Array.isArray(providers) ? providers : [],
+        };
+      });
+      
+      setScans(transformedScans);
+    } catch (err) {
+      console.error('Error fetching scans:', err);
+      setError(err.response?.data?.error || 'Scan listesi yüklenemedi');
+      setScans([]);
+    } finally {
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchScans();
+    
+    // Refresh every 5 seconds to get updated scan statuses
+    const interval = setInterval(() => fetchScans(false), 5000);
+    return () => clearInterval(interval);
+  }, [fetchScans]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -93,20 +108,43 @@ const ScansList = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  // Calculate risk score based on findings (simple heuristic)
+  const getRiskScore = (scan) => {
+    if (scan.status === 'failed') return 10;
+    if (scan.status === 'running' || scan.status === 'queued') return 0;
+    const findings = scan.findings || 0;
+    if (findings > 20) return 8;
+    if (findings > 10) return 5;
+    if (findings > 5) return 3;
+    return 1;
+  };
+
   return (
     <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Scans</h1>
-          <p className="text-surface-muted">Monitor and manage your security scans</p>
+          <h1 className="text-3xl font-bold text-white">Scan History</h1>
+          <p className="text-surface-muted">View and manage your security scan history</p>
         </div>
-        <Link to="/dashboard/scans/new">
-          <Button className="flex items-center space-x-2">
-            <Plus className="h-4 w-4" />
-            <span>New Scan</span>
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={() => fetchScans(true)}
+            disabled={refreshing || loading}
+            className="flex items-center space-x-2"
+            title="Refresh scan list"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </Button>
-        </Link>
+          <Link to="/dashboard/scans/new">
+            <Button className="flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>New Scan</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters and search */}
@@ -158,88 +196,158 @@ const ScansList = () => {
       {/* Scans table */}
       <Card>
         <CardHeader>
-          <CardTitle>Scan History</CardTitle>
+          <CardTitle>Scan History ({scans.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-border">
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Scan</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Type</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Status</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Risk</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Findings</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Started</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredScans.map((scan) => (
-                  <tr key={scan.id} className="border-b border-surface-border/50 hover:bg-surface-panel/50">
-                    <td className="p-3">
-                      <div>
-                        <p className="font-medium text-white">{scan.name}</p>
-                        <p className="text-sm text-surface-muted">
-                          Targets: {scan.targets.join(', ')}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{getTypeIcon(scan.type)}</span>
-                        <span className="capitalize text-white">{scan.type}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span className={cn(
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        getStatusColor(scan.status)
-                      )}>
-                        {scan.status}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <RiskBadge score={scan.risk} />
-                    </td>
-                    <td className="p-3">
-                      <span className="text-white">{scan.findings}</span>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-surface-muted">
-                        {scan.startedAt ? new Date(scan.startedAt).toLocaleDateString() : '-'}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center space-x-2">
-                        <Link to={`/scans/${scan.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        {scan.status === 'running' && (
-                          <Button variant="ghost" size="sm">
-                            <Pause className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {scan.status === 'queued' && (
-                          <Button variant="ghost" size="sm">
-                            <Play className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-danger hover:text-danger">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+              <span className="ml-3 text-surface-muted">Scan listesi yükleniyor...</span>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <p className="text-danger mb-2">{error}</p>
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  Tekrar Dene
+                </Button>
+              </div>
+            </div>
+          ) : filteredScans.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <p className="text-surface-muted mb-4">
+                  {scans.length === 0 
+                    ? 'Henüz scan yapılmamış. İlk scan\'inizi oluşturmak için "New Scan" butonuna tıklayın.'
+                    : 'Arama kriterlerinize uygun scan bulunamadı.'}
+                </p>
+                {scans.length === 0 && (
+                  <Link to="/dashboard/scans/new">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Yeni Scan Oluştur
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-surface-border">
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Scan</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Type</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Status</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Risk</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Findings</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Started</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredScans.map((scan) => (
+                    <tr key={scan.scanId || scan.id} className="border-b border-surface-border/50 hover:bg-surface-panel/50">
+                      <td className="p-3">
+                        <div>
+                          <p className="font-medium text-white">{scan.name}</p>
+                          <p className="text-sm text-surface-muted">
+                            {scan.targets.length > 0 
+                              ? `Targets: ${scan.targets.join(', ')}`
+                              : 'No targets'}
+                          </p>
+                          {scan.providers.length > 0 && (
+                            <p className="text-xs text-surface-muted mt-1">
+                              Providers: {scan.providers.join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg">{getTypeIcon(scan.type)}</span>
+                          <span className="capitalize text-white">{scan.type}</span>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className={cn(
+                          'px-2 py-1 rounded-full text-xs font-medium capitalize',
+                          getStatusColor(scan.status)
+                        )}>
+                          {scan.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <RiskBadge score={getRiskScore(scan)} />
+                      </td>
+                      <td className="p-3">
+                        <span className="text-white">{scan.findings}</span>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-surface-muted">
+                          {scan.startedAt 
+                            ? new Date(scan.startedAt).toLocaleString('tr-TR', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : '-'}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center space-x-2">
+                          <Link to={`/dashboard/scans/${scan.scanId || scan.id}`}>
+                            <Button variant="ghost" size="sm" title="View Details">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          {scan.status === 'running' && (
+                            <Button variant="ghost" size="sm" title="Pause">
+                              <Pause className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {scan.status === 'queued' && (
+                            <Button variant="ghost" size="sm" title="Start">
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-danger hover:text-danger" 
+                            title="Delete"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (window.confirm(`"${scan.name}" scan'ini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+                                try {
+                                  const scanIdToDelete = scan.scanId || scan.id;
+                                  console.log('Deleting scan:', scanIdToDelete);
+                                  await api.delete(`/scans/${scanIdToDelete}`);
+                                  console.log('Scan deleted successfully');
+                                  // Refresh scan list
+                                  await fetchScans(false);
+                                  alert('Scan başarıyla silindi');
+                                } catch (err) {
+                                  console.error('Error deleting scan:', err);
+                                  const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
+                                  alert('Scan silinirken hata oluştu: ' + errorMsg);
+                                }
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

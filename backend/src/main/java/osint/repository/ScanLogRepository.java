@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
-// @Repository - Disabled: Scan tables don't exist
+@Repository
 public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
     
     List<ScanLog> findByScanId(Long scanId);

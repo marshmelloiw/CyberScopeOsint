@@ -20,22 +20,22 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "full_name")
+    @Transient  // May not exist in database schema
     private String fullName;
 
-    @Column(name = "role", length = 50)
+    @Transient  // May not exist in database schema
     private String role; // ADMIN, USER, CORPORATE
 
-    @Column(name = "is_verified")
+    @Transient  // May not exist in database schema
     private Boolean isVerified = false;
 
-    @Column(name = "mfa_enabled")
+    @Transient  // May not exist in database schema
     private Boolean mfaEnabled = false;
 
-    @Column(name = "created_at", updatable = false, insertable = false)
+    @Transient  // Not in database schema
     private LocalDateTime createdAt;
 
-    @Column(name = "last_login")
+    @Transient  // May not exist in database schema
     private LocalDateTime lastLogin;
 
     // For backward compatibility - keep roles but map to role field

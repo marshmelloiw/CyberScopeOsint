@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.util.List;
 
-// @Repository - Disabled: Scan tables don't exist
+@Repository
 public interface ScanResultRepository extends JpaRepository<ScanResult, Long> {
     
     List<ScanResult> findByScanId(Long scanId);

@@ -21,6 +21,7 @@ import ResetPassword from './features/auth/ResetPassword';
 import Dashboard from './features/dashboard/Dashboard';
 import ScansList from './features/scans/ScansList';
 import NewScan from './features/scans/NewScan';
+import ScanDetail from './features/scans/ScanDetail';
 import Reports from './features/reports/Reports';
 import Notifications from './features/notifications/Notifications';
 import Settings from './features/settings/Settings';
@@ -120,7 +121,9 @@ function App() {
 
               {/* Scans routes */}
               <Route path="scans" element={<ScansList />} />
+              <Route path="scans/history" element={<ScansList />} />
               <Route path="scans/new" element={<NewScan />} />
+              <Route path="scans/:scanId" element={<ScanDetail />} />
 
               {/* Reports routes */}
               <Route path="reports" element={<Reports />} />
