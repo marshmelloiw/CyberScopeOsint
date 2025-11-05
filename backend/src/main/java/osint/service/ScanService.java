@@ -144,9 +144,30 @@ public class ScanService {
             results.put("results", providerResults);
             results.put("data", providerResults); // Also add as 'data' for frontend compatibility
             
+            // Initialize Gemini reports map
+            results.put("gemini_reports", new HashMap<>());
+            
             status.setStatus("COMPLETED");
             status.setResults(results);
             status.setCompletedAt(LocalDateTime.now());
+            
+            // Generate Gemini reports for each provider-target combination
+            for (String target : request.getTargets()) {
+                Object targetResultObj = providerResults.get(target);
+                if (targetResultObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> targetResult = (Map<String, Object>) targetResultObj;
+                    for (String provider : request.getProviders()) {
+                        Object providerData = targetResult.get(provider);
+                        if (providerData instanceof Map && !((Map<?, ?>) providerData).containsKey("error")) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> providerResult = (Map<String, Object>) providerData;
+                            // Generate Gemini report asynchronously
+                            generateGeminiReportAsync(scanId, null, provider, target, providerResult, request.getType());
+                        }
+                    }
+                }
+            }
             
         } catch (Exception e) {
             logger.error("Error executing scan {}: {}", scanId, e.getMessage(), e);

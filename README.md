@@ -227,7 +227,6 @@ MIT License – Ayrıntılar için **LICENSE** dosyasına bakın.
 3. Commit yapın (`git commit -m 'Add amazing feature'`)  
 4. Push yapın (`git push origin feature/amazing-feature`)  
 5. Pull Request oluşturun  
-
 ---
 
 ## 📞 Destek
@@ -236,3 +235,4 @@ Sorularınız için:
 - Issue oluşturun  
 - Dokümantasyonu inceleyin  
 - Kod örneklerini kontrol edin  
+

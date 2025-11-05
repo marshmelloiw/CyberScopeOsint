@@ -63,7 +63,7 @@ public class GeminiService {
             logger.debug("Request body: {}", requestBody);
 
             return webClient.post()
-                    .uri("/models/gemini-2.5-pro:generateContent?key=" + apiKey)
+                    .uri("/models/gemini-1.5-pro:generateContent?key=" + apiKey)
                     .bodyValue(requestBody)
                     .retrieve()
                     .onStatus(status -> status.isError(), response -> {
