@@ -56,7 +56,7 @@ const Reports = () => {
           scanId: scan.scanId,
           title: title || 'Unnamed AI Report',
           type: scan.type || 'unknown',
-          status: 'completed',
+      status: 'completed',
           createdAt: timestamp ? new Date(timestamp).toISOString() : completedAt,
           updatedAt: completedAt || new Date().toISOString(),
           targets: Array.isArray(targets) ? targets : [],
@@ -113,7 +113,7 @@ const Reports = () => {
       report.targets.some(target => target.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
     const matchesType = typeFilter === 'all' || report.type === typeFilter;
-    
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -134,7 +134,7 @@ const Reports = () => {
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
         </Button>
-      </div>
+        </div>
 
       {/* Filters and search */}
       <Card>
@@ -218,66 +218,66 @@ const Reports = () => {
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredReports.map((report) => (
-                <div
-                  key={report.id}
-                  className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        {getTypeIcon(report.type)}
-                        <h3 className="text-lg font-semibold text-white">{report.title}</h3>
-                        <span className={cn(
+          <div className="space-y-4">
+            {filteredReports.map((report) => (
+              <div
+                key={report.id}
+                className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      {getTypeIcon(report.type)}
+                      <h3 className="text-lg font-semibold text-white">{report.title}</h3>
+                      <span className={cn(
                           'px-2 py-1 rounded-full text-xs font-medium capitalize',
-                          getStatusColor(report.status)
-                        )}>
-                          {report.status}
-                        </span>
-                      </div>
+                        getStatusColor(report.status)
+                      )}>
+                        {report.status}
+                      </span>
+                    </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
-                        <div>
+                      <div>
                           <span className="text-surface-muted">Targets:</span>
                           <span className="text-white ml-2">
                             {report.targets.length > 0 ? report.targets.join(', ') : 'N/A'}
                           </span>
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <span className="text-surface-muted">Providers:</span>
                           <span className="text-white ml-2">
                             {report.providers.length > 0 ? report.providers.join(', ') : 'N/A'}
                           </span>
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <span className="text-surface-muted">AI Reports:</span>
                           <span className="text-white ml-2">{report.geminiReportCount || 0}</span>
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <span className="text-surface-muted">Risk:</span>
                           <span className="ml-2">
                             <RiskBadge score={report.riskScore} />
                           </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-4 text-sm text-surface-muted">
-                        <div className="flex items-center space-x-1">
-                          <span>Created: {new Date(report.createdAt).toLocaleDateString('tr-TR')}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="capitalize">{report.type}</span>
-                        </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col space-y-2 ml-4">
+                      <div className="flex items-center space-x-4 text-sm text-surface-muted">
+                      <div className="flex items-center space-x-1">
+                          <span>Created: {new Date(report.createdAt).toLocaleDateString('tr-TR')}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                          <span className="capitalize">{report.type}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col space-y-2 ml-4">
                       <Link to={`/dashboard/reports/${report.scanId}`}>
                         <Button variant="ghost" size="sm" className="w-full">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </Button>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
                       </Link>
                       <Button 
                         variant="ghost" 
@@ -303,12 +303,12 @@ const Reports = () => {
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
-                      </Button>
-                    </div>
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           )}
         </CardContent>
       </Card>

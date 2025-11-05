@@ -122,12 +122,23 @@ export const endpoints = {
     preferences: '/notifications/preferences',
   },
   
-  // API Keys
+  // API Keys (OSINT service keys)
   apiKeys: {
     list: '/apikeys',
     create: '/apikeys',
     delete: (id) => `/apikeys/${id}`,
     rotate: (id) => `/apikeys/${id}/rotate`,
+  },
+  
+  // User API Keys (user-managed keys)
+  userApiKeys: {
+    list: '/user-apikeys',
+    create: '/user-apikeys',
+    get: (id) => `/user-apikeys/${id}`,
+    update: (id) => `/user-apikeys/${id}`,
+    delete: (id) => `/user-apikeys/${id}`,
+    regenerate: (id) => `/user-apikeys/${id}/regenerate`,
+    export: (id) => `/user-apikeys/${id}/export`,
   },
   
   // User management (admin)

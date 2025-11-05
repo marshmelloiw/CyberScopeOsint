@@ -138,12 +138,12 @@ const ScansList = () => {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
-          <Link to="/dashboard/scans/new">
-            <Button className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>New Scan</span>
-            </Button>
-          </Link>
+        <Link to="/dashboard/scans/new">
+          <Button className="flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>New Scan</span>
+          </Button>
+        </Link>
         </div>
       </div>
 
@@ -232,26 +232,26 @@ const ScansList = () => {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-surface-border">
-                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Scan</th>
-                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Type</th>
-                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Status</th>
-                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Risk</th>
-                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Findings</th>
-                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Started</th>
-                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredScans.map((scan) => (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-surface-border">
+                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Scan</th>
+                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Type</th>
+                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Status</th>
+                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Risk</th>
+                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Findings</th>
+                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Started</th>
+                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredScans.map((scan) => (
                     <tr key={scan.scanId || scan.id} className="border-b border-surface-border/50 hover:bg-surface-panel/50">
-                      <td className="p-3">
-                        <div>
-                          <p className="font-medium text-white">{scan.name}</p>
-                          <p className="text-sm text-surface-muted">
+                    <td className="p-3">
+                      <div>
+                        <p className="font-medium text-white">{scan.name}</p>
+                        <p className="text-sm text-surface-muted">
                             {scan.targets.length > 0 
                               ? `Targets: ${scan.targets.join(', ')}`
                               : 'No targets'}
@@ -259,32 +259,32 @@ const ScansList = () => {
                           {scan.providers.length > 0 && (
                             <p className="text-xs text-surface-muted mt-1">
                               Providers: {scan.providers.join(', ')}
-                            </p>
+                        </p>
                           )}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">{getTypeIcon(scan.type)}</span>
-                          <span className="capitalize text-white">{scan.type}</span>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <span className={cn(
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">{getTypeIcon(scan.type)}</span>
+                        <span className="capitalize text-white">{scan.type}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <span className={cn(
                           'px-2 py-1 rounded-full text-xs font-medium capitalize',
-                          getStatusColor(scan.status)
-                        )}>
-                          {scan.status}
-                        </span>
-                      </td>
-                      <td className="p-3">
+                        getStatusColor(scan.status)
+                      )}>
+                        {scan.status}
+                      </span>
+                    </td>
+                    <td className="p-3">
                         <RiskBadge score={getRiskScore(scan)} />
-                      </td>
-                      <td className="p-3">
-                        <span className="text-white">{scan.findings}</span>
-                      </td>
-                      <td className="p-3">
-                        <span className="text-surface-muted">
+                    </td>
+                    <td className="p-3">
+                      <span className="text-white">{scan.findings}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-surface-muted">
                           {scan.startedAt 
                             ? new Date(scan.startedAt).toLocaleString('tr-TR', {
                                 year: 'numeric',
@@ -294,25 +294,25 @@ const ScansList = () => {
                                 minute: '2-digit'
                               })
                             : '-'}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center space-x-2">
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center space-x-2">
                           <Link to={`/dashboard/scans/${scan.scanId || scan.id}`}>
                             <Button variant="ghost" size="sm" title="View Details">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          {scan.status === 'running' && (
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        {scan.status === 'running' && (
                             <Button variant="ghost" size="sm" title="Pause">
-                              <Pause className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {scan.status === 'queued' && (
+                            <Pause className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {scan.status === 'queued' && (
                             <Button variant="ghost" size="sm" title="Start">
-                              <Play className="h-4 w-4" />
-                            </Button>
-                          )}
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        )}
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -338,15 +338,15 @@ const ScansList = () => {
                               }
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           )}
         </CardContent>
       </Card>

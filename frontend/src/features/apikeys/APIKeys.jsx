@@ -1,75 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Key, Plus, Copy, Eye, EyeOff, Trash2, RefreshCw, Download, Upload, Calendar, Globe, Shield, Activity } from 'lucide-react';
+import { Key, Plus, Copy, Eye, EyeOff, Trash2, RefreshCw, Download, Upload, Calendar, Globe, Shield, Activity, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import api, { endpoints } from '../../lib/axios';
 
 const APIKeys = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingKeyId, setEditingKeyId] = useState(null); // ID of key being edited
   const [showSecret, setShowSecret] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-
-  // Mock API keys data
-  const apiKeys = [
-    {
-      id: 1,
-      name: 'Production API Key',
-      key: 'cy_sk_prod_1234567890abcdef',
-      secret: 'cy_sk_prod_secret_abcdef1234567890',
-      status: 'active',
-      permissions: ['read', 'write', 'scan', 'reports'],
-      createdAt: '2024-01-10T08:00:00Z',
-      lastUsed: '2024-01-15T14:30:00Z',
-      usageCount: 15420,
-      rateLimit: '1000/hour',
-      expiresAt: null,
-      description: 'Primary API key for production integrations',
-    },
-    {
-      id: 2,
-      name: 'Development API Key',
-      key: 'cy_sk_dev_9876543210fedcba',
-      secret: 'cy_sk_dev_secret_fedcba0987654321',
-      status: 'active',
-      permissions: ['read', 'scan'],
-      createdAt: '2024-01-12T10:00:00Z',
-      lastUsed: '2024-01-15T09:15:00Z',
-      usageCount: 2340,
-      rateLimit: '100/hour',
-      expiresAt: '2024-04-12T10:00:00Z',
-      description: 'API key for development and testing',
-    },
-    {
-      id: 3,
-      name: 'Read-Only API Key',
-      key: 'cy_sk_read_abcdef1234567890',
-      secret: 'cy_sk_read_secret_1234567890abcdef',
-      status: 'active',
-      permissions: ['read'],
-      createdAt: '2024-01-08T14:00:00Z',
-      lastUsed: '2024-01-14T16:45:00Z',
-      usageCount: 890,
-      rateLimit: '500/hour',
-      expiresAt: null,
-      description: 'Read-only access for reporting tools',
-    },
-    {
-      id: 4,
-      name: 'Expired API Key',
-      key: 'cy_sk_exp_1234567890abcdef',
-      secret: 'cy_sk_exp_secret_abcdef1234567890',
-      status: 'expired',
-      permissions: ['read', 'write'],
-      createdAt: '2023-12-01T08:00:00Z',
-      lastUsed: '2023-12-31T23:59:00Z',
-      usageCount: 5670,
-      rateLimit: '1000/hour',
-      expiresAt: '2023-12-31T23:59:00Z',
-      description: 'Old API key that has expired',
-    },
-  ];
+  const [apiKeys, setApiKeys] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [newKeyData, setNewKeyData] = useState({
     name: '',
@@ -77,6 +23,8 @@ const APIKeys = () => {
     permissions: [],
     expiresAt: '',
     rateLimit: '1000/hour',
+    apiKey: '', // Manuel API key (opsiyonel)
+    secretKey: '', // Manuel secret key (opsiyonel)
   });
 
   const permissions = [
@@ -96,8 +44,55 @@ const APIKeys = () => {
     'Unlimited',
   ];
 
+  // Fetch API keys from backend
+  const fetchApiKeys = useCallback(async (showRefreshing = false) => {
+    try {
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+      
+      const response = await api.get(endpoints.userApiKeys.list);
+      const keysData = response.data.apiKeys || [];
+      
+      // Transform backend data to frontend format
+      const transformedKeys = keysData.map(key => ({
+        id: key.id,
+        name: key.name,
+        key: key.key,
+        secret: key.secret,
+        status: key.status || 'active',
+        permissions: key.permissions || [],
+        createdAt: key.createdAt,
+        lastUsed: key.lastUsed,
+        usageCount: key.usageCount || 0,
+        rateLimit: key.rateLimit || '1000/hour',
+        expiresAt: key.expiresAt,
+        description: key.description || '',
+      }));
+      
+      setApiKeys(transformedKeys);
+    } catch (err) {
+      console.error('Error fetching API keys:', err);
+      setError(err.response?.data?.error || 'API key\'ler yüklenemedi');
+      setApiKeys([]);
+    } finally {
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchApiKeys();
+  }, [fetchApiKeys]);
+
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'active': return 'bg-success/20 text-success border-success/30';
       case 'inactive': return 'bg-surface-muted/20 text-surface-muted border-surface-muted/30';
       case 'expired': return 'bg-danger/20 text-danger border-danger/30';
@@ -119,30 +114,71 @@ const APIKeys = () => {
 
   const filteredKeys = apiKeys.filter(key => {
     const matchesSearch = key.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         key.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || key.status === statusFilter;
+                         (key.description && key.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || key.status.toLowerCase() === statusFilter.toLowerCase();
     
     return matchesSearch && matchesStatus;
   });
 
-  const handleCreateKey = () => {
+  const handleCreateKey = async () => {
     if (!newKeyData.name || newKeyData.permissions.length === 0) {
-      alert('Please provide a name and select at least one permission');
+      alert('Lütfen bir isim girin ve en az bir yetki seçin');
       return;
     }
 
-    // Mock API call
-    console.log('Creating new API key:', newKeyData);
-    
-    // Reset form
-    setNewKeyData({
-      name: '',
-      description: '',
-      permissions: [],
-      expiresAt: '',
-      rateLimit: '1000/hour',
-    });
-    setShowCreateForm(false);
+    try {
+      // If editing, update; otherwise create
+      if (editingKeyId) {
+        const requestData = {
+          name: newKeyData.name,
+          description: newKeyData.description || '',
+          permissions: newKeyData.permissions,
+          rateLimit: newKeyData.rateLimit,
+          expiresAt: newKeyData.expiresAt ? new Date(newKeyData.expiresAt).toISOString() : null,
+          // API key ve secret key'i her zaman gönder (boş olsa bile, backend kontrol edecek)
+          apiKey: newKeyData.apiKey && newKeyData.apiKey.trim() !== '' ? newKeyData.apiKey.trim() : null,
+          secretKey: newKeyData.secretKey && newKeyData.secretKey.trim() !== '' ? newKeyData.secretKey.trim() : null,
+        };
+
+        console.log('Updating API key with data:', requestData); // Debug log
+        
+        await api.put(endpoints.userApiKeys.update(editingKeyId), requestData);
+        alert('API key başarıyla güncellendi!');
+      } else {
+        const requestData = {
+          name: newKeyData.name,
+          description: newKeyData.description,
+          permissions: newKeyData.permissions,
+          rateLimit: newKeyData.rateLimit,
+          expiresAt: newKeyData.expiresAt ? new Date(newKeyData.expiresAt).toISOString() : null,
+          apiKey: newKeyData.apiKey || null, // Manuel API key (opsiyonel)
+          secretKey: newKeyData.secretKey || null, // Manuel secret key (opsiyonel)
+        };
+
+        await api.post(endpoints.userApiKeys.create, requestData);
+        alert('API key başarıyla oluşturuldu!');
+      }
+      
+      // Reset form
+      setNewKeyData({
+        name: '',
+        description: '',
+        permissions: [],
+        expiresAt: '',
+        rateLimit: '1000/hour',
+        apiKey: '',
+        secretKey: '',
+      });
+      setEditingKeyId(null);
+      setShowCreateForm(false);
+      
+      // Refresh list
+      await fetchApiKeys(false);
+    } catch (err) {
+      console.error(editingKeyId ? 'Error updating API key:' : 'Error creating API key:', err);
+      const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
+      alert(editingKeyId ? 'API key güncellenemedi: ' : 'API key oluşturulamadı: ' + errorMsg);
+    }
   };
 
   const handlePermissionToggle = (permission) => {
@@ -154,122 +190,75 @@ const APIKeys = () => {
     }));
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    // In a real app, you'd show a toast notification
-    console.log('Copied to clipboard:', text);
-  };
-
-  const revokeKey = (id) => {
-    if (confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
-      console.log('Revoking API key:', id);
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Panoya kopyalandı!');
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      alert('Kopyalama başarısız');
     }
   };
 
-  const regenerateKey = (id) => {
-    if (confirm('Are you sure you want to regenerate this API key? The old key will be invalidated.')) {
-      console.log('Regenerating API key:', id);
+  const revokeKey = async (id) => {
+    if (!window.confirm('Bu API key\'i silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+      return;
+    }
+
+    try {
+      await api.delete(endpoints.userApiKeys.delete(id));
+      alert('API key başarıyla silindi');
+      await fetchApiKeys(false);
+    } catch (err) {
+      console.error('Error deleting API key:', err);
+      const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
+      alert('API key silinemedi: ' + errorMsg);
     }
   };
 
-  const CreateKeyForm = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create New API Key</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Key Name</label>
-              <Input
-                placeholder="e.g., Production API Key"
-                value={newKeyData.name}
-                onChange={(e) => setNewKeyData(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Rate Limit</label>
-              <select
-                value={newKeyData.rateLimit}
-                onChange={(e) => setNewKeyData(prev => ({ ...prev, rateLimit: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                {rateLimits.map((limit) => (
-                  <option key={limit} value={limit}>{limit}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+  const editKey = (key) => {
+    console.log('Editing key:', key); // Debug log
+    
+    // Load all key data into form
+    let expiresAtFormatted = '';
+    if (key.expiresAt) {
+      try {
+        // Handle different date formats from backend
+        const date = new Date(key.expiresAt);
+        if (!isNaN(date.getTime())) {
+          // Convert to local datetime format (YYYY-MM-DDTHH:mm)
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          expiresAtFormatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+      } catch (e) {
+        console.error('Error parsing expiresAt:', e);
+      }
+    }
 
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">Description</label>
-            <textarea
-              placeholder="Describe what this API key will be used for..."
-              value={newKeyData.description}
-              onChange={(e) => setNewKeyData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-              rows={3}
-            />
-          </div>
+    // Ensure permissions is an array
+    const keyPermissions = Array.isArray(key.permissions) ? key.permissions : (key.permissions ? [key.permissions] : []);
 
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">Expiration Date (Optional)</label>
-            <Input
-              type="datetime-local"
-              value={newKeyData.expiresAt}
-              onChange={(e) => setNewKeyData(prev => ({ ...prev, expiresAt: e.target.value }))}
-            />
-          </div>
+    const formData = {
+      name: key.name || '',
+      description: key.description || '',
+      permissions: [...keyPermissions], // Deep copy
+      expiresAt: expiresAtFormatted,
+      rateLimit: key.rateLimit || '1000/hour',
+      apiKey: key.key || '', // Show existing API key
+      secretKey: key.secret || '', // Show existing secret key
+    };
 
-          {/* Permissions */}
-          <div>
-            <label className="block text-sm font-medium text-white mb-3">Permissions</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {permissions.map((permission) => (
-                <div
-                  key={permission.id}
-                  className={cn(
-                    'p-3 border rounded-lg cursor-pointer transition-all',
-                    newKeyData.permissions.includes(permission.id)
-                      ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-surface-border hover:border-primary-400'
-                  )}
-                  onClick={() => handlePermissionToggle(permission.id)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={newKeyData.permissions.includes(permission.id)}
-                      onChange={() => {}} // Controlled by onClick
-                      className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
-                    />
-                    <div>
-                      <p className="font-medium text-white">{permission.label}</p>
-                      <p className="text-sm text-surface-muted">{permission.description}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+    console.log('Setting form data:', formData); // Debug log
+    
+    setNewKeyData(formData);
+    setEditingKeyId(key.id);
+    setShowCreateForm(true);
+  };
 
-          {/* Actions */}
-          <div className="flex justify-end space-x-3">
-            <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateKey}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create API Key
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <div className="space-y-6">
@@ -277,16 +266,206 @@ const APIKeys = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">API Keys</h1>
-          <p className="text-surface-muted">Manage your API keys and integrations</p>
+          <p className="text-surface-muted">API key'lerinizi ve entegrasyonlarınızı yönetin</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New API Key
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={() => fetchApiKeys(true)}
+            disabled={refreshing || loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Yenile
+          </Button>
+          <Button onClick={() => {
+            setEditingKeyId(null);
+            setNewKeyData({
+              name: '',
+              description: '',
+              permissions: [],
+              expiresAt: '',
+              rateLimit: '1000/hour',
+              apiKey: '',
+              secretKey: '',
+            });
+            setShowCreateForm(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Yeni API Key
+          </Button>
+        </div>
       </div>
 
       {/* Create Key Form */}
-      {showCreateForm && <CreateKeyForm />}
+      {showCreateForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingKeyId ? 'API Key Düzenle' : 'Yeni API Key Oluştur'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Key İsmi *</label>
+                  <input
+                    type="text"
+                    placeholder="örn: Production API Key"
+                    value={newKeyData.name}
+                    onChange={(e) => {
+                      setNewKeyData(prev => ({ ...prev, name: e.target.value }));
+                    }}
+                    className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Rate Limit</label>
+                  <select
+                    value={newKeyData.rateLimit}
+                    onChange={(e) => setNewKeyData(prev => ({ ...prev, rateLimit: e.target.value }))}
+                    className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    {rateLimits.map((limit) => (
+                      <option key={limit} value={limit}>{limit}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Açıklama</label>
+                <textarea
+                  placeholder="Bu API key'in ne için kullanılacağını açıklayın..."
+                  value={newKeyData.description}
+                  onChange={(e) => {
+                    setNewKeyData(prev => ({ ...prev, description: e.target.value }));
+                  }}
+                  className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[80px]"
+                  rows={4}
+                />
+              </div>
+
+              {/* API Key ve Secret Key - Her zaman göster */}
+              <div className="border-t border-surface-border pt-4">
+                {editingKeyId ? (
+                  <p className="text-sm text-surface-muted mb-4">
+                    Mevcut API Key ve Secret Key bilgileri. İsterseniz değiştirebilirsiniz.
+                  </p>
+                ) : (
+                  <p className="text-sm text-surface-muted mb-4">
+                    Manuel API Key ve Secret Key girmek isterseniz aşağıdaki alanları doldurun. 
+                    Boş bırakırsanız otomatik olarak oluşturulacaktır.
+                  </p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      {editingKeyId ? 'API Key' : 'API Key (Opsiyonel)'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={editingKeyId ? "API key" : "Manuel API key girin veya boş bırakın"}
+                      value={newKeyData.apiKey}
+                      onChange={(e) => {
+                        setNewKeyData(prev => ({ ...prev, apiKey: e.target.value }));
+                      }}
+                      className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      {editingKeyId ? 'Secret Key' : 'Secret Key (Opsiyonel)'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={editingKeyId ? "Secret key" : "Manuel secret key girin veya boş bırakın"}
+                      value={newKeyData.secretKey}
+                      onChange={(e) => {
+                        setNewKeyData(prev => ({ ...prev, secretKey: e.target.value }));
+                      }}
+                      className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none font-mono text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Son Kullanma Tarihi (Opsiyonel)</label>
+                <Input
+                  type="datetime-local"
+                  value={newKeyData.expiresAt}
+                  onChange={(e) => setNewKeyData(prev => ({ ...prev, expiresAt: e.target.value }))}
+                />
+              </div>
+
+              {/* Permissions */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-3">Yetkiler *</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {permissions.map((permission) => (
+                    <div
+                      key={permission.id}
+                      className={cn(
+                        'p-3 border rounded-lg cursor-pointer transition-all',
+                        newKeyData.permissions.includes(permission.id)
+                          ? 'border-primary-500 bg-primary-500/10'
+                          : 'border-surface-border hover:border-primary-400'
+                      )}
+                      onClick={() => handlePermissionToggle(permission.id)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={newKeyData.permissions.includes(permission.id)}
+                          onChange={() => {}}
+                          className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
+                        />
+                        <div>
+                          <p className="font-medium text-white">{permission.label}</p>
+                          <p className="text-sm text-surface-muted">{permission.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-3">
+                <Button variant="outline" onClick={() => {
+                  setShowCreateForm(false);
+                  setEditingKeyId(null);
+                  setNewKeyData({
+                    name: '',
+                    description: '',
+                    permissions: [],
+                    expiresAt: '',
+                    rateLimit: '1000/hour',
+                    apiKey: '',
+                    secretKey: '',
+                  });
+                }}>
+                  İptal
+                </Button>
+                <Button onClick={handleCreateKey}>
+                  {editingKeyId ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Kaydet
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      API Key Oluştur
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters and search */}
       <Card>
@@ -297,7 +476,7 @@ const APIKeys = () => {
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-muted" />
                 <Input
-                  placeholder="Search API keys by name or description..."
+                  placeholder="API key'leri isim veya açıklamaya göre ara..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -311,11 +490,11 @@ const APIKeys = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="expired">Expired</option>
-              <option value="suspended">Suspended</option>
+              <option value="all">Tüm Durumlar</option>
+              <option value="active">Aktif</option>
+              <option value="inactive">Pasif</option>
+              <option value="expired">Süresi Dolmuş</option>
+              <option value="suspended">Askıya Alınmış</option>
             </select>
           </div>
         </CardContent>
@@ -327,154 +506,181 @@ const APIKeys = () => {
           <CardTitle>API Keys ({filteredKeys.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredKeys.map((key) => (
-              <div
-                key={key.id}
-                className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <Key className="h-5 w-5 text-primary" />
-                      <h3 className="text-lg font-semibold text-white">{key.name}</h3>
-                      <span className={cn(
-                        'px-2 py-1 rounded-full text-xs font-medium border',
-                        getStatusColor(key.status)
-                      )}>
-                        {key.status.toUpperCase()}
-                      </span>
-                    </div>
-                    
-                    <p className="text-surface-muted mb-3">{key.description}</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-surface-muted">API Key:</span>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="font-mono text-white">{key.key}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(key.key)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+              <span className="ml-3 text-surface-muted">API key'ler yükleniyor...</span>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <AlertCircle className="h-16 w-16 mx-auto mb-4 text-danger" />
+                <p className="text-danger mb-2">{error}</p>
+                <Button onClick={() => fetchApiKeys(false)} variant="outline">
+                  Tekrar Dene
+                </Button>
+              </div>
+            </div>
+          ) : filteredKeys.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-surface-muted mb-4">
+                {apiKeys.length === 0 
+                  ? 'Henüz API key yok. Yeni bir API key oluşturun.'
+                  : 'Arama kriterlerinize uygun API key bulunamadı.'}
+              </p>
+              {apiKeys.length === 0 && (
+                <Button onClick={() => {
+                  setEditingKeyId(null);
+                  setNewKeyData({
+                    name: '',
+                    description: '',
+                    permissions: [],
+                    expiresAt: '',
+                    rateLimit: '1000/hour',
+                    apiKey: '',
+                    secretKey: '',
+                  });
+                  setShowCreateForm(true);
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  İlk API Key'i Oluştur
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredKeys.map((key) => (
+                <div
+                  key={key.id}
+                  className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <Key className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold text-white">{key.name}</h3>
+                        <span className={cn(
+                          'px-2 py-1 rounded-full text-xs font-medium border',
+                          getStatusColor(key.status)
+                        )}>
+                          {key.status.toUpperCase()}
+                        </span>
+                      </div>
+                      
+                      {key.description && (
+                        <p className="text-surface-muted mb-3">{key.description}</p>
+                      )}
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-surface-muted">API Key:</span>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="font-mono text-white text-xs">{key.key}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(key.key)}
+                              title="Kopyala"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <span className="text-surface-muted">Secret:</span>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="font-mono text-white text-xs">
+                              {showSecret[key.id] ? key.secret : '••••••••••••••••••••'}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowSecret(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
+                              title={showSecret[key.id] ? 'Gizle' : 'Göster'}
+                            >
+                              {showSecret[key.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(key.secret)}
+                              title="Kopyala"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <span className="text-surface-muted">Rate Limit:</span>
+                          <span className="text-white ml-2">{key.rateLimit}</span>
+                        </div>
+                        
+                        <div>
+                          <span className="text-surface-muted">Kullanım:</span>
+                          <span className="text-white ml-2">{key.usageCount.toLocaleString()}</span>
                         </div>
                       </div>
                       
-                      <div>
-                        <span className="text-surface-muted">Secret:</span>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="font-mono text-white">
-                            {showSecret[key.id] ? key.secret : '••••••••••••••••••••'}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowSecret(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
-                          >
-                            {showSecret[key.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(key.secret)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <div className="flex items-center space-x-4 mt-3 text-sm text-surface-muted">
+                        {key.createdAt && (
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>Oluşturuldu: {new Date(key.createdAt).toLocaleDateString('tr-TR')}</span>
+                          </div>
+                        )}
+                        {key.lastUsed && (
+                          <div className="flex items-center space-x-1">
+                            <Activity className="h-4 w-4" />
+                            <span>Son Kullanım: {new Date(key.lastUsed).toLocaleDateString('tr-TR')}</span>
+                          </div>
+                        )}
+                        {key.expiresAt && (
+                          <div className="flex items-center space-x-1">
+                            <Globe className="h-4 w-4" />
+                            <span>Bitiş: {key.expiresAt.includes('T') ? new Date(key.expiresAt).toLocaleDateString('tr-TR') : new Date(key.expiresAt + 'T00:00:00').toLocaleDateString('tr-TR')}</span>
+                          </div>
+                        )}
                       </div>
                       
-                      <div>
-                        <span className="text-surface-muted">Rate Limit:</span>
-                        <span className="text-white ml-2">{key.rateLimit}</span>
-                      </div>
-                      
-                      <div>
-                        <span className="text-surface-muted">Usage Count:</span>
-                        <span className="text-white ml-2">{key.usageCount.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 mt-3 text-sm text-surface-muted">
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>Created: {new Date(key.createdAt).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Activity className="h-4 w-4" />
-                        <span>Last Used: {new Date(key.lastUsed).toLocaleDateString()}</span>
-                      </div>
-                      {key.expiresAt && (
-                        <div className="flex items-center space-x-1">
-                          <Globe className="h-4 w-4" />
-                          <span>Expires: {new Date(key.expiresAt).toLocaleDateString()}</span>
+                      {key.permissions && key.permissions.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {key.permissions.map((permission) => (
+                            <span
+                              key={permission}
+                              className={cn(
+                                'px-2 py-1 text-xs rounded',
+                                getPermissionColor(permission)
+                              )}
+                            >
+                              {permission}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex flex-wrap gap-1 mt-3">
-                      {key.permissions.map((permission) => (
-                        <span
-                          key={permission}
-                          className={cn(
-                            'px-2 py-1 text-xs rounded',
-                            getPermissionColor(permission)
-                          )}
-                        >
-                          {permission}
-                        </span>
-                      ))}
+                    <div className="flex flex-col space-y-2 ml-4">
+                      <Button variant="outline" size="sm" onClick={() => editKey(key)}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Düzenle
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-danger hover:text-danger"
+                        onClick={() => revokeKey(key.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Sil
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex flex-col space-y-2 ml-4">
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => regenerateKey(key.id)}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Regenerate
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-danger hover:text-danger"
-                      onClick={() => revokeKey(key.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Revoke
-                    </Button>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Download className="h-6 w-6" />
-              <span>Export All Keys</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Upload className="h-6 w-6" />
-              <span>Import Keys</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Shield className="h-6 w-6" />
-              <span>Security Audit</span>
-            </Button>
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

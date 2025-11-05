@@ -1,8 +1,10 @@
+osint/service/UserApiKeyService.class
 osint/dto/MfaSetupResponse.class
 osint/model/Role.class
 osint/model/PasswordResetToken.class
 osint/repository/ScanRepository.class
 osint/dto/JwtResponse.class
+osint/controller/UserApiKeysController.class
 osint/config/SecurityConfig.class
 osint/service/VirusTotalService.class
 osint/repository/UserRepository.class
@@ -10,6 +12,7 @@ osint/controller/HealthController.class
 osint/controller/AuthController.class
 osint/model/ScanProvider.class
 osint/model/EntityFinding.class
+osint/repository/ApiKeyRepository.class
 osint/util/TOTPUtil.class
 osint/service/ApiKeyService.class
 osint/dto/RegisterRequest.class
@@ -29,6 +32,7 @@ osint/model/ScanResult.class
 osint/util/JwtUtil.class
 osint/dto/JwtResponse$Builder.class
 osint/repository/RoleRepository.class
+osint/model/ApiKey.class
 osint/dto/ForgotPasswordRequest.class
 osint/dto/SmsMfaSetupRequest.class
 osint/dto/MfaVerifyRequest.class

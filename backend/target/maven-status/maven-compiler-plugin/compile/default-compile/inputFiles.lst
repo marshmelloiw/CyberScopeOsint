@@ -1,3 +1,4 @@
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/UserApiKeysController.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/PasswordResetToken.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/ScanTarget.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/util/TOTPVerifier.java
@@ -10,6 +11,7 @@
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/dto/MfaVerifyRequest.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/EntityFinding.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/ScanLog.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/repository/ApiKeyRepository.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/dto/JwtResponse.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/util/TOTPUtil.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/config/AsyncConfig.java
@@ -25,6 +27,7 @@
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/repository/EntityFindingRepository.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/repository/UserRepository.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/Entity.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/ApiKey.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/VirusTotalService.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/repository/ScanResultRepository.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/ApiKeyService.java
@@ -37,6 +40,7 @@
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/dto/LoginRequest.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/ScanController.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/controller/AuthController.java
+/Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/UserApiKeyService.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/model/Scan.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/SmsService.java
 /Users/gulosyasemin/Desktop/CyberScopeOsint/backend/src/main/java/osint/service/HaveIBeenPwnedService.java
