@@ -24,6 +24,7 @@ public class ScanService {
     private final VirusTotalService virusTotalService;
     private final HaveIBeenPwnedService hibpService;
     private final GeminiService geminiService;
+    private final ZapService zapService;
 
     // Note: Scan tables don't exist in current DB schema
     // All scan operations are in-memory only
@@ -38,18 +39,21 @@ public class ScanService {
             VirusTotalService virusTotalService,
             HaveIBeenPwnedService hibpService,
             GeminiService geminiService,
+            ZapService zapService,
             EntityRepository entityRepository) {
         this.shodanService = shodanService;
         this.virusTotalService = virusTotalService;
         this.hibpService = hibpService;
         this.geminiService = geminiService;
+        this.zapService = zapService;
         this.entityRepository = entityRepository;
     }
 
     public String startScan(ScanRequest request) {
         String scanId = UUID.randomUUID().toString();
 
-        // Note: Scan tables (scans, scan_targets, scan_providers) don't exist in current DB schema
+        // Note: Scan tables (scans, scan_targets, scan_providers) don't exist in
+        // current DB schema
         // Using in-memory storage only for now
         logger.info("Starting scan: {} for targets: {}", scanId, request.getTargets());
 
@@ -62,7 +66,7 @@ public class ScanService {
 
         return scanId;
     }
-    
+
     @Async("taskExecutor")
     private void executeScanAsyncWithoutDB(String scanId, ScanRequest request) {
         ScanStatus status = scanStatuses.get(scanId);
@@ -80,24 +84,25 @@ public class ScanService {
             results.put("timestamp", System.currentTimeMillis());
 
             Map<String, Object> providerResults = new HashMap<>();
-            
+
             // Process each target
             for (String target : request.getTargets()) {
                 Map<String, Object> targetResult = new HashMap<>();
-                
+
                 // Process each provider
                 for (String provider : request.getProviders()) {
                     try {
                         Map<String, Object> providerResult = new HashMap<>();
                         String providerUpper = provider.toUpperCase(Locale.ENGLISH).trim();
-                        
+
                         logger.info("Processing provider: '{}' (normalized: '{}')", provider, providerUpper);
-                        
-                        // Normalize provider names (frontend sends "VirusTotal", "Shodan", "HaveIBeenPwned")
+
+                        // Normalize provider names (frontend sends "VirusTotal", "Shodan",
+                        // "HaveIBeenPwned")
                         if (providerUpper.equals("HAVEIBEENPWNED")) {
                             providerUpper = "HIBP";
                         }
-                        
+
                         switch (providerUpper) {
                             case "SHODAN":
                                 logger.info("Matched SHODAN for type: {}", request.getType());
@@ -121,12 +126,18 @@ public class ScanService {
                                     providerResult = hibpService.checkEmailBreach(target).block();
                                 }
                                 break;
+                            case "ZAP":
+                                logger.info("Matched ZAP for type: {}", request.getType());
+                                if (request.getType().equals("url")) {
+                                    providerResult = zapService.scanUrl(target).block();
+                                }
+                                break;
                             default:
                                 logger.warn("Unknown provider: '{}' (normalized: '{}')", provider, providerUpper);
                                 providerResult = Map.of("error", "Provider not supported: " + provider);
                                 break;
                         }
-                        
+
                         if (providerResult != null && !providerResult.containsKey("error")) {
                             providerResult.put("provider", provider); // Keep original name for frontend
                             targetResult.put(provider, providerResult);
@@ -134,24 +145,25 @@ public class ScanService {
                             targetResult.put(provider, providerResult);
                         }
                     } catch (Exception e) {
-                        logger.error("Error processing provider {} for target {}: {}", provider, target, e.getMessage(), e);
+                        logger.error("Error processing provider {} for target {}: {}", provider, target, e.getMessage(),
+                                e);
                         targetResult.put(provider, Map.of("error", e.getMessage()));
                     }
                 }
-                
+
                 providerResults.put(target, targetResult);
             }
-            
+
             results.put("results", providerResults);
             results.put("data", providerResults); // Also add as 'data' for frontend compatibility
-            
+
             // Initialize Gemini reports map
             results.put("gemini_reports", new HashMap<>());
-            
+
             status.setStatus("COMPLETED");
             status.setResults(results);
             status.setCompletedAt(LocalDateTime.now());
-            
+
             // Generate Gemini reports for each provider-target combination
             for (String target : request.getTargets()) {
                 Object targetResultObj = providerResults.get(target);
@@ -164,12 +176,13 @@ public class ScanService {
                             @SuppressWarnings("unchecked")
                             Map<String, Object> providerResult = (Map<String, Object>) providerData;
                             // Generate Gemini report asynchronously
-                            generateGeminiReportAsync(scanId, null, provider, target, providerResult, request.getType());
+                            generateGeminiReportAsync(scanId, null, provider, target, providerResult,
+                                    request.getType());
                         }
                     }
                 }
             }
-            
+
         } catch (Exception e) {
             logger.error("Error executing scan {}: {}", scanId, e.getMessage(), e);
             status.setStatus("FAILED");
@@ -181,97 +194,104 @@ public class ScanService {
     // (Scan tables don't exist in current DB schema)
 
     /**
-     * Generate Gemini report asynchronously for a specific provider-target combination
+     * Generate Gemini report asynchronously for a specific provider-target
+     * combination
      * Note: Scan tables don't exist, so reports are stored in memory only
      */
     @Async("taskExecutor")
-    private void generateGeminiReportAsync(String scanIdStr, Long scanResultId, String provider, String target, Map<String, Object> resultData, String scanType) {
+    private void generateGeminiReportAsync(String scanIdStr, Long scanResultId, String provider, String target,
+            Map<String, Object> resultData, String scanType) {
         // Log start
         final String initialLogMsg = "Generating AI analysis for " + provider + " - " + target + "...";
         logger.info("[Scan {}] {}", scanIdStr, initialLogMsg);
-        
+
         ScanStatus status = scanStatuses.get(scanIdStr);
         if (status != null) {
             addLog(status, initialLogMsg);
         }
-        
+
         // Prepare data for this specific provider-target
         Map<String, Object> providerData = new HashMap<>();
         providerData.put(provider + "_" + target, resultData);
-        
+
         // Generate report asynchronously (non-blocking)
         geminiService.analyzeScanResults(providerData, scanType)
-            .publishOn(Schedulers.boundedElastic())
-            .subscribe(
-                geminiAnalysis -> {
-                    // Success callback
-                    try {
-                        if (geminiAnalysis != null && !geminiAnalysis.containsKey("error")) {
-                            geminiAnalysis.put("provider", provider);
-                            geminiAnalysis.put("target", target);
-                            geminiAnalysis.put("status", "completed");
-                            
-                            final String successLogMsg = "✓ AI analysis completed for " + provider + " - " + target;
-                            logger.info("[Scan {}] {}", scanIdStr, successLogMsg);
-                            
-                            // Update in-memory status
-                            if (status != null) {
-                                addLog(status, successLogMsg);
-                                if (status.getResult() != null) {
-                                    Map<String, Object> geminiReports = (Map<String, Object>) status.getResult().getOrDefault("gemini_reports", new HashMap<>());
-                                    geminiReports.put(provider + "_" + target, geminiAnalysis);
-                                    status.getResult().put("gemini_reports", geminiReports);
+                .publishOn(Schedulers.boundedElastic())
+                .subscribe(
+                        geminiAnalysis -> {
+                            // Success callback
+                            try {
+                                if (geminiAnalysis != null && !geminiAnalysis.containsKey("error")) {
+                                    geminiAnalysis.put("provider", provider);
+                                    geminiAnalysis.put("target", target);
+                                    geminiAnalysis.put("status", "completed");
+
+                                    final String successLogMsg = "✓ AI analysis completed for " + provider + " - "
+                                            + target;
+                                    logger.info("[Scan {}] {}", scanIdStr, successLogMsg);
+
+                                    // Update in-memory status
+                                    if (status != null) {
+                                        addLog(status, successLogMsg);
+                                        if (status.getResult() != null) {
+                                            Map<String, Object> geminiReports = (Map<String, Object>) status.getResult()
+                                                    .getOrDefault("gemini_reports", new HashMap<>());
+                                            geminiReports.put(provider + "_" + target, geminiAnalysis);
+                                            status.getResult().put("gemini_reports", geminiReports);
+                                        }
+                                    }
+                                } else {
+                                    final String errorMsg = "⚠ AI analysis failed for " + provider + " - " + target
+                                            + ": " +
+                                            (geminiAnalysis != null ? geminiAnalysis.get("error") : "Unknown error");
+                                    logger.warn("[Scan {}] {}", scanIdStr, errorMsg);
+                                    if (status != null) {
+                                        addLog(status, errorMsg);
+                                    }
                                 }
+                            } catch (Exception e) {
+                                logger.error("Error processing Gemini analysis result for " + provider + " - " + target,
+                                        e);
+                                handleGeminiError(scanResultId, scanIdStr, provider, target, e.getMessage());
                             }
-                        } else {
-                            final String errorMsg = "⚠ AI analysis failed for " + provider + " - " + target + ": " + 
-                                (geminiAnalysis != null ? geminiAnalysis.get("error") : "Unknown error");
-                            logger.warn("[Scan {}] {}", scanIdStr, errorMsg);
-                            if (status != null) {
-                                addLog(status, errorMsg);
-                            }
-                        }
-                    } catch (Exception e) {
-                        logger.error("Error processing Gemini analysis result for " + provider + " - " + target, e);
-                        handleGeminiError(scanResultId, scanIdStr, provider, target, e.getMessage());
-                    }
-                },
-                error -> {
-                    logger.error("Error generating Gemini analysis for " + provider + " - " + target, error);
-                    handleGeminiError(scanResultId, scanIdStr, provider, target, error.getMessage());
-                }
-            );
+                        },
+                        error -> {
+                            logger.error("Error generating Gemini analysis for " + provider + " - " + target, error);
+                            handleGeminiError(scanResultId, scanIdStr, provider, target, error.getMessage());
+                        });
     }
-    
-    // Repository-dependent methods removed - Scan tables don't exist in current DB schema
+
+    // Repository-dependent methods removed - Scan tables don't exist in current DB
+    // schema
     // Using in-memory operations only
     private void saveGeneratingStatus(Long scanResultId, String provider, String target) {
         // No-op - scan tables don't exist
     }
-    
+
     private void saveCompletedReport(Long scanResultId, Map<String, Object> report) {
         // No-op - scan tables don't exist
     }
-    
+
     private void saveFailedReport(Long scanResultId, Map<String, Object> report) {
         // No-op - scan tables don't exist
     }
-    
-    private void handleGeminiError(Long scanResultId, String scanIdStr, String provider, String target, String errorMessage) {
+
+    private void handleGeminiError(Long scanResultId, String scanIdStr, String provider, String target,
+            String errorMessage) {
         String errorMsg = "⚠ AI analysis error for " + provider + " - " + target + ": " + errorMessage;
         logger.warn("[Scan {}] {}", scanIdStr, errorMsg);
-        
+
         // Update in-memory status if exists
         ScanStatus status = scanStatuses.get(scanIdStr);
         if (status != null) {
             addLog(status, errorMsg);
         }
     }
-    
+
     private void markScanCompleted(Long scanId, Map<String, Object> results) {
         // No-op - scan tables don't exist
     }
-    
+
     private void addLogToDBAsync(String scanId, String level, String message) {
         // No-op - scan tables don't exist
         logger.info("[Scan {}] {}", scanId, message);
@@ -441,7 +461,7 @@ public class ScanService {
         public void setResult(Map<String, Object> result) {
             this.result = result;
         }
-        
+
         public void setResults(Map<String, Object> results) {
             this.result = results;
         }

@@ -3,6 +3,7 @@ package osint.controller;
 import osint.service.ShodanService;
 import osint.service.VirusTotalService;
 import osint.service.HaveIBeenPwnedService;
+import osint.service.ZapService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,9 @@ public class OsintController {
 
     @Autowired
     private HaveIBeenPwnedService hibpService;
+
+    @Autowired
+    private ZapService zapService;
 
     // Shodan endpoints
     @GetMapping("/shodan/host/{ip}")
@@ -101,5 +105,30 @@ public class OsintController {
                             "timestamp", System.currentTimeMillis());
                     return ResponseEntity.ok(result);
                 });
+    }
+
+    // ZAP endpoints
+    @GetMapping("/zap/scan/{url}")
+    public Mono<ResponseEntity<Map<String, Object>>> scanUrl(@PathVariable String url) {
+        return zapService.scanUrl(url)
+                .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/zap/spider-status/{scanId}")
+    public Mono<ResponseEntity<Map<String, Object>>> getSpiderStatus(@PathVariable String scanId) {
+        return zapService.getSpiderStatus(scanId)
+                .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/zap/scan-results/{scanId}")
+    public Mono<ResponseEntity<Map<String, Object>>> getActiveScanResults(@PathVariable String scanId) {
+        return zapService.getActiveScanResults(scanId)
+                .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/zap/alerts")
+    public Mono<ResponseEntity<Map<String, Object>>> getZapAlerts(@RequestParam String baseUrl) {
+        return zapService.getAlerts(baseUrl)
+                .map(ResponseEntity::ok);
     }
 }
