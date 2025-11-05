@@ -1,22 +1,18 @@
 package osint.service;
 
-import osint.model.*;
-import osint.repository.*;
+import osint.model.Entity;
+import osint.repository.EntityRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Service
 public class ScanService {
@@ -28,14 +24,11 @@ public class ScanService {
     private final HaveIBeenPwnedService hibpService;
     private final GeminiService geminiService;
 
-    private final ScanRepository scanRepository;
-    private final ScanTargetRepository scanTargetRepository;
-    private final ScanProviderRepository scanProviderRepository;
-    private final ScanResultRepository scanResultRepository;
-    private final ScanLogRepository scanLogRepository;
+    // Note: Scan tables don't exist in current DB schema
+    // All scan operations are in-memory only
     private final EntityRepository entityRepository;
 
-    // In-memory cache for quick status lookups (optional - can be removed)
+    // In-memory cache for quick status lookups
     private final Map<String, ScanStatus> scanStatuses = new ConcurrentHashMap<>();
 
     @Autowired
@@ -44,73 +37,33 @@ public class ScanService {
             VirusTotalService virusTotalService,
             HaveIBeenPwnedService hibpService,
             GeminiService geminiService,
-            ScanRepository scanRepository,
-            ScanTargetRepository scanTargetRepository,
-            ScanProviderRepository scanProviderRepository,
-            ScanResultRepository scanResultRepository,
-            ScanLogRepository scanLogRepository,
             EntityRepository entityRepository) {
         this.shodanService = shodanService;
         this.virusTotalService = virusTotalService;
         this.hibpService = hibpService;
         this.geminiService = geminiService;
-        this.scanRepository = scanRepository;
-        this.scanTargetRepository = scanTargetRepository;
-        this.scanProviderRepository = scanProviderRepository;
-        this.scanResultRepository = scanResultRepository;
-        this.scanLogRepository = scanLogRepository;
         this.entityRepository = entityRepository;
     }
 
-    @Transactional
     public String startScan(ScanRequest request) {
         String scanId = UUID.randomUUID().toString();
 
-        // Create Scan entity
-        Scan scan = new Scan();
-        scan.setScanId(scanId);
-        scan.setName(request.getName());
-        scan.setType(request.getType());
-        scan.setStatus("RUNNING");
-        scan.setPriority("NORMAL");
-        scan.setStartedAt(LocalDateTime.now());
-        scan = scanRepository.save(scan);
-
-        // Create scan targets
-        for (String target : request.getTargets()) {
-            ScanTarget scanTarget = new ScanTarget(scan, target, request.getType());
-            scanTargetRepository.save(scanTarget);
-        }
-
-        // Create scan providers
-        for (String provider : request.getProviders()) {
-            ScanProvider scanProvider = new ScanProvider(scan, provider);
-            scanProviderRepository.save(scanProvider);
-        }
-
-        // Add initial log
-        addLogToDB(scan, "INFO", "Initializing scan for: " + request.getType());
-        addLogToDB(scan, "INFO", "Targets: " + String.join(", ", request.getTargets()));
+        // Note: Scan tables (scans, scan_targets, scan_providers) don't exist in current DB schema
+        // Using in-memory storage only for now
+        logger.info("Starting scan: {} for targets: {}", scanId, request.getTargets());
 
         // Create in-memory status for API compatibility
         ScanStatus status = new ScanStatus(scanId, "RUNNING", new ArrayList<>(), null);
         scanStatuses.put(scanId, status);
 
-        // Execute async
-        executeScanAsync(scanId, request);
+        // Execute async without DB persistence
+        executeScanAsyncWithoutDB(scanId, request);
 
         return scanId;
     }
-
+    
     @Async("taskExecutor")
-    private void executeScanAsync(String scanId, ScanRequest request) {
-        Optional<Scan> scanOpt = scanRepository.findByScanId(scanId);
-        if (scanOpt.isEmpty()) {
-            logger.error("Scan not found: {}", scanId);
-            return;
-        }
-
-        Scan scan = scanOpt.get();
+    private void executeScanAsyncWithoutDB(String scanId, ScanRequest request) {
         ScanStatus status = scanStatuses.get(scanId);
         if (status == null) {
             status = new ScanStatus(scanId, "RUNNING", new ArrayList<>(), null);
@@ -126,230 +79,99 @@ public class ScanService {
             results.put("timestamp", System.currentTimeMillis());
 
             Map<String, Object> providerResults = new HashMap<>();
-            List<ScanTarget> targets = scanTargetRepository.findByScanId(scan.getId());
-            List<ScanProvider> providers = scanProviderRepository.findByScanId(scan.getId());
-            List<osint.model.ScanResult> savedResults = new ArrayList<>();
-
+            
             // Process each target
-            for (ScanTarget scanTarget : targets) {
-                String target = scanTarget.getTarget();
-                addLog(status, "Processing target: " + target);
-                addLogToDB(scan, "INFO", "Processing target: " + target);
-
-                scanTarget.setStatus("PROCESSING");
-                scanTargetRepository.save(scanTarget);
-
-                // Update or create entity (for tracking)
-                updateOrCreateEntity(scanTarget.getTargetType(), target, scan);
-
+            for (String target : request.getTargets()) {
+                Map<String, Object> targetResult = new HashMap<>();
+                
                 // Process each provider
-                for (ScanProvider scanProvider : providers) {
-                    String provider = scanProvider.getProviderName();
-                    addLog(status, "Querying " + provider + " for " + target + "...");
-                    addLogToDB(scan, "INFO", "Querying " + provider + " for " + target + "...");
-
-                    scanProvider.setStatus("PROCESSING");
-                    scanProviderRepository.save(scanProvider);
-
+                for (String provider : request.getProviders()) {
                     try {
-                        String providerLower = provider.toLowerCase().trim();
-                        Map<String, Object> result = null;
-
-                        switch (providerLower) {
-                            case "shodan":
-                                if ("domain".equals(request.getType())) {
-                                    result = shodanService.getDomainInfo(target).block();
-                                    providerResults.put(provider + "_" + target, result);
-                                } else if ("ip".equals(request.getType())) {
-                                    result = shodanService.getHostInfo(target).block();
-                                    providerResults.put(provider + "_" + target, result);
-                                } else {
-                                    addLog(status, "⚠ Shodan does not support scan type: " + request.getType());
-                                    continue;
-                                }
-
-                                // Check for errors in result
-                                if (result != null && result.containsKey("error")) {
-                                    String errorMsg = "✗ " + provider + " error: " + result.get("error");
-                                    addLog(status, errorMsg);
-                                    addLogToDB(scan, "ERROR", errorMsg);
-                                    scanProvider.setStatus("FAILED");
-                                    scanProvider.setErrorMessage(String.valueOf(result.get("error")));
-                                } else {
-                                    String successMsg = "✓ " + provider + " query completed for " + target;
-                                    addLog(status, successMsg);
-                                    addLogToDB(scan, "INFO", successMsg);
-
-                                    // Save result to DB
-                                    osint.model.ScanResult scanResult = saveScanResult(scan, scanTarget, scanProvider, result);
-                                    savedResults.add(scanResult);
-
-                                    scanProvider.setStatus("COMPLETED");
-                                    scanProvider.setCompletedAt(LocalDateTime.now());
-                                }
-                                scanProviderRepository.save(scanProvider);
-                                break;
-
-                            case "virustotal":
-                            case "vt":
-                                if ("domain".equals(request.getType())) {
-                                    result = virusTotalService.getDomainReport(target).block();
-                                    providerResults.put(provider + "_" + target, result);
-                                } else if ("ip".equals(request.getType())) {
-                                    result = virusTotalService.getIpReport(target).block();
-                                    providerResults.put(provider + "_" + target, result);
-                                } else {
-                                    addLog(status, "⚠ VirusTotal does not support scan type: " + request.getType());
-                                    continue;
-                                }
-
-                                if (result != null && result.containsKey("error")) {
-                                    String errorMsg = "✗ " + provider + " error: " + result.get("error");
-                                    addLog(status, errorMsg);
-                                    addLogToDB(scan, "ERROR", errorMsg);
-                                    scanProvider.setStatus("FAILED");
-                                    scanProvider.setErrorMessage(String.valueOf(result.get("error")));
-                                } else {
-                                    String successMsg = "✓ " + provider + " query completed for " + target;
-                                    addLog(status, successMsg);
-                                    addLogToDB(scan, "INFO", successMsg);
-
-                                    // Save result to DB
-                                    osint.model.ScanResult scanResult = saveScanResult(scan, scanTarget, scanProvider, result);
-                                    savedResults.add(scanResult);
-
-                                    scanProvider.setStatus("COMPLETED");
-                                    scanProvider.setCompletedAt(LocalDateTime.now());
-                                }
-                                scanProviderRepository.save(scanProvider);
-                                break;
-
-                            case "haveibeenpwned":
-                            case "hibp":
-                                if ("email".equals(request.getType())) {
-                                    result = hibpService.checkEmailBreach(target).block();
-                                    providerResults.put(provider + "_" + target, result);
-
-                                    if (result != null && result.containsKey("error")) {
-                                        String errorMsg = "✗ " + provider + " error: " + result.get("error");
-                                        addLog(status, errorMsg);
-                                        addLogToDB(scan, "ERROR", errorMsg);
-                                        scanProvider.setStatus("FAILED");
-                                        scanProvider.setErrorMessage(String.valueOf(result.get("error")));
-                                    } else {
-                                        String successMsg = "✓ " + provider + " query completed for " + target;
-                                        addLog(status, successMsg);
-                                        addLogToDB(scan, "INFO", successMsg);
-
-                                        // Save result to DB
-                                        osint.model.ScanResult scanResult = saveScanResult(scan, scanTarget, scanProvider, result);
-                                        savedResults.add(scanResult);
-
-                                        scanProvider.setStatus("COMPLETED");
-                                        scanProvider.setCompletedAt(LocalDateTime.now());
-                                    }
-                                    scanProviderRepository.save(scanProvider);
-                                } else {
-                                    addLog(status, "⚠ HaveIBeenPwned only supports email scan type");
-                                    continue;
+                        Map<String, Object> providerResult = new HashMap<>();
+                        String providerUpper = provider.toUpperCase(Locale.ENGLISH).trim();
+                        
+                        logger.info("Processing provider: '{}' (normalized: '{}')", provider, providerUpper);
+                        
+                        // Normalize provider names (frontend sends "VirusTotal", "Shodan", "HaveIBeenPwned")
+                        if (providerUpper.equals("HAVEIBEENPWNED")) {
+                            providerUpper = "HIBP";
+                        }
+                        
+                        switch (providerUpper) {
+                            case "SHODAN":
+                                logger.info("Matched SHODAN for type: {}", request.getType());
+                                if (request.getType().equals("ip")) {
+                                    providerResult = shodanService.getHostInfo(target).block();
+                                } else if (request.getType().equals("domain")) {
+                                    providerResult = shodanService.getDomainInfo(target).block();
                                 }
                                 break;
-
+                            case "VIRUSTOTAL":
+                                logger.info("Matched VIRUSTOTAL for type: {}", request.getType());
+                                if (request.getType().equals("ip")) {
+                                    providerResult = virusTotalService.getIpReport(target).block();
+                                } else if (request.getType().equals("domain")) {
+                                    providerResult = virusTotalService.getDomainReport(target).block();
+                                }
+                                break;
+                            case "HIBP":
+                                logger.info("Matched HIBP for type: {}", request.getType());
+                                if (request.getType().equals("email")) {
+                                    providerResult = hibpService.checkEmailBreach(target).block();
+                                }
+                                break;
                             default:
-                                addLog(status, "⚠ Unknown provider: " + provider + " (skipped)");
-                                continue;
+                                logger.warn("Unknown provider: '{}' (normalized: '{}')", provider, providerUpper);
+                                providerResult = Map.of("error", "Provider not supported: " + provider);
+                                break;
+                        }
+                        
+                        if (providerResult != null && !providerResult.containsKey("error")) {
+                            providerResult.put("provider", provider); // Keep original name for frontend
+                            targetResult.put(provider, providerResult);
+                        } else if (providerResult != null) {
+                            targetResult.put(provider, providerResult);
                         }
                     } catch (Exception e) {
-                        logger.error("Error querying " + provider + " for " + target, e);
-                        String errorMsg = "✗ Error querying " + provider + " for " + target + ": " + e.getMessage();
-                        addLog(status, errorMsg);
-                        addLogToDB(scan, "ERROR", errorMsg);
-
-                        // Store error in results
-                        Map<String, Object> errorResult = new HashMap<>();
-                        errorResult.put("error", e.getMessage());
-                        errorResult.put("exception", e.getClass().getSimpleName());
-                        providerResults.put(provider + "_" + target + "_error", errorResult);
-
-                        scanProvider.setStatus("FAILED");
-                        scanProvider.setErrorMessage(e.getMessage());
-                        scanProviderRepository.save(scanProvider);
-                    }
-
-                    // Simulate delay between requests
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                        logger.error("Error processing provider {} for target {}: {}", provider, target, e.getMessage(), e);
+                        targetResult.put(provider, Map.of("error", e.getMessage()));
                     }
                 }
-
-                // Mark target as completed
-                scanTarget.setStatus("COMPLETED");
-                scanTarget.setProcessedAt(LocalDateTime.now());
-                scanTargetRepository.save(scanTarget);
+                
+                providerResults.put(target, targetResult);
             }
-
-            results.put("data", providerResults);
-
-            // Generate Gemini AI analysis asynchronously for each provider-target combination
-            addLog(status, "Initializing AI analysis generation...");
-            addLogToDB(scan, "INFO", "Initializing AI analysis generation...");
             
-            // Mark scan as completed first (don't wait for Gemini reports)
-            // Use separate transaction for scan completion
-            markScanCompleted(scan.getId(), results);
+            results.put("results", providerResults);
+            results.put("data", providerResults); // Also add as 'data' for frontend compatibility
             
             status.setStatus("COMPLETED");
-            status.setResult(results);
-
-            String successMsg = "Scan completed successfully";
-            addLog(status, successMsg);
-            addLogToDB(scan, "INFO", successMsg);
-
-            // Start async Gemini report generation for each successful scan result
-            // Extract target and provider values before async call (while transaction is active)
-            for (osint.model.ScanResult scanResult : savedResults) {
-                if (scanResult.getResultData() != null && !scanResult.getResultData().containsKey("error")) {
-                    // Extract values while still in transaction context
-                    String target = scanResult.getScanTarget() != null ? scanResult.getScanTarget().getTarget() : "unknown";
-                    String provider = scanResult.getProviderName();
-                    Long scanResultId = scanResult.getId();
-                    String scanIdStr = scan.getScanId();
-                    Map<String, Object> resultData = scanResult.getResultData();
-                    
-                    generateGeminiReportAsync(scanIdStr, scanResultId, provider, target, resultData, request.getType());
-                }
-            }
-
+            status.setResults(results);
+            status.setCompletedAt(LocalDateTime.now());
+            
         } catch (Exception e) {
-            logger.error("Error executing scan", e);
-            String errorMsg = "✗ Scan failed: " + e.getMessage();
-            addLog(status, errorMsg);
-            addLogToDB(scan, "ERROR", errorMsg);
-
-            scan.setStatus("FAILED");
-            scan.setErrorMessage(e.getMessage());
-            scan.setCompletedAt(LocalDateTime.now());
-            scanRepository.save(scan);
-
+            logger.error("Error executing scan {}: {}", scanId, e.getMessage(), e);
             status.setStatus("FAILED");
-            status.setResult(Map.of("error", e.getMessage()));
+            status.setErrorMessage(e.getMessage());
         }
     }
 
+    // Old executeScanAsync method removed - using executeScanAsyncWithoutDB instead
+    // (Scan tables don't exist in current DB schema)
+
     /**
      * Generate Gemini report asynchronously for a specific provider-target combination
-     * Note: All entity values must be extracted before calling this method to avoid lazy loading issues
+     * Note: Scan tables don't exist, so reports are stored in memory only
      */
     @Async("taskExecutor")
     private void generateGeminiReportAsync(String scanIdStr, Long scanResultId, String provider, String target, Map<String, Object> resultData, String scanType) {
-        // Mark as generating (in a separate transaction)
-        saveGeneratingStatus(scanResultId, provider, target);
-        
         // Log start
         final String initialLogMsg = "Generating AI analysis for " + provider + " - " + target + "...";
-        addLogToDBAsync(scanIdStr, "INFO", initialLogMsg);
+        logger.info("[Scan {}] {}", scanIdStr, initialLogMsg);
+        
+        ScanStatus status = scanStatuses.get(scanIdStr);
+        if (status != null) {
+            addLog(status, initialLogMsg);
+        }
         
         // Prepare data for this specific provider-target
         Map<String, Object> providerData = new HashMap<>();
@@ -357,38 +179,35 @@ public class ScanService {
         
         // Generate report asynchronously (non-blocking)
         geminiService.analyzeScanResults(providerData, scanType)
-            .publishOn(Schedulers.boundedElastic()) // Run on a separate thread pool
+            .publishOn(Schedulers.boundedElastic())
             .subscribe(
                 geminiAnalysis -> {
                     // Success callback
                     try {
                         if (geminiAnalysis != null && !geminiAnalysis.containsKey("error")) {
-                            // Add provider and target info to the report
                             geminiAnalysis.put("provider", provider);
                             geminiAnalysis.put("target", target);
                             geminiAnalysis.put("status", "completed");
                             
-                            saveCompletedReport(scanResultId, geminiAnalysis);
-                            
                             final String successLogMsg = "✓ AI analysis completed for " + provider + " - " + target;
-                            addLogToDBAsync(scanIdStr, "INFO", successLogMsg);
+                            logger.info("[Scan {}] {}", scanIdStr, successLogMsg);
                             
-                            // Update cache if exists
-                            updateScanStatusCache(scanIdStr);
+                            // Update in-memory status
+                            if (status != null) {
+                                addLog(status, successLogMsg);
+                                if (status.getResult() != null) {
+                                    Map<String, Object> geminiReports = (Map<String, Object>) status.getResult().getOrDefault("gemini_reports", new HashMap<>());
+                                    geminiReports.put(provider + "_" + target, geminiAnalysis);
+                                    status.getResult().put("gemini_reports", geminiReports);
+                                }
+                            }
                         } else {
                             final String errorMsg = "⚠ AI analysis failed for " + provider + " - " + target + ": " + 
                                 (geminiAnalysis != null ? geminiAnalysis.get("error") : "Unknown error");
-                            
-                            Map<String, Object> errorReport = new HashMap<>();
-                            errorReport.put("status", "failed");
-                            errorReport.put("provider", provider);
-                            errorReport.put("target", target);
-                            errorReport.put("error", errorMsg);
-                            errorReport.put("has_error", true);
-                            
-                            saveFailedReport(scanResultId, errorReport);
-                            addLogToDBAsync(scanIdStr, "WARNING", errorMsg);
-                            updateScanStatusCache(scanIdStr);
+                            logger.warn("[Scan {}] {}", scanIdStr, errorMsg);
+                            if (status != null) {
+                                addLog(status, errorMsg);
+                            }
                         }
                     } catch (Exception e) {
                         logger.error("Error processing Gemini analysis result for " + provider + " - " + target, e);
@@ -396,170 +215,63 @@ public class ScanService {
                     }
                 },
                 error -> {
-                    // Error callback
                     logger.error("Error generating Gemini analysis for " + provider + " - " + target, error);
                     handleGeminiError(scanResultId, scanIdStr, provider, target, error.getMessage());
                 }
             );
     }
     
-    @Transactional
+    // Repository-dependent methods removed - Scan tables don't exist in current DB schema
+    // Using in-memory operations only
     private void saveGeneratingStatus(Long scanResultId, String provider, String target) {
-        Optional<osint.model.ScanResult> resultOpt = scanResultRepository.findById(scanResultId);
-        if (resultOpt.isPresent()) {
-            osint.model.ScanResult result = resultOpt.get();
-            Map<String, Object> generatingStatus = new HashMap<>();
-            generatingStatus.put("status", "generating");
-            generatingStatus.put("provider", provider);
-            generatingStatus.put("target", target);
-            result.setGeminiReport(generatingStatus);
-            scanResultRepository.save(result);
-        }
+        // No-op - scan tables don't exist
     }
     
-    @Transactional
     private void saveCompletedReport(Long scanResultId, Map<String, Object> report) {
-        Optional<osint.model.ScanResult> resultOpt = scanResultRepository.findById(scanResultId);
-        if (resultOpt.isPresent()) {
-            osint.model.ScanResult result = resultOpt.get();
-            result.setGeminiReport(report);
-            scanResultRepository.save(result);
-        }
+        // No-op - scan tables don't exist
     }
     
-    @Transactional
     private void saveFailedReport(Long scanResultId, Map<String, Object> report) {
-        Optional<osint.model.ScanResult> resultOpt = scanResultRepository.findById(scanResultId);
-        if (resultOpt.isPresent()) {
-            osint.model.ScanResult result = resultOpt.get();
-            result.setGeminiReport(report);
-            scanResultRepository.save(result);
-        }
+        // No-op - scan tables don't exist
     }
     
     private void handleGeminiError(Long scanResultId, String scanIdStr, String provider, String target, String errorMessage) {
         String errorMsg = "⚠ AI analysis error for " + provider + " - " + target + ": " + errorMessage;
+        logger.warn("[Scan {}] {}", scanIdStr, errorMsg);
         
-        Map<String, Object> errorReport = new HashMap<>();
-        errorReport.put("status", "failed");
-        errorReport.put("provider", provider);
-        errorReport.put("target", target);
-        errorReport.put("error", errorMsg);
-        errorReport.put("has_error", true);
-        
-        saveFailedReport(scanResultId, errorReport);
-        addLogToDBAsync(scanIdStr, "WARNING", errorMsg);
-        updateScanStatusCache(scanIdStr);
-    }
-    
-    @Transactional
-    private void markScanCompleted(Long scanId, Map<String, Object> results) {
-        Optional<Scan> scanOpt = scanRepository.findById(scanId);
-        if (scanOpt.isPresent()) {
-            Scan scan = scanOpt.get();
-            scan.setStatus("COMPLETED");
-            scan.setCompletedAt(LocalDateTime.now());
-            scanRepository.save(scan);
-        }
-    }
-    
-    @Async("taskExecutor")
-    @Transactional
-    private void addLogToDBAsync(String scanId, String level, String message) {
-        Optional<Scan> scanOpt = scanRepository.findByScanId(scanId);
-        if (scanOpt.isPresent()) {
-            ScanLog log = new ScanLog(scanOpt.get(), level, message);
-            scanLogRepository.save(log);
-        }
-    }
-
-    /**
-     * Update the cached scan status with latest data from DB
-     */
-    @Transactional(readOnly = true)
-    private void updateScanStatusCache(String scanId) {
-        ScanStatus status = getScanStatusFromDB(scanId);
+        // Update in-memory status if exists
+        ScanStatus status = scanStatuses.get(scanIdStr);
         if (status != null) {
-            scanStatuses.put(scanId, status);
+            addLog(status, errorMsg);
         }
     }
+    
+    private void markScanCompleted(Long scanId, Map<String, Object> results) {
+        // No-op - scan tables don't exist
+    }
+    
+    private void addLogToDBAsync(String scanId, String level, String message) {
+        // No-op - scan tables don't exist
+        logger.info("[Scan {}] {}", scanId, message);
+    }
 
-    /**
-     * Get scan status from database (used for cache updates)
-     */
-    @Transactional(readOnly = true)
+    private void updateScanStatusCache(String scanId) {
+        // No-op - using in-memory cache only
+    }
+
     private ScanStatus getScanStatusFromDB(String scanId) {
-        Optional<Scan> scanOpt = scanRepository.findByScanId(scanId);
-        if (scanOpt.isEmpty()) {
-            return null;
-        }
-
-        Scan scan = scanOpt.get();
-        List<ScanLog> dbLogs = scanLogRepository.findByScanIdOrderByTimestampAsc(scan.getId());
-
-        List<LogEntry> logs = dbLogs.stream()
-                .map(log -> new LogEntry(
-                        log.getTimestamp().toEpochSecond(ZoneOffset.UTC) * 1000,
-                        log.getMessage()))
-                .collect(Collectors.toList());
-
-        Map<String, Object> result = buildScanResultMap(scan);
-        return new ScanStatus(scanId, scan.getStatus(), logs, result);
-    }
-
-    /**
-     * Build result map with provider-specific Gemini reports
-     */
-    private Map<String, Object> buildScanResultMap(Scan scan) {
-        Map<String, Object> result = new HashMap<>();
-        // Use fetch join to eagerly load ScanTarget to avoid lazy loading issues
-        List<osint.model.ScanResult> scanResults = scanResultRepository.findByScanIdWithTarget(scan.getId());
-        
-        // Build data map
-        Map<String, Object> data = new HashMap<>();
-        Map<String, Map<String, Object>> geminiReports = new HashMap<>();
-        
-        for (osint.model.ScanResult sr : scanResults) {
-            if (sr.getScanTarget() != null) {
-                String key = sr.getProviderName() + "_" + sr.getScanTarget().getTarget();
-                data.put(key, sr.getResultData());
-                
-                // Add Gemini report if available (even if generating)
-                if (sr.getGeminiReport() != null) {
-                    String reportKey = sr.getProviderName() + "_" + sr.getScanTarget().getTarget();
-                    geminiReports.put(reportKey, sr.getGeminiReport());
-                }
-            }
-        }
-        
-        result.put("data", data);
-        result.put("gemini_reports", geminiReports);
-        
-        return result;
-    }
-
-    @Transactional(readOnly = true)
-    public ScanStatus getScanStatus(String scanId) {
-        // Try cache first
-        ScanStatus cached = scanStatuses.get(scanId);
-        if (cached != null) {
-            // Still refresh from DB to get latest Gemini reports
-            ScanStatus dbStatus = getScanStatusFromDB(scanId);
-            if (dbStatus != null) {
-                scanStatuses.put(scanId, dbStatus);
-                return dbStatus;
-            }
-            return cached;
-        }
-
-        // Load from DB
-        ScanStatus dbStatus = getScanStatusFromDB(scanId);
-        if (dbStatus != null) {
-            scanStatuses.put(scanId, dbStatus);
-            return dbStatus;
-        }
-
+        // No-op - scan tables don't exist, return null
         return null;
+    }
+
+    private Map<String, Object> buildScanResultMap(String scanId) {
+        // No-op - scan tables don't exist
+        return new HashMap<>();
+    }
+
+    public ScanStatus getScanStatus(String scanId) {
+        // Return from in-memory cache only (DB tables don't exist)
+        return scanStatuses.get(scanId);
     }
 
     private void addLog(ScanStatus status, String message) {
@@ -567,53 +279,28 @@ public class ScanService {
         logger.info("[Scan {}] {}", status.getScanId(), message);
     }
 
-    @Transactional
-    private void addLogToDB(Scan scan, String level, String message) {
-        ScanLog log = new ScanLog(scan, level, message);
-        scanLogRepository.save(log);
-        logger.info("[Scan {}] {}", scan.getScanId(), message);
+    private void addLogToDB(String scanId, String level, String message) {
+        // No-op - scan tables don't exist
+        logger.info("[Scan {}] {}", scanId, message);
     }
 
-    @Transactional
-    private Entity updateOrCreateEntity(String entityType, String entityValue, Scan scan) {
-        Optional<Entity> entityOpt = entityRepository.findByEntityTypeAndEntityValue(entityType, entityValue);
-        Entity entity;
-
-        if (entityOpt.isPresent()) {
-            entity = entityOpt.get();
-        } else {
-            entity = new Entity(entityType, entityValue);
-        }
-
-        entity.setLastScan(scan);
-        entity.setLastScannedAt(LocalDateTime.now());
-        entity.setLastSeenAt(LocalDateTime.now());
-
-        return entityRepository.save(entity);
-    }
-
-    @Transactional
-    private osint.model.ScanResult saveScanResult(Scan scan, ScanTarget scanTarget, ScanProvider scanProvider,
-            Map<String, Object> result) {
-        osint.model.ScanResult scanResult = new osint.model.ScanResult();
-        scanResult.setScan(scan);
-        scanResult.setScanTarget(scanTarget);
-        scanResult.setProviderName(scanProvider.getProviderName());
-        scanResult.setResultData(result);
-
-        // Calculate risk score if available
-        if (result.containsKey("risk_score")) {
-            Object riskObj = result.get("risk_score");
-            if (riskObj instanceof Number) {
-                scanResult.setRiskScore(BigDecimal.valueOf(((Number) riskObj).doubleValue()));
+    private Entity updateOrCreateEntity(String entityType, String entityValue, Object scan) {
+        // Update entity in DB (entities table exists)
+        // Note: user_id is required, but we can't get it without authentication context
+        // For now, skip entity creation to avoid errors
+        try {
+            Optional<Entity> entityOpt = entityRepository.findByEntityTypeAndEntityValue(entityType, entityValue);
+            if (entityOpt.isPresent()) {
+                Entity entity = entityOpt.get();
+                entity.setLastScanAt(LocalDateTime.now());
+                return entityRepository.save(entity);
             }
+            // Don't create new entity without user_id
+            return null;
+        } catch (Exception e) {
+            logger.error("Error updating entity: {}", e.getMessage());
+            return null;
         }
-
-        if (result.containsKey("risk_level")) {
-            scanResult.setRiskLevel(String.valueOf(result.get("risk_level")));
-        }
-
-        return scanResultRepository.save(scanResult);
     }
 
     // Inner classes
@@ -690,6 +377,8 @@ public class ScanService {
         private String status;
         private List<LogEntry> logs;
         private Map<String, Object> result;
+        private LocalDateTime completedAt;
+        private String errorMessage;
 
         public ScanStatus(String scanId, String status, List<LogEntry> logs, Map<String, Object> result) {
             this.scanId = scanId;
@@ -729,6 +418,26 @@ public class ScanService {
 
         public void setResult(Map<String, Object> result) {
             this.result = result;
+        }
+        
+        public void setResults(Map<String, Object> results) {
+            this.result = results;
+        }
+
+        public LocalDateTime getCompletedAt() {
+            return completedAt;
+        }
+
+        public void setCompletedAt(LocalDateTime completedAt) {
+            this.completedAt = completedAt;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public void setErrorMessage(String errorMessage) {
+            this.errorMessage = errorMessage;
         }
     }
 

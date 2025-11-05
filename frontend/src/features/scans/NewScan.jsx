@@ -491,38 +491,46 @@ const NewScan = () => {
                   {scanResult.data && Object.keys(scanResult.data).length > 0 && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-white">Provider Results</h3>
-                      {Object.entries(scanResult.data).map(([key, value]) => {
-                        const hasError = value && typeof value === 'object' && 'error' in value;
-                        return (
-                          <Card key={key} className={hasError ? 'border-error' : ''}>
-                            <CardHeader>
-                              <CardTitle className="text-base flex items-center gap-2">
-                                {hasError ? (
-                                  <span className="text-error">✗</span>
-                                ) : (
-                                  <span className="text-success">✓</span>
-                                )}
-                                {key}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              {hasError ? (
-                                <div className="p-3 bg-error/10 border border-error/30 rounded text-error">
-                                  <p className="font-medium">Error:</p>
-                                  <p className="text-sm mt-1">{value.error}</p>
-                                </div>
-                              ) : (
-                                <pre className="bg-surface-panel p-4 rounded-lg overflow-auto max-h-96 text-sm text-surface-muted">
-                                  {JSON.stringify(value, null, 2)}
-                                </pre>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
+                      {Object.entries(scanResult.data).map(([target, providersMap]) => (
+                        <div key={target} className="space-y-3">
+                          <h4 className="text-white/80 font-medium">Target: {target}</h4>
+                          {providersMap && typeof providersMap === 'object' && Object.entries(providersMap).map(([providerName, value]) => {
+                            const hasError = value && typeof value === 'object' && 'error' in value;
+                            return (
+                              <Card key={`${target}-${providerName}`} className={hasError ? 'border-error' : ''}>
+                                <CardHeader>
+                                  <CardTitle className="text-base flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded bg-surface-panel border border-surface-border text-white/90">{providerName}</span>
+                                    {hasError ? (
+                                      <span className="text-error">✗</span>
+                                    ) : (
+                                      <span className="text-success">✓</span>
+                                    )}
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {hasError ? (
+                                    <div className="p-3 bg-error/10 border border-error/30 rounded text-error">
+                                      <p className="font-medium">Error:</p>
+                                      <p className="text-sm mt-1">{value.error}</p>
+                                    </div>
+                                  ) : (
+                                    <details open className="bg-surface-panel rounded-lg">
+                                      <summary className="cursor-pointer text-surface-muted px-3 py-2">Raw {providerName} payload</summary>
+                                      <pre className="p-4 overflow-auto max-h-96 text-sm text-surface-muted">
+                                        {JSON.stringify(value, null, 2)}
+                                      </pre>
+                                    </details>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
                   )}
-
+                  
                   {/* Display Gemini AI Analysis - Provider-specific reports */}
                   <div className="space-y-4 mt-6">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">

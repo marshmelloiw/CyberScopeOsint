@@ -21,15 +21,26 @@ public class ScanController {
     
     @PostMapping("/start")
     // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı (JWT filter eksik)
-    public ResponseEntity<Map<String, Object>> startScan(@RequestBody ScanService.ScanRequest request) {
-        // Start async scan and return scanId immediately
-        String scanId = scanService.startScan(request);
-        
-        return ResponseEntity.ok(Map.of(
-            "scanId", scanId,
-            "status", "started",
-            "message", "Scan started successfully"
-        ));
+    public ResponseEntity<?> startScan(@RequestBody ScanService.ScanRequest request) {
+        try {
+            // Start async scan and return scanId immediately
+            String scanId = scanService.startScan(request);
+            
+            return ResponseEntity.ok(Map.of(
+                "scanId", scanId,
+                "status", "started",
+                "message", "Scan started successfully"
+            ));
+        } catch (Exception e) {
+            // Log error for debugging
+            System.err.println("Error starting scan: " + e.getMessage());
+            e.printStackTrace();
+            
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Scan başlatılamadı: " + e.getMessage(),
+                "status", "error"
+            ));
+        }
     }
     
     @GetMapping("/status/{scanId}")

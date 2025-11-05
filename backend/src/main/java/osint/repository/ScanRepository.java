@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
+// // @Repository - Disabled: Scan tables don't exist - Disabled: Scan tables don't exist in current DB schema
 public interface ScanRepository extends JpaRepository<Scan, Long> {
     
     Optional<Scan> findByScanId(String scanId);

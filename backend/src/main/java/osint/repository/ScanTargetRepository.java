@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
+// @Repository - Disabled: Scan tables don't exist
 public interface ScanTargetRepository extends JpaRepository<ScanTarget, Long> {
     
     List<ScanTarget> findByScanId(Long scanId);
