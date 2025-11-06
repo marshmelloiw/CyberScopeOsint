@@ -16,6 +16,19 @@ import { cn } from '../../lib/utils';
 import api, { endpoints } from '../../lib/axios';
 import useAuthStore from '../../store/auth';
 import { ROLE } from '../../constants/roles';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -26,9 +39,31 @@ const Dashboard = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [toolUsageData, setToolUsageData] = useState(null);
+  const [userActivityData, setUserActivityData] = useState(null);
+  const [scanStatusData, setScanStatusData] = useState(null);
+  const [chartsLoading, setChartsLoading] = useState(true);
 
   useEffect(() => {
     fetchSummary();
+    fetchChartData();
+    
+    // Auto-refresh every 30 seconds to get latest data (silent refresh - no loading states)
+    const interval = setInterval(() => {
+      // Save scroll position
+      const scrollY = window.scrollY;
+      
+      // Silent refresh - update data without showing loading states
+      fetchSummarySilent();
+      fetchChartDataSilent();
+      
+      // Restore scroll position after a brief delay
+      setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, 100);
+    }, 30000); // Refresh every 30 seconds (reduced frequency)
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchSummary = async () => {
@@ -42,6 +77,72 @@ const Dashboard = () => {
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSummarySilent = async () => {
+    try {
+      // Silent refresh - don't set loading state
+      const { data } = await api.get(endpoints.dashboard.summary);
+      setSummary(data);
+    } catch (err) {
+      // Silent error - don't show error state on auto-refresh
+      console.error('Silent refresh error:', err);
+    }
+  };
+
+
+  const fetchChartData = async () => {
+    try {
+      setChartsLoading(true);
+      const [toolsRes, usersRes, scansRes] = await Promise.all([
+        api.get(endpoints.dashboard.charts.tools).catch(err => {
+          console.error('Error fetching tools data:', err);
+          return { data: { tools: [] } };
+        }),
+        api.get(endpoints.dashboard.charts.users).catch(err => {
+          console.error('Error fetching users data:', err);
+          return { data: { active: 0, inactive: 0, activePercentage: 0, inactivePercentage: 0 } };
+        }),
+        api.get(endpoints.dashboard.charts.scans).catch(err => {
+          console.error('Error fetching scans data:', err);
+          return { data: { statuses: [] } };
+        }),
+      ]);
+      setToolUsageData(toolsRes.data || { tools: [] });
+      setUserActivityData(usersRes.data || { active: 0, inactive: 0, activePercentage: 0, inactivePercentage: 0 });
+      setScanStatusData(scansRes.data || { statuses: [] });
+    } catch (err) {
+      console.error('Error fetching chart data:', err);
+      // Set default empty data
+      setToolUsageData({ tools: [] });
+      setUserActivityData({ active: 0, inactive: 0, activePercentage: 0, inactivePercentage: 0 });
+      setScanStatusData({ statuses: [] });
+    } finally {
+      setChartsLoading(false);
+    }
+  };
+
+  const fetchChartDataSilent = async () => {
+    try {
+      // Silent refresh - don't set loading state
+      const [toolsRes, usersRes, scansRes] = await Promise.all([
+        api.get(endpoints.dashboard.charts.tools).catch(err => {
+          return { data: { tools: [] } };
+        }),
+        api.get(endpoints.dashboard.charts.users).catch(err => {
+          return { data: { active: 0, inactive: 0, activePercentage: 0, inactivePercentage: 0 } };
+        }),
+        api.get(endpoints.dashboard.charts.scans).catch(err => {
+          return { data: { statuses: [] } };
+        }),
+      ]);
+      setToolUsageData(toolsRes.data || { tools: [] });
+      setUserActivityData(usersRes.data || { active: 0, inactive: 0, activePercentage: 0, inactivePercentage: 0 });
+      setScanStatusData(scansRes.data || { statuses: [] });
+    } catch (err) {
+      // Silent error - don't update state on error during auto-refresh
+      console.error('Silent chart refresh error:', err);
     }
   };
 
@@ -355,16 +456,168 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Security Trends</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center text-surface-muted">
-            <p>Grafikler yakında gelecektir.</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Tool Usage Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Kullanılan Araçların Sıklığı</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {chartsLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
+              </div>
+            ) : toolUsageData && toolUsageData.tools ? (
+              toolUsageData.tools.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={toolUsageData.tools}
+                    layout="vertical"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis type="number" stroke="#9ca3af" />
+                    <YAxis dataKey="name" type="category" stroke="#9ca3af" width={100} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1f2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#fff',
+                      }}
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-surface-muted">
+                  <p>Henüz araç kullanım verisi yok</p>
+                </div>
+              )
+            ) : (
+              <div className="h-64 flex items-center justify-center text-surface-muted">
+                <p>Veri yükleniyor...</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* User Activity Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Kullanıcı Aktivite Durumu</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {chartsLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
+              </div>
+            ) : userActivityData ? (
+              <div className="space-y-4">
+                {(userActivityData.active > 0 || userActivityData.inactive > 0) ? (
+                  <>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Aktif', value: userActivityData.active || 0, color: '#22c55e' },
+                            { name: 'Pasif', value: userActivityData.inactive || 0, color: '#6b7280' },
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => {
+                            const total = (userActivityData.active || 0) + (userActivityData.inactive || 0);
+                            if (total === 0) return `${name}: 0%`;
+                            return `${name}: ${(percent * 100).toFixed(1)}%`;
+                          }}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          <Cell fill="#22c55e" />
+                          <Cell fill="#6b7280" />
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1f2937',
+                            border: '1px solid #374151',
+                            borderRadius: '8px',
+                            color: '#fff',
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex items-center justify-center space-x-6 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-3 w-3 rounded-full bg-success"></div>
+                        <span className="text-surface-muted">
+                          Aktif: {userActivityData.active || 0} ({userActivityData.activePercentage?.toFixed(1) || 0}%)
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="h-3 w-3 rounded-full bg-surface-muted"></div>
+                        <span className="text-surface-muted">
+                          Pasif: {userActivityData.inactive || 0} ({userActivityData.inactivePercentage?.toFixed(1) || 0}%)
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-64 flex items-center justify-center text-surface-muted">
+                    <p>Henüz kullanıcı verisi yok</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-surface-muted">
+                <p>Veri yükleniyor...</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Scan Status Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tarama Durumları</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {chartsLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
+              </div>
+            ) : scanStatusData && scanStatusData.statuses ? (
+              scanStatusData.statuses.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={scanStatusData.statuses}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="status" stroke="#9ca3af" />
+                    <YAxis stroke="#9ca3af" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1f2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#fff',
+                      }}
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-surface-muted">
+                  <p>Henüz tarama verisi yok</p>
+                </div>
+              )
+            ) : (
+              <div className="h-64 flex items-center justify-center text-surface-muted">
+                <p>Veri yükleniyor...</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

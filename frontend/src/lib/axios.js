@@ -165,6 +165,12 @@ export const endpoints = {
 
   dashboard: {
     summary: '/dashboard/summary',
+    charts: {
+      vulnerabilities: (scanId) => `/dashboard/charts/vulnerabilities/${scanId}`,
+      tools: '/dashboard/charts/tools',
+      users: '/dashboard/charts/users',
+      scans: '/dashboard/charts/scans',
+    },
   },
 };
 
