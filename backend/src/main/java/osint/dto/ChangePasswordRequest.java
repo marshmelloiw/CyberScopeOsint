@@ -1,0 +1,50 @@
+package osint.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public class ChangePasswordRequest {
+    @NotBlank
+    private String email;
+
+    @NotBlank
+    private String currentPassword;
+
+    @NotBlank
+    @Size(min = 8, max = 128)
+    private String newPassword;
+
+    public ChangePasswordRequest() {
+    }
+
+    public ChangePasswordRequest(String email, String currentPassword, String newPassword) {
+        this.email = email;
+        this.currentPassword = currentPassword;
+        this.newPassword = newPassword;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getCurrentPassword() {
+        return currentPassword;
+    }
+
+    public void setCurrentPassword(String currentPassword) {
+        this.currentPassword = currentPassword;
+    }
+
+    public String getNewPassword() {
+        return newPassword;
+    }
+
+    public void setNewPassword(String newPassword) {
+        this.newPassword = newPassword;
+    }
+}
+

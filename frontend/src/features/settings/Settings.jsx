@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { User, Sun, Moon, Shield, Globe, Building, Palette, Eye, EyeOff, Upload } from 'lucide-react';
+import { User, Sun, Moon, Shield, Globe, Palette, Eye, EyeOff, Upload } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import api from '../../lib/axios';
+import api, { endpoints } from '../../lib/axios';
 import useUIStore from '../../store/ui';
 import useAuthStore from '../../store/auth';
 import MFASetup from '../../components/auth/MFASetup';
@@ -15,7 +15,7 @@ const Settings = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showMFASetup, setShowMFASetup] = useState(false);
 
-  const { theme, toggleTheme, sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { theme, setTheme, sidebarCollapsed, toggleSidebar } = useUIStore();
   const { user, updateProfile } = useAuthStore();
   const phoneRef = useRef(null);
 
@@ -26,6 +26,18 @@ const Settings = () => {
     avatar: user?.avatar || '',
   });
 
+  // Update profileData when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || '',
+        avatar: user.avatar || '',
+      });
+    }
+  }, [user]);
+
   const [securityData, setSecurityData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -35,15 +47,6 @@ const Settings = () => {
     countryCode: '+90',
     phoneNumber: '',
     sessionTimeout: 30,
-  });
-
-  const [organizationData, setOrganizationData] = useState({
-    name: 'CyberScope Security',
-    domain: 'cyberscope.com',
-    industry: 'Cybersecurity',
-    size: '50-100',
-    timezone: 'Europe/Istanbul',
-    language: 'tr',
   });
 
   const [appearanceData, setAppearanceData] = useState({
@@ -57,34 +60,122 @@ const Settings = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'organization', label: 'Organization', icon: Building },
   ];
 
-  const handleProfileUpdate = () => {
-    updateProfile(profileData);
-    console.log('Profile updated:', profileData);
-  };
-
-  const handlePasswordChange = () => {
-    if (securityData.newPassword !== securityData.confirmPassword) {
-      alert('Passwords do not match');
+  const handleProfileUpdate = useCallback(async () => {
+    if (!user?.id) {
+      alert('Kullanıcı bilgisi bulunamadı');
       return;
     }
-    console.log('Password changed');
-  };
 
-  const handleMFASetupComplete = () => {
+    try {
+      // Split name into firstName and lastName
+      const nameParts = (profileData.name || '').trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Call backend API to update user
+      const response = await api.put(endpoints.users.update(user.id), {
+        email: profileData.email,
+        firstName: firstName,
+        lastName: lastName,
+        role: profileData.role,
+        // Don't update status, isVerified, mfaEnabled, phoneNumber, or userFile
+      });
+
+      // Update local state with response data
+      const updatedUser = response.data;
+      const updatedName = updatedUser.fullName || profileData.name;
+
+      // Update auth store
+      updateProfile({
+        name: updatedName,
+        email: updatedUser.email || profileData.email,
+        role: updatedUser.role || profileData.role,
+        avatar: profileData.avatar,
+      });
+
+      // Update local profileData state
+      setProfileData(prev => ({
+        ...prev,
+        name: updatedName,
+        email: updatedUser.email || prev.email,
+        role: updatedUser.role || prev.role,
+      }));
+
+      alert('Profil başarıyla güncellendi!');
+    } catch (error) {
+      console.error('Profile update error:', error);
+      alert(error.response?.data?.error || error.message || 'Profil güncellenirken bir hata oluştu');
+    }
+  }, [profileData, user, updateProfile]);
+
+  const handlePasswordChange = useCallback(async () => {
+    if (!user?.email) {
+      alert('Kullanıcı bilgisi bulunamadı');
+      return;
+    }
+
+    if (!securityData.currentPassword) {
+      alert('Lütfen mevcut şifrenizi girin');
+      return;
+    }
+
+    if (!securityData.newPassword) {
+      alert('Lütfen yeni şifrenizi girin');
+      return;
+    }
+
+    if (securityData.newPassword.length < 8) {
+      alert('Yeni şifre en az 8 karakter olmalıdır');
+      return;
+    }
+
+    if (securityData.newPassword !== securityData.confirmPassword) {
+      alert('Yeni şifreler eşleşmiyor');
+      return;
+    }
+
+    try {
+      const url = endpoints.auth.changePassword;
+      console.log('Changing password, URL:', url);
+      console.log('Request data:', { email: user.email, currentPassword: '***', newPassword: '***' });
+
+      const response = await api.post(url, {
+        email: user.email,
+        currentPassword: securityData.currentPassword,
+        newPassword: securityData.newPassword,
+      });
+
+      console.log('Password change response:', response);
+
+      alert('Şifre başarıyla değiştirildi!');
+
+      // Clear password fields
+      setSecurityData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      }));
+    } catch (error) {
+      console.error('Password change error:', error);
+      alert(error.response?.data?.error || error.message || 'Şifre değiştirilirken bir hata oluştu');
+    }
+  }, [securityData, user]);
+
+  const handleMFASetupComplete = useCallback(() => {
     setShowMFASetup(false);
     // Update user state to reflect MFA is enabled
     updateProfile({ ...user, totp_enabled: true });
-  };
+  }, [user, updateProfile]);
 
-  const handleThemeChange = (newTheme) => {
+  const handleThemeChange = useCallback((newTheme) => {
     setAppearanceData(prev => ({ ...prev, theme: newTheme }));
-    toggleTheme();
-  };
+    setTheme(newTheme);
+  }, [setTheme]);
 
-  const ProfileTab = () => (
+  const ProfileTab = useMemo(() => (
     <div className="space-y-6">
       {/* Profile Information */}
       <Card>
@@ -198,9 +289,9 @@ const Settings = () => {
         </CardContent>
       </Card>
     </div>
-  );
+  ), [profileData, handleProfileUpdate]);
 
-  const SecurityTab = () => (
+  const SecurityTab = useMemo(() => (
     <div className="space-y-6">
       {/* Password Change */}
       <Card>
@@ -428,9 +519,9 @@ const Settings = () => {
         </CardContent>
       </Card>
     </div>
-  );
+  ), [securityData, showPassword, showConfirmPassword, user, updateProfile, handlePasswordChange]);
 
-  const AppearanceTab = () => (
+  const AppearanceTab = useMemo(() => (
     <div className="space-y-6">
       {/* Theme Settings */}
       <Card>
@@ -557,111 +648,14 @@ const Settings = () => {
         </CardContent>
       </Card>
     </div>
-  );
-
-  const OrganizationTab = () => (
-    <div className="space-y-6">
-      {/* Organization Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Organization Name</label>
-              <Input
-                value={organizationData.name}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter organization name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Domain</label>
-              <Input
-                value={organizationData.domain}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, domain: e.target.value }))}
-                placeholder="Enter domain"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Industry</label>
-              <select
-                value={organizationData.industry}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, industry: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="Cybersecurity">Cybersecurity</option>
-                <option value="Finance">Finance</option>
-                <option value="Healthcare">Healthcare</option>
-                <option value="Technology">Technology</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Company Size</label>
-              <select
-                value={organizationData.size}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, size: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="1-10">1-10 employees</option>
-                <option value="11-50">11-50 employees</option>
-                <option value="50-100">50-100 employees</option>
-                <option value="100-500">100-500 employees</option>
-                <option value="500+">500+ employees</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Timezone</label>
-              <select
-                value={organizationData.timezone}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, timezone: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="Europe/Istanbul">Europe/Istanbul (UTC+3)</option>
-                <option value="UTC">UTC (UTC+0)</option>
-                <option value="America/New_York">America/New_York (UTC-5)</option>
-                <option value="Europe/London">Europe/London (UTC+0)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Language</label>
-              <select
-                value={organizationData.language}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, language: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="tr">Türkçe</option>
-                <option value="en">English</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <Button>
-              Update Organization
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-
+  ), [appearanceData, sidebarCollapsed, handleThemeChange, toggleSidebar]);
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'profile': return <ProfileTab />;
-      case 'security': return <SecurityTab />;
-      case 'appearance': return <AppearanceTab />;
-      case 'organization': return <OrganizationTab />;
-      default: return <ProfileTab />;
+      case 'profile': return ProfileTab;
+      case 'security': return SecurityTab;
+      case 'appearance': return AppearanceTab;
+      default: return ProfileTab;
     }
   };
 
