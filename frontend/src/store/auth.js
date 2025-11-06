@@ -2,14 +2,23 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api, { endpoints } from '../lib/axios';
 
+const ALLOWED_ROLES = ['admin', 'analyst', 'viewer'];
+
+const normalizeRole = (role) => {
+  if (!role || typeof role !== 'string') return 'viewer';
+  const normalized = role.trim().toLowerCase();
+  return ALLOWED_ROLES.includes(normalized) ? normalized : 'viewer';
+};
+
 const buildUserFromPayload = (payload = {}) => {
   const email = payload.email || '';
   const fullName = payload.fullName || '';
+  const role = normalizeRole(payload.role);
   return {
     id: payload.userId ?? null,
     name: fullName || email.split('@')[0] || email,
     email,
-    role: payload.role || 'viewer',
+    role,
     status: payload.verified ? 'active' : 'inactive',
     verified: !!payload.verified,
     mfaEnabled: !!payload.mfaEnabled,

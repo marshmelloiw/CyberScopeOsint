@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import useUIStore from '../../store/ui';
+import useAuthStore from '../../store/auth';
+import { ROLE, ROLE_PERMISSIONS } from '../../constants/roles';
 import {
   Home,
   Search,
@@ -15,26 +17,31 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Dashboard', href: '/dashboard', icon: Home, permission: 'dashboard' },
   {
     name: 'Scans',
     href: '/dashboard/scans',
     icon: Search,
+    permission: 'scans',
     children: [
       { name: 'New Scan', href: '/dashboard/scans/new' },
       { name: 'History', href: '/dashboard/scans/history' },
     ],
   },
-  { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
-  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
-  { name: 'API Keys', href: '/dashboard/apikeys', icon: Key },
-  { name: 'User Management', href: '/dashboard/users', icon: UserCog },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Reports', href: '/dashboard/reports', icon: BarChart3, permission: 'reports' },
+  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, permission: 'notifications' },
+  { name: 'API Keys', href: '/dashboard/apikeys', icon: Key, permission: 'apikeys' },
+  { name: 'User Management', href: '/dashboard/users', icon: UserCog, permission: 'users' },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings, permission: 'settings' },
 ];
 
 const Sidebar = () => {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { user } = useAuthStore();
   const location = useLocation();
+
+  const normalizedRole = user?.role ?? ROLE.VIEWER;
+  const allowedPermissions = ROLE_PERMISSIONS[normalizedRole] || ROLE_PERMISSIONS[ROLE.VIEWER];
 
   const isActive = (href) => {
     if (href === '/dashboard') {
@@ -70,7 +77,12 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-2 py-4">
-        {navigation.map((item) => {
+        {navigation
+          .filter((item) => {
+            if (!item.permission) return true;
+            return allowedPermissions.includes(item.permission);
+          })
+          .map((item) => {
           const isItemActive = isActive(item.href);
           
           return (
@@ -112,7 +124,7 @@ const Sidebar = () => {
               )}
             </div>
           );
-        })}
+          })}
       </nav>
 
       {/* Footer */}

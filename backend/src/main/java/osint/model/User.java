@@ -24,7 +24,7 @@ public class User {
     private String fullName;
 
     @Column(name = "role")
-    private String role; // admin, analyst, viewer
+    private String role; // Legacy single-role column
 
     @Column(name = "is_verified")
     private Boolean isVerified = false;
@@ -47,8 +47,11 @@ public class User {
     @Column(name = "user_file")
     private String userFile;
 
-    // For backward compatibility - keep roles but map to role field
-    @Transient
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
     // Constructors
