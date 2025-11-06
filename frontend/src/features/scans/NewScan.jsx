@@ -6,6 +6,8 @@ import Input from '../../components/ui/Input';
 import axios from '../../lib/axios';
 import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText, Terminal, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import MarkdownRenderer from '../../components/common/MarkdownRenderer';
+import { resolveReportMarkdown } from '../../lib/reportMarkdown';
 
 const NewScan = () => {
   const navigate = useNavigate();
@@ -618,29 +620,57 @@ const NewScan = () => {
                             </CardHeader>
                             <CardContent className="space-y-4">
                               {/* Show analysis text if available (raw_text or analysis as string) */}
-                              {typeof report.analysis === 'string' ? (
-                                <Card>
-                                  <CardHeader>
-                                    <CardTitle className="text-base">AI Analysis Report</CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
-                                      {report.analysis}
-                                    </pre>
-                                  </CardContent>
-                                </Card>
-                              ) : report.raw_text ? (
-                                <Card>
-                                  <CardHeader>
-                                    <CardTitle className="text-base">AI Analysis Report</CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
-                                      {report.raw_text}
-                                    </pre>
-                                  </CardContent>
-                                </Card>
-                              ) : report.analysis && typeof report.analysis === 'object' ? (
+                              {(() => {
+                                // Try to get markdown content (same as other pages)
+                                const markdownContent = resolveReportMarkdown(report);
+                                
+                                if (markdownContent) {
+                                  return (
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle className="text-base">AI Analysis Report</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <MarkdownRenderer content={markdownContent} className="space-y-4" />
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                }
+                                
+                                // Fallback to old format if no markdown found
+                                if (typeof report.analysis === 'string') {
+                                  return (
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle className="text-base">AI Analysis Report</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
+                                          {report.analysis}
+                                        </pre>
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                }
+                                
+                                if (report.raw_text) {
+                                  return (
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle className="text-base">AI Analysis Report</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <pre className="bg-surface-panel p-4 rounded-lg overflow-auto text-sm text-surface-muted whitespace-pre-wrap">
+                                          {report.raw_text}
+                                        </pre>
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                }
+                                
+                                return null;
+                              })()}
+                              {report.analysis && typeof report.analysis === 'object' ? (
                                 <div className="space-y-4">
                                   {/* Summary */}
                                   {report.analysis.summary && (
