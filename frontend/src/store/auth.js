@@ -188,21 +188,22 @@ try {
         console.log('Auth store register called with:', userData);
         set({ isLoading: true, error: null });
         try {
-          if (!userData.name || !userData.email || !userData.password) {
-            throw new Error('Tüm alanlar gerekli');
+          if (!userData.name || !userData.email || !userData.file) {
+            throw new Error('Tüm alanlar gerekli (Ad, Email, Dosya)');
           }
 
-          // Real API call to backend
-          const response = await fetch('http://localhost:8080/api/auth/register', {
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append('name', userData.name);
+          formData.append('email', userData.email);
+          formData.append('file', userData.file);
+
+          // Real API call to backend with multipart/form-data
+          const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+          const response = await fetch(`${base}/api/auth/register`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: userData.name,
-              email: userData.email,
-              password: userData.password,
-            }),
+            // Don't set Content-Type header, browser will set it with boundary for FormData
+            body: formData,
           });
 
           if (!response.ok) {
@@ -212,13 +213,13 @@ try {
               const text = await response.text();
               if (text) {
                 const errorData = JSON.parse(text);
-                message = errorData.detail || errorData.message || message;
+                message = errorData.detail || errorData.message || errorData.error || message;
               }
             } catch (_) {}
             throw new Error(message);
           }
           
-          // ✅ Backend 201 Created döndürüyor ama body boş -> try/catch ekliyoruz
+          // ✅ Backend 201 Created döndürüyor, body'de token olabilir
           let data = null;
           try {
             const text = await response.text();
@@ -236,15 +237,7 @@ try {
             error: null,
           });
           
-          return { message: 'Kayıt başarılı' };
-          
-
-          set({
-            isLoading: false,
-            error: null,
-          });
-
-          return { message: 'Kayıt başarılı' };
+          return { message: data?.message || 'Kayıt başarılı. Hesabınızın aktifleştirilmesi için yönetici onayı gerekmektedir.' };
         } catch (error) {
           console.error('Register error in store:', error);
           set({

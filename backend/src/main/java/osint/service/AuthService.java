@@ -8,8 +8,15 @@ import osint.model.PasswordResetToken;
 import osint.model.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.apache.commons.codec.binary.Base32;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -32,19 +39,62 @@ public class AuthService {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
-    public void register(String email, String rawPassword) {
+    public Map<String, Object> register(String name, String email, MultipartFile file) {
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already in use");
         }
-        String hash = passwordEncoder.encode(rawPassword);
+
+        // Validate file
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Dosya seçilmedi");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
+            throw new IllegalArgumentException("Sadece PDF dosyası yüklenebilir");
+        }
+
+        // Save file
+        String filePath;
+        try {
+            String projectRoot = System.getProperty("user.dir");
+            String uploadDir = projectRoot + "/uploads/user-files";
+            File directory = new File(uploadDir);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+            Path filePathObj = Paths.get(uploadDir, uniqueFilename);
+            Files.copy(file.getInputStream(), filePathObj, StandardCopyOption.REPLACE_EXISTING);
+            filePath = uploadDir + "/" + uniqueFilename;
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Dosya yüklenirken hata oluştu: " + e.getMessage());
+        }
+
+        // Generate a random password (not used for login, but required by DB schema)
+        String randomPassword = UUID.randomUUID().toString();
+        String hash = passwordEncoder.encode(randomPassword);
+
+        // Create user
         User user = User.builder()
                 .email(email)
+                .fullName(name)
                 .passwordHash(hash)
+                .userFile(filePath)
                 .role("USER") // Default role: USER, ADMIN, or CORPORATE
-                .isVerified(false)
+                .isVerified(false) // Requires admin approval
                 .mfaEnabled(false)
                 .build();
         userRepository.save(user);
+
+        // Return success message (no token - user needs admin approval)
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("message", "Kayıt başarılı. Hesabınızın aktifleştirilmesi için yönetici onayı gerekmektedir.");
+        response.put("user_id", user.getId());
+
+        return response;
     }
 
     public JwtResponse login(String email, String rawPassword) {

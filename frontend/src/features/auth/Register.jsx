@@ -7,23 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import useAuthStore from '../../store/auth';
-import { Eye, EyeOff } from 'lucide-react';
+import { Upload } from 'lucide-react';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Ad en az 2 karakter olmalıdır'),
   email: z.string().email('Geçerli bir email adresi giriniz'),
-  password: z.string().min(6, 'Şifre en az 6 karakter olmalıdır'),
-  confirmPassword: z.string(),
+  file: z.instanceof(FileList).refine((files) => files.length > 0, 'Dosya seçilmelidir')
+    .refine((files) => files[0]?.type === 'application/pdf', 'Sadece PDF dosyası yüklenebilir'),
   agreeToTerms: z.boolean().refine(val => val === true, 'Kullanım şartlarını kabul etmelisiniz'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Şifreler eşleşmiyor",
-  path: ["confirmPassword"],
 });
 
 const Register = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState('');
   const navigate = useNavigate();
   const { register: registerUser, error, clearError } = useAuthStore();
 
@@ -31,9 +27,20 @@ const Register = () => {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm({
     resolver: zodResolver(registerSchema),
   });
+
+  const fileInput = watch('file');
+
+  React.useEffect(() => {
+    if (fileInput && fileInput.length > 0) {
+      setSelectedFileName(fileInput[0].name);
+    } else {
+      setSelectedFileName('');
+    }
+  }, [fileInput]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
@@ -41,15 +48,16 @@ const Register = () => {
     
     try {
       console.log('Register attempt with:', data);
+      const file = data.file[0];
       const result = await registerUser({
         name: data.name,
         email: data.email,
-        password: data.password,
+        file: file,
       });
       console.log('Register result:', result);
       
       // Show success message and redirect to login
-      alert('Kayıt başarılı! Giriş yapabilirsiniz.');
+      alert(result.message || 'Kayıt başarılı! Hesabınızın aktifleştirilmesi için yönetici onayı gerekmektedir. Giriş yapabilmek için lütfen yönetici onayını bekleyin.');
       navigate('/auth/login');
       
     } catch (err) {
@@ -98,59 +106,32 @@ const Register = () => {
                 {...register('email')}
               />
 
-              {/* Password field */}
+              {/* File upload field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Şifre</label>
+                <label className="text-sm font-medium text-white">Dosya Yükle</label>
                 <div className="relative">
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    error={errors.password?.message}
-                    {...register('password')}
-                    className="pr-10"
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    id="file-upload"
+                    {...register('file')}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-muted hover:text-white transition-colors"
+                  <label
+                    htmlFor="file-upload"
+                    className="flex items-center justify-center w-full px-4 py-3 border border-surface-border rounded-lg bg-surface-panel text-white cursor-pointer hover:bg-surface-hover transition-colors"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                    <Upload className="h-4 w-4 mr-2" />
+                    <span className="text-sm">
+                      {selectedFileName || 'PDF dosyası seçin'}
+                    </span>
+                  </label>
                 </div>
-                {errors.password && (
-                  <p className="text-sm text-danger">{errors.password.message}</p>
+                {errors.file && (
+                  <p className="text-sm text-danger">{errors.file.message}</p>
                 )}
-              </div>
-
-              {/* Confirm Password field */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Şifre Tekrar</label>
-                <div className="relative">
-                  <Input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    error={errors.confirmPassword?.message}
-                    {...register('confirmPassword')}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-muted hover:text-white transition-colors"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="text-sm text-danger">{errors.confirmPassword.message}</p>
+                {selectedFileName && (
+                  <p className="text-sm text-surface-muted">Seçilen dosya: {selectedFileName}</p>
                 )}
               </div>
 

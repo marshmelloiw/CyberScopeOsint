@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import osint.service.AuthService;
 import osint.repository.UserRepository;
 import osint.model.User;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @SpringBootApplication
 public class OsintBackendApplication {
@@ -27,16 +28,19 @@ public class OsintBackendApplication {
             // Create admin user if it doesn't exist
             User admin = userRepository.findByEmail(adminEmail).orElseGet(() -> {
                 try {
-                    authService.register(adminEmail, adminPassword);
-                    User newAdmin = userRepository.findByEmail(adminEmail).orElse(null);
-                    if (newAdmin != null) {
-                        // Set admin role
-                        newAdmin.setRole("ADMIN");
-                        newAdmin.setIsVerified(true);
-                        return userRepository.save(newAdmin);
-                    }
-                    return null;
-                } catch (IllegalArgumentException ignored) {
+                    // Create admin user directly (no file required for default admin)
+                    BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+                    String hash = passwordEncoder.encode(adminPassword);
+                    User newAdmin = User.builder()
+                            .email(adminEmail)
+                            .fullName("Admin User")
+                            .passwordHash(hash)
+                            .role("ADMIN")
+                            .isVerified(true)
+                            .mfaEnabled(false)
+                            .build();
+                    return userRepository.save(newAdmin);
+                } catch (Exception ignored) {
                     return null;
                 }
             });
@@ -59,4 +63,3 @@ public class OsintBackendApplication {
         };
     }
 }
-
