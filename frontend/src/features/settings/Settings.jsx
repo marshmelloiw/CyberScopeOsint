@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { User, Sun, Moon, Shield, Globe, Building, Palette, Eye, EyeOff, Upload } from 'lucide-react';
+import { User, Sun, Moon, Shield, Globe, Palette, Eye, EyeOff, Upload } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import api, { endpoints } from '../../lib/axios';
 import useUIStore from '../../store/ui';
@@ -49,15 +49,6 @@ const Settings = () => {
     sessionTimeout: 30,
   });
 
-  const [organizationData, setOrganizationData] = useState({
-    name: 'CyberScope Security',
-    domain: 'cyberscope.com',
-    industry: 'Cybersecurity',
-    size: '50-100',
-    timezone: 'Europe/Istanbul',
-    language: 'tr',
-  });
-
   const [appearanceData, setAppearanceData] = useState({
     theme: theme,
     density: 'comfortable',
@@ -69,7 +60,6 @@ const Settings = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'organization', label: 'Organization', icon: Building },
   ];
 
   const handleProfileUpdate = useCallback(async () => {
@@ -660,108 +650,11 @@ const Settings = () => {
     </div>
   ), [appearanceData, sidebarCollapsed, handleThemeChange, toggleSidebar]);
 
-  const OrganizationTab = useMemo(() => (
-    <div className="space-y-6">
-      {/* Organization Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Organization Name</label>
-              <Input
-                value={organizationData.name}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter organization name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Domain</label>
-              <Input
-                value={organizationData.domain}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, domain: e.target.value }))}
-                placeholder="Enter domain"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Industry</label>
-              <select
-                value={organizationData.industry}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, industry: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="Cybersecurity">Cybersecurity</option>
-                <option value="Finance">Finance</option>
-                <option value="Healthcare">Healthcare</option>
-                <option value="Technology">Technology</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Company Size</label>
-              <select
-                value={organizationData.size}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, size: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="1-10">1-10 employees</option>
-                <option value="11-50">11-50 employees</option>
-                <option value="50-100">50-100 employees</option>
-                <option value="100-500">100-500 employees</option>
-                <option value="500+">500+ employees</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Timezone</label>
-              <select
-                value={organizationData.timezone}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, timezone: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="Europe/Istanbul">Europe/Istanbul (UTC+3)</option>
-                <option value="UTC">UTC (UTC+0)</option>
-                <option value="America/New_York">America/New_York (UTC-5)</option>
-                <option value="Europe/London">Europe/London (UTC+0)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Language</label>
-              <select
-                value={organizationData.language}
-                onChange={(e) => setOrganizationData(prev => ({ ...prev, language: e.target.value }))}
-                className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="tr">Türkçe</option>
-                <option value="en">English</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <Button>
-              Update Organization
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  ), [organizationData]);
-
-
-
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile': return ProfileTab;
       case 'security': return SecurityTab;
       case 'appearance': return AppearanceTab;
-      case 'organization': return OrganizationTab;
       default: return ProfileTab;
     }
   };
