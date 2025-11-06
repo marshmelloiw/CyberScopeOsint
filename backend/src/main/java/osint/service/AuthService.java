@@ -194,6 +194,32 @@ public class AuthService {
         passwordResetTokenRepository.deleteByToken(token);
     }
 
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email gerekli");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Kullanıcı bulunamadı"));
+
+        // Verify current password
+        String sanitizedCurrentPassword = currentPassword != null ? currentPassword.trim() : "";
+        if (!passwordEncoder.matches(sanitizedCurrentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Mevcut şifre hatalı");
+        }
+
+        // Validate new password
+        if (newPassword == null || newPassword.trim().length() < 8) {
+            throw new IllegalArgumentException("Yeni şifre en az 8 karakter olmalıdır");
+        }
+
+        // Update password
+        user.setPasswordHash(passwordEncoder.encode(newPassword.trim()));
+        userRepository.save(user);
+        logger.info("Password changed for user: {}", normalizedEmail);
+    }
+
     public void deleteUser(String email) {
         userRepository.deleteByEmail(email);
     }

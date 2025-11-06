@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { User, Sun, Moon, Shield, Globe, Building, Palette, Eye, EyeOff, Upload } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import api from '../../lib/axios';
+import api, { endpoints } from '../../lib/axios';
 import useUIStore from '../../store/ui';
 import useAuthStore from '../../store/auth';
 import MFASetup from '../../components/auth/MFASetup';
@@ -15,7 +15,7 @@ const Settings = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showMFASetup, setShowMFASetup] = useState(false);
 
-  const { theme, toggleTheme, sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { theme, setTheme, sidebarCollapsed, toggleSidebar } = useUIStore();
   const { user, updateProfile } = useAuthStore();
   const phoneRef = useRef(null);
 
@@ -25,6 +25,18 @@ const Settings = () => {
     role: user?.role || '',
     avatar: user?.avatar || '',
   });
+
+  // Update profileData when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || '',
+        avatar: user.avatar || '',
+      });
+    }
+  }, [user]);
 
   const [securityData, setSecurityData] = useState({
     currentPassword: '',
@@ -60,31 +72,120 @@ const Settings = () => {
     { id: 'organization', label: 'Organization', icon: Building },
   ];
 
-  const handleProfileUpdate = () => {
-    updateProfile(profileData);
-    console.log('Profile updated:', profileData);
-  };
-
-  const handlePasswordChange = () => {
-    if (securityData.newPassword !== securityData.confirmPassword) {
-      alert('Passwords do not match');
+  const handleProfileUpdate = useCallback(async () => {
+    if (!user?.id) {
+      alert('Kullanıcı bilgisi bulunamadı');
       return;
     }
-    console.log('Password changed');
-  };
 
-  const handleMFASetupComplete = () => {
+    try {
+      // Split name into firstName and lastName
+      const nameParts = (profileData.name || '').trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Call backend API to update user
+      const response = await api.put(endpoints.users.update(user.id), {
+        email: profileData.email,
+        firstName: firstName,
+        lastName: lastName,
+        role: profileData.role,
+        // Don't update status, isVerified, mfaEnabled, phoneNumber, or userFile
+      });
+
+      // Update local state with response data
+      const updatedUser = response.data;
+      const updatedName = updatedUser.fullName || profileData.name;
+
+      // Update auth store
+      updateProfile({
+        name: updatedName,
+        email: updatedUser.email || profileData.email,
+        role: updatedUser.role || profileData.role,
+        avatar: profileData.avatar,
+      });
+
+      // Update local profileData state
+      setProfileData(prev => ({
+        ...prev,
+        name: updatedName,
+        email: updatedUser.email || prev.email,
+        role: updatedUser.role || prev.role,
+      }));
+
+      alert('Profil başarıyla güncellendi!');
+    } catch (error) {
+      console.error('Profile update error:', error);
+      alert(error.response?.data?.error || error.message || 'Profil güncellenirken bir hata oluştu');
+    }
+  }, [profileData, user, updateProfile]);
+
+  const handlePasswordChange = useCallback(async () => {
+    if (!user?.email) {
+      alert('Kullanıcı bilgisi bulunamadı');
+      return;
+    }
+
+    if (!securityData.currentPassword) {
+      alert('Lütfen mevcut şifrenizi girin');
+      return;
+    }
+
+    if (!securityData.newPassword) {
+      alert('Lütfen yeni şifrenizi girin');
+      return;
+    }
+
+    if (securityData.newPassword.length < 8) {
+      alert('Yeni şifre en az 8 karakter olmalıdır');
+      return;
+    }
+
+    if (securityData.newPassword !== securityData.confirmPassword) {
+      alert('Yeni şifreler eşleşmiyor');
+      return;
+    }
+
+    try {
+      const url = endpoints.auth.changePassword;
+      console.log('Changing password, URL:', url);
+      console.log('Request data:', { email: user.email, currentPassword: '***', newPassword: '***' });
+
+      const response = await api.post(url, {
+        email: user.email,
+        currentPassword: securityData.currentPassword,
+        newPassword: securityData.newPassword,
+      });
+
+      console.log('Password change response:', response);
+
+      alert('Şifre başarıyla değiştirildi!');
+
+      // Clear password fields
+      setSecurityData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      }));
+    } catch (error) {
+      console.error('Password change error:', error);
+      alert(error.response?.data?.error || error.message || 'Şifre değiştirilirken bir hata oluştu');
+    }
+  }, [securityData, user]);
+
+  const handleMFASetupComplete = useCallback(() => {
     setShowMFASetup(false);
     // Update user state to reflect MFA is enabled
     updateProfile({ ...user, totp_enabled: true });
-  };
+  }, [user, updateProfile]);
 
-  const handleThemeChange = (newTheme) => {
+  const handleThemeChange = useCallback((newTheme) => {
     setAppearanceData(prev => ({ ...prev, theme: newTheme }));
-    toggleTheme();
-  };
+    setTheme(newTheme);
+  }, [setTheme]);
 
-  const ProfileTab = () => (
+  const ProfileTab = useMemo(() => (
     <div className="space-y-6">
       {/* Profile Information */}
       <Card>
@@ -198,9 +299,9 @@ const Settings = () => {
         </CardContent>
       </Card>
     </div>
-  );
+  ), [profileData, handleProfileUpdate]);
 
-  const SecurityTab = () => (
+  const SecurityTab = useMemo(() => (
     <div className="space-y-6">
       {/* Password Change */}
       <Card>
@@ -428,9 +529,9 @@ const Settings = () => {
         </CardContent>
       </Card>
     </div>
-  );
+  ), [securityData, showPassword, showConfirmPassword, user, updateProfile, handlePasswordChange]);
 
-  const AppearanceTab = () => (
+  const AppearanceTab = useMemo(() => (
     <div className="space-y-6">
       {/* Theme Settings */}
       <Card>
@@ -557,9 +658,9 @@ const Settings = () => {
         </CardContent>
       </Card>
     </div>
-  );
+  ), [appearanceData, sidebarCollapsed, handleThemeChange, toggleSidebar]);
 
-  const OrganizationTab = () => (
+  const OrganizationTab = useMemo(() => (
     <div className="space-y-6">
       {/* Organization Information */}
       <Card>
@@ -651,17 +752,17 @@ const Settings = () => {
         </CardContent>
       </Card>
     </div>
-  );
+  ), [organizationData]);
 
 
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'profile': return <ProfileTab />;
-      case 'security': return <SecurityTab />;
-      case 'appearance': return <AppearanceTab />;
-      case 'organization': return <OrganizationTab />;
-      default: return <ProfileTab />;
+      case 'profile': return ProfileTab;
+      case 'security': return SecurityTab;
+      case 'appearance': return AppearanceTab;
+      case 'organization': return OrganizationTab;
+      default: return ProfileTab;
     }
   };
 

@@ -78,6 +78,20 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            authService.changePassword(request.getEmail(), request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of("message", "Şifre başarıyla değiştirildi"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Şifre değiştirilemedi: " + e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/user/{email}")
     public ResponseEntity<?> deleteUser(@PathVariable String email) {
         authService.deleteUser(email);

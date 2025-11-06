@@ -83,6 +83,7 @@ export const endpoints = {
     refresh: '/auth/refresh',
     forgotPassword: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',
+    changePassword: '/auth/change-password',
   },
   
   // User management
