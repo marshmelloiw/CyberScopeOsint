@@ -12,10 +12,10 @@ spring:
     import: optional:file:.env
   
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope local}
     driver-class-name: org.postgresql.Driver
-    username: ${SPRING_DATASOURCE_USERNAME:cyber}
-    password: ${SPRING_DATASOURCE_PASSWORD:cyberpass}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:123}
   
   jpa:
     hibernate:
@@ -67,4 +67,10 @@ management:
     web:
       exposure:
         include: health,info
+
+security:
+  jwt:
+    secret: ${SECURITY_JWT_SECRET:b20c60b956f0daf982ef48bfc19f1fa2}
+    expiration: ${SECURITY_JWT_EXPIRATION:3600}
+    refresh-expiration: ${SECURITY_JWT_REFRESH_EXPIRATION:604800}
 

@@ -72,9 +72,6 @@ async function main() {
           bullet('axios.js: API client and interceptors.'),
           bullet('utils.js: Utilities.'),
 
-          heading('src/mocks', HeadingLevel.HEADING_3),
-          bullet('MSW-based mock handlers for development/testing.'),
-
           heading('Dependency flow', HeadingLevel.HEADING_3),
           bullet('Backend: controller → service → repository → database; util is cross-cutting.'),
           bullet('Frontend: features/components → store → lib/axios → backend APIs.'),
@@ -96,8 +93,10 @@ async function main() {
           bullet('POST /api/auth/forgot-password — Body: ForgotPasswordRequest — 200 OK'),
           bullet('POST /api/auth/reset-password — Body: ResetPasswordRequest — 200 OK'),
           bullet('DELETE /api/auth/user/{email} — 200 OK'),
-          bullet('POST /api/auth/mfa/sms/setup — Body: SmsMfaSetupRequest — 200 OK'),
-          bullet('POST /api/auth/mfa/sms/verify — Body: SmsMfaVerifyRequest — 200 OK/400 Bad Request'),
+          bullet('POST /api/auth/refresh — Body: RefreshTokenRequest — 200 JwtResponse'),
+          bullet('POST /api/auth/mfa/setup — Body: MfaSetupRequest — 200 MfaSetupResponse'),
+          bullet('POST /api/auth/mfa/verify — Body: MfaVerifyRequest — 200 JwtResponse'),
+          bullet('POST /api/auth/mfa/disable — Body: MfaSetupRequest — 200 OK'),
 
           heading('ApiKeysController', HeadingLevel.HEADING_3),
           bullet('GET /api/apikeys — returns availability flags for shodan, virustotal, hibp'),
@@ -120,13 +119,14 @@ async function main() {
 
           heading('Backend — Services', HeadingLevel.HEADING_2),
           heading('AuthService', HeadingLevel.HEADING_3),
-          bullet('register(String email, String rawPassword): void'),
+          bullet('register(String name, String email, MultipartFile): Map'),
           bullet('login(String email, String rawPassword): JwtResponse'),
+          bullet('refreshAccessToken(String refreshToken): JwtResponse'),
           bullet('forgotPassword(String email): void'),
           bullet('resetPassword(String token, String newPassword): void'),
-          bullet('deleteUser(String email): void'),
-          bullet('setupSmsMfa(String email, String phoneNumber): void'),
-          bullet('verifySmsMfa(String email, String code): boolean'),
+          bullet('setupTotpMfa(String email): MfaSetupResponse'),
+          bullet('verifyTotpMfa(String email, String totpToken): JwtResponse'),
+          bullet('disableTotpMfa(String email): void'),
 
           heading('ApiKeyService', HeadingLevel.HEADING_3),
           bullet('getShodanKey(): String / setShodanKey(String): void'),

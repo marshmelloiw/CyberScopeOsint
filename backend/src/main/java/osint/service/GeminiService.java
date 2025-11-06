@@ -63,7 +63,7 @@ public class GeminiService {
             logger.debug("Request body: {}", requestBody);
 
             return webClient.post()
-                    .uri("/models/gemini-2.5-pro:generateContent?key=" + apiKey)
+                    .uri("/models/gemini-2.5-flash:generateContent?key=" + apiKey)
                     .bodyValue(requestBody)
                     .retrieve()
                     .onStatus(status -> status.isError(), response -> {
@@ -184,6 +184,10 @@ public class GeminiService {
         Map<String, Object> error = new HashMap<>();
         error.put("error", message);
         return error;
+    }
+
+    public boolean isConfigured() {
+        return apiKey != null && !apiKey.isEmpty();
     }
 }
 

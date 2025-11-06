@@ -6,6 +6,7 @@ import { Shield, Smartphone, AlertCircle, ArrowLeft } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Card } from '../ui/Card';
+import api from '../../lib/axios';
 
 const mfaVerificationSchema = z.object({
   totp_token: z.string().min(6, 'TOTP token en az 6 karakter olmalıdır'),
@@ -29,35 +30,15 @@ const MFAVerification = ({ username, onVerificationSuccess, onBack, onCancel }) 
     
     try {
       // Real API call to backend
-      const response = await fetch('http://localhost:8080/api/auth/mfa/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username,
-          totp_token: data.totp_token,
-        }),
+      const response = await api.post('/auth/mfa/verify', {
+        username,
+        totpToken: data.totp_token,
       });
 
-      if (!response.ok) {
-        throw new Error('Geçersiz MFA token');
-      }
-
-      const result = await response.json();
-      onVerificationSuccess(result);
+      onVerificationSuccess(response.data);
     } catch (error) {
       console.error('MFA verification error:', error);
       setError('Geçersiz TOTP token. Lütfen tekrar deneyin.');
-      
-      // Mock success for development
-      setTimeout(() => {
-        onVerificationSuccess({
-          access_token: 'mock_access_token',
-          refresh_token: 'mock_refresh_token',
-          token_type: 'bearer'
-        });
-      }, 1000);
     } finally {
       setIsLoading(false);
     }

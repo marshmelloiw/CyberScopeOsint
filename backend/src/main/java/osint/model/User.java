@@ -32,6 +32,9 @@ public class User {
     @Column(name = "mfa_enabled")
     private Boolean mfaEnabled = false;
 
+    @Column(name = "totp_secret")
+    private String totpSecret;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -167,11 +170,11 @@ public class User {
     }
 
     public String getTotpSecret() {
-        return null; // Not in DB schema
+        return totpSecret;
     }
 
     public void setTotpSecret(String totpSecret) {
-        // Not in DB schema
+        this.totpSecret = totpSecret;
     }
 
     // Builder pattern
@@ -191,6 +194,7 @@ public class User {
         private LocalDateTime lastLogin;
         private String phoneNumber;
         private String userFile;
+        private String totpSecret;
         private Set<Role> roles = new HashSet<>();
 
         public Builder id(Long id) {
@@ -253,6 +257,11 @@ public class User {
             return this;
         }
 
+        public Builder totpSecret(String totpSecret) {
+            this.totpSecret = totpSecret;
+            return this;
+        }
+
         public User build() {
             User user = new User(email, passwordHash, roles);
             user.setFullName(fullName);
@@ -261,6 +270,7 @@ public class User {
             user.setMfaEnabled(mfaEnabled);
             user.setPhoneNumber(phoneNumber);
             user.setUserFile(userFile);
+            user.setTotpSecret(totpSecret);
             if (createdAt != null)
                 user.setCreatedAt(createdAt);
             if (lastLogin != null)

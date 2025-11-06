@@ -42,6 +42,10 @@ public class ShodanService {
                 .onErrorReturn(createErrorMap("Failed to fetch data from Shodan"));
     }
 
+    public boolean isConfigured() {
+        return apiKey != null && !apiKey.isEmpty();
+    }
+
     public Mono<Map<String, Object>> searchHosts(String query) {
         if (apiKey.isEmpty()) {
             return Mono.just(createErrorMap("Shodan API key not configured"));

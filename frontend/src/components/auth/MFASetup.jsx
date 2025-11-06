@@ -7,6 +7,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Card } from '../ui/Card';
 import useAuthStore from '../../store/auth';
+import api from '../../lib/axios';
 import QRCode from 'qrcode';
 
 const mfaSetupSchema = z.object({
@@ -21,7 +22,6 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
   const [error, setError] = useState(null);
 
   const user = useAuthStore((s) => s.user);
-  const token = useAuthStore((s) => s.token);
 
   const {
     register,
@@ -37,22 +37,7 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
     setError(null);
 
     try {
-      // Real API call to backend
-      const response = await fetch('http://localhost:8080/api/auth/mfa/setup', {
-        method: 'POST',
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username: user?.email }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || 'MFA setup başlatılamadı');
-      }
-
-      const data = await response.json();
+      const { data } = await api.post('/auth/mfa/setup', { username: user?.email });
       setQrCodeData(data);
       setError(null); // Başarılı olunca hatayı temizle
       // Başarılı yanıtta da QR görselini üret
@@ -89,23 +74,10 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
     setError(null);
 
     try {
-      // Real API call to backend
-      const response = await fetch('http://localhost:8080/api/auth/mfa/verify', {
-        method: 'POST',
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: user?.email,
-          totpToken: data.totp_token,
-        }),
+      await api.post('/auth/mfa/verify', {
+        username: user?.email,
+        totpToken: data.totp_token,
       });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || 'MFA verification başarısız');
-      }
 
       setStep('success');
       setTimeout(() => {

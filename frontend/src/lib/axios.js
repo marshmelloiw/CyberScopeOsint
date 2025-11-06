@@ -161,6 +161,10 @@ export const endpoints = {
     integrations: '/settings/integrations',
     security: '/settings/security',
   },
+
+  dashboard: {
+    summary: '/dashboard/summary',
+  },
 };
 
 export default api;

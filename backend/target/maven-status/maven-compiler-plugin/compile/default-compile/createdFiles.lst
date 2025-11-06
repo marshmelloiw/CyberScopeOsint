@@ -9,6 +9,7 @@ osint\controller\ApiKeysController.class
 osint\model\ScanProvider.class
 osint\repository\UserRepository.class
 osint\repository\EntityFindingRepository.class
+osint\dto\DashboardSummaryResponse$Alert.class
 osint\dto\JwtResponse$Builder.class
 osint\model\Entity.class
 osint\util\TOTPUtil.class
@@ -17,9 +18,11 @@ osint\model\ApiKey.class
 osint\controller\HealthController.class
 osint\service\UserManagementService.class
 osint\controller\ScanController.class
+osint\dto\DashboardSummaryResponse.class
 osint\service\UserApiKeyService.class
 osint\config\AsyncConfig.class
 osint\dto\MfaSetupResponse.class
+osint\model\RefreshToken.class
 osint\repository\ApiKeyRepository.class
 osint\model\Role.class
 osint\service\SmsService.class
@@ -27,6 +30,7 @@ osint\dto\SmsMfaSetupRequest.class
 osint\model\EntityFinding.class
 osint\controller\UserManagementController.class
 osint\service\ScanService$LogEntry.class
+osint\repository\RefreshTokenRepository.class
 osint\dto\JwtResponse.class
 osint\OsintBackendApplication.class
 osint\service\AuthService.class
@@ -37,8 +41,11 @@ osint\model\PasswordResetToken$Builder.class
 osint\controller\UserApiKeysController.class
 osint\repository\RoleRepository.class
 osint\service\VirusTotalService.class
+osint\dto\RefreshTokenRequest.class
 osint\model\PasswordResetToken.class
+osint\service\DashboardService.class
 osint\config\SecurityConfig.class
+osint\controller\DashboardController.class
 osint\service\ScanService.class
 osint\repository\EntityRepository.class
 osint\repository\ScanResultRepository.class
@@ -53,6 +60,7 @@ osint\controller\OsintController.class
 osint\service\ApiKeyService.class
 osint\model\Role$Builder.class
 osint\model\ScanLog.class
+osint\dto\DashboardSummaryResponse$ProviderStatus.class
 osint\dto\MfaVerifyRequest.class
 osint\repository\ScanProviderRepository.class
 osint\dto\MfaSetupRequest.class

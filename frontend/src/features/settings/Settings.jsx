@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { User, Sun, Moon, Shield, Globe, Building, Palette, Eye, EyeOff, Upload } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import api from '../../lib/axios';
 import useUIStore from '../../store/ui';
 import useAuthStore from '../../store/auth';
 import MFASetup from '../../components/auth/MFASetup';
@@ -17,8 +18,6 @@ const Settings = () => {
   const { theme, toggleTheme, sidebarCollapsed, toggleSidebar } = useUIStore();
   const { user, updateProfile } = useAuthStore();
   const phoneRef = useRef(null);
-  const [savingSms, setSavingSms] = useState(false);
-  const [smsSaveMessage, setSmsSaveMessage] = useState('');
 
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -288,11 +287,7 @@ const Settings = () => {
                       size="sm"
                       onClick={async () => {
                         try {
-                          await fetch('http://localhost:8080/api/auth/mfa/disable', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ username: user?.email })
-                          });
+                          await api.post('/auth/mfa/disable', { username: user?.email });
                           updateProfile({ ...user, totp_enabled: false });
                         } catch (e) {
                           console.error(e);
@@ -375,65 +370,10 @@ const Settings = () => {
                     }}
                   />
                 </div>
-                <Button
-                  disabled={savingSms}
-                  onClick={async () => {
-                    try {
-                      setSmsSaveMessage('');
-                      setSavingSms(true);
-                      const emailVal = user?.email || (profileData?.email ?? '');
-                      if (!emailVal) {
-                        setSmsSaveMessage('Önce profil email adresinizi girin.');
-                        return;
-                      }
-                      const normalized = (securityData.phoneNumber || '').replace(/\D/g, '').replace(/^0+/, '');
-                      if (!normalized) {
-                        setSmsSaveMessage('Telefon numarası boş olamaz.');
-                        return;
-                      }
-                      const fullPhone = `${securityData.countryCode}${normalized}`;
-                      const res = await fetch('http://localhost:8080/api/auth/mfa/sms/setup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          phoneNumber: fullPhone,
-                        })
-                      });
-                      if (!res.ok) {
-                        const text = await res.text();
-                        throw new Error(text || 'SMS MFA kaydedilemedi');
-                      }
-                      const data = await res.json();
-                      // Ülke kodunu yanlışlıkla yerel numaranın ilk hanesiyle birlikte silmemek için
-                      const savedFull = (data.phoneNumber || fullPhone);
-                      const chosenCc = (prev => prev)(securityData).countryCode || '+90';
-                      const savedNoPlus = savedFull.startsWith('+') ? savedFull.slice(1) : savedFull;
-                      const ccDigits = chosenCc.replace('+', '');
-                      const localPart = savedNoPlus.startsWith(ccDigits)
-                        ? savedNoPlus.slice(ccDigits.length)
-                        : normalized; // fallback: kullanıcının girdiği normalize numara
-
-                      setSecurityData(prev => ({
-                        ...prev,
-                        smsMfaEnabled: !!data.smsMfaEnabled,
-                        phoneNumber: localPart,
-                        countryCode: chosenCc,
-                      }));
-                      setSmsSaveMessage('Kaydedildi');
-                    } catch (e) {
-                      console.error(e);
-                      setSmsSaveMessage('Kaydedilemedi');
-                    } finally {
-                      setSavingSms(false);
-                    }
-                  }}
-                >
-                  {savingSms ? 'Kaydediliyor...' : 'Kaydet'}
-                </Button>
+                <p className="text-sm text-surface-muted">
+                  SMS tabanlı MFA şu anda desteklenmiyor.
+                </p>
               </div>
-              {smsSaveMessage && (
-                <p className="text-sm text-surface-muted">{smsSaveMessage}</p>
-              )}
             </div>
 
             <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">

@@ -3,13 +3,19 @@ package osint.service;
 import osint.dto.JwtResponse;
 import osint.dto.MfaSetupResponse;
 import osint.repository.PasswordResetTokenRepository;
+import osint.repository.RefreshTokenRepository;
 import osint.repository.UserRepository;
 import osint.model.PasswordResetToken;
+import osint.model.RefreshToken;
 import osint.model.User;
+import osint.util.JwtUtil;
+import osint.util.TOTPVerifier;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.commons.codec.binary.Base32;
+
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,25 +24,32 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    // In-memory storage for TOTP secrets (not in DB schema)
-    // In production, consider using Redis or another external storage
-    private final Map<String, String> totpSecrets = new ConcurrentHashMap<>();
+    private final JwtUtil jwtUtil;
+    private final long refreshTokenValiditySeconds;
+    private final TOTPVerifier totpVerifier = new TOTPVerifier();
 
     public AuthService(UserRepository userRepository,
-            PasswordResetTokenRepository passwordResetTokenRepository) {
+            PasswordResetTokenRepository passwordResetTokenRepository,
+            RefreshTokenRepository refreshTokenRepository,
+            @Value("${security.jwt.secret:change-me-change-me-change-me-123456}") String jwtSecret,
+            @Value("${security.jwt.expiration:3600}") long jwtExpirationSeconds,
+            @Value("${security.jwt.refresh-expiration:604800}") long refreshTokenValiditySeconds) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.jwtUtil = new JwtUtil(jwtSecret, jwtExpirationSeconds);
+        this.refreshTokenValiditySeconds = refreshTokenValiditySeconds;
     }
 
     public Map<String, Object> register(String name, String email, MultipartFile file) {
@@ -99,27 +112,33 @@ public class AuthService {
 
     public JwtResponse login(String email, String rawPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+                .orElseThrow(() -> new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre"));
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid credentials");
+            throw new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre");
         }
 
-        // Check if user is active (isVerified = true means active)
-        if (user.getIsVerified() == null || !user.getIsVerified()) {
+        if (!Boolean.TRUE.equals(user.getIsVerified())) {
             throw new IllegalArgumentException("Hesabınız aktif değil. Lütfen yöneticinizle iletişime geçin.");
         }
 
-        // Update last login timestamp
-        user.setLastLogin(java.time.LocalDateTime.now());
+        boolean totpEnabled = Boolean.TRUE.equals(user.getMfaEnabled()) && user.getTotpSecret() != null;
+        if (totpEnabled) {
+            return JwtResponse.builder()
+                    .mfaRequired(true)
+                    .tokenType("mfa_required")
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .fullName(user.getFullName())
+                    .role(user.getRole())
+                    .verified(Boolean.TRUE.equals(user.getIsVerified()))
+                    .mfaEnabled(true)
+                    .expiresIn(jwtUtil.getExpirationSeconds())
+                    .build();
+        }
+
+        user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
-
-        String mockJwt = "mock-" + UUID.randomUUID();
-        return JwtResponse.builder()
-                .token(mockJwt)
-                .token_type("Bearer") // 🆕 eklendi
-                .mfaRequired(false)
-                .build();
-
+        return issueTokens(user);
     }
 
     public void forgotPassword(String email) {
@@ -155,21 +174,12 @@ public class AuthService {
     public void setupSmsMfa(String email, String phoneNumber) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        // phoneNumber is not stored in DB schema, only enable MFA
-        user.setMfaEnabled(true);
+        user.setPhoneNumber(phoneNumber);
         userRepository.save(user);
     }
 
     public boolean verifySmsMfa(String email, String code) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        if (!Boolean.TRUE.equals(user.getMfaEnabled())) {
-            throw new IllegalArgumentException("MFA not enabled for user");
-        }
-
-        // Mock SMS verification - in production, verify against SMS service
-        return "123456".equals(code);
+        throw new UnsupportedOperationException("SMS MFA henüz desteklenmiyor");
     }
 
     public MfaSetupResponse setupTotpMfa(String email) {
@@ -182,9 +192,7 @@ public class AuthService {
         Base32 base32 = new Base32();
         String secret = base32.encodeToString(secretBytes);
 
-        // Save secret in memory (not in DB schema)
-        // In production, consider using Redis or another external storage
-        totpSecrets.put(email, secret);
+        user.setTotpSecret(secret);
         user.setMfaEnabled(true);
         userRepository.save(user);
 
@@ -197,37 +205,44 @@ public class AuthService {
         return new MfaSetupResponse(secret, totpUri);
     }
 
-    public boolean verifyTotpMfa(String email, String totpToken) {
+    public JwtResponse verifyTotpMfa(String email, String totpToken) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String secret = totpSecrets.get(email);
+        String secret = user.getTotpSecret();
         if (secret == null || secret.isEmpty()) {
             throw new IllegalArgumentException("TOTP MFA not setup for user");
         }
 
-        // For now, accept any 6-digit code as a mock
-        // In production, use a proper TOTP library (e.g., com.warrenstrange:googleauth)
-        // to verify the token against the secret
         if (totpToken == null || totpToken.length() != 6 || !totpToken.matches("\\d{6}")) {
-            return false;
+            throw new IllegalArgumentException("Invalid TOTP token");
         }
 
-        // Mock verification: accept any valid format
-        // TODO: Replace with actual TOTP verification
-        // TOTPVerifier verifier = new TOTPVerifier();
-        // return verifier.verify(secret, totpToken);
+        int code;
+        try {
+            code = Integer.parseInt(totpToken);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid TOTP token");
+        }
 
-        // For demo purposes, accept "123456" or any code if secret exists
-        // In production, implement proper TOTP verification
-        return true;
+        try {
+            if (!totpVerifier.verify(secret, code)) {
+                throw new IllegalArgumentException("Invalid TOTP token");
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("TOTP verification failed: " + e.getMessage(), e);
+        }
+
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
+        return issueTokens(user);
     }
 
     public void enableTotpMfa(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (!totpSecrets.containsKey(email)) {
+        if (user.getTotpSecret() == null || user.getTotpSecret().isEmpty()) {
             throw new IllegalArgumentException("TOTP secret not found. Please setup TOTP first.");
         }
 
@@ -239,8 +254,58 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        totpSecrets.remove(email);
+        user.setTotpSecret(null);
         user.setMfaEnabled(false);
         userRepository.save(user);
+    }
+
+    public JwtResponse refreshAccessToken(String refreshTokenValue) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
+                .orElseThrow(() -> new IllegalArgumentException("Geçersiz yenileme tokenı"));
+
+        if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
+            refreshTokenRepository.delete(refreshToken);
+            throw new IllegalArgumentException("Yenileme tokenının süresi dolmuş");
+        }
+
+        User user = refreshToken.getUser();
+        return buildJwtResponse(user, generateAccessToken(user), refreshTokenValue);
+    }
+
+    private JwtResponse issueTokens(User user) {
+        refreshTokenRepository.deleteByUserId(user.getId());
+        refreshTokenRepository.deleteAllExpired(Instant.now());
+
+        String accessToken = generateAccessToken(user);
+        String refreshTokenValue = UUID.randomUUID().toString();
+        Instant refreshExpiry = Instant.now().plusSeconds(refreshTokenValiditySeconds);
+
+        RefreshToken refreshToken = new RefreshToken(user, refreshTokenValue, refreshExpiry);
+        refreshTokenRepository.save(refreshToken);
+
+        return buildJwtResponse(user, accessToken, refreshTokenValue);
+    }
+
+    private String generateAccessToken(User user) {
+        return jwtUtil.generateToken(user.getEmail(), Map.of(
+                "userId", user.getId(),
+                "role", user.getRole() != null ? user.getRole() : "USER"
+        ));
+    }
+
+    private JwtResponse buildJwtResponse(User user, String accessToken, String refreshTokenValue) {
+        return JwtResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshTokenValue)
+                .tokenType("Bearer")
+                .mfaRequired(false)
+                .userId(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .verified(Boolean.TRUE.equals(user.getIsVerified()))
+                .mfaEnabled(Boolean.TRUE.equals(user.getMfaEnabled()))
+                .expiresIn(jwtUtil.getExpirationSeconds())
+                .build();
     }
 }

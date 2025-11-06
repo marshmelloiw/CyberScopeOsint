@@ -309,9 +309,7 @@ public class UserManagementService {
         List<String> permissions = getPermissionsByRole(user.getRole());
         response.put("permissions", permissions);
 
-        // Mock data for compatibility
         response.put("lastActive", user.getLastLogin() != null ? user.getLastLogin().toString() : null);
-        response.put("loginCount", 0); // Not stored in DB
 
         return response;
     }

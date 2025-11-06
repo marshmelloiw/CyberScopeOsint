@@ -81,4 +81,13 @@ public class HaveIBeenPwnedService {
         error.put("error", message);
         return error;
     }
+
+    public boolean isConfigured() {
+        String key = (apiKeyService != null && !apiKeyService.getHibpKey().isEmpty()) ? apiKeyService.getHibpKey()
+                : apiKey;
+        if (key == null) {
+            return false;
+        }
+        return !key.isEmpty() && !"your_actual_hibp_api_key_here".equalsIgnoreCase(key);
+    }
 }

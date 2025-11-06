@@ -12,7 +12,7 @@ Modern **React tabanlı Cybersecurity OSINT platformu** frontend uygulaması.
 - 🪝 **Zustand** – Hafif state management  
 - 🔄 **TanStack Query** – Server state management ve caching  
 - 🛣 **React Router** – Client-side routing  
-- 🧪 **MSW** – API mocking (development)  
+- 🔐 **JWT Auth** – Token tabanlı kimlik doğrulama ve MFA  
 - 📱 **Responsive Design** – Mobil uyumlu tasarım  
 
 ---
@@ -91,7 +91,6 @@ src/
 │   └── users/          # Kullanıcı yönetimi
 ├── hooks/              # Custom hooks
 ├── lib/                # Utility kütüphaneleri
-├── mocks/              # Mock data & API handlers
 ├── store/              # Zustand store'ları
 └── utils/              # Yardımcı fonksiyonlar
 ```
@@ -142,18 +141,6 @@ npm run test:ui
 # E2E Test
 npm run test:e2e
 ```
-
-### Mock API
-Development modunda **MSW (Mock Service Worker)** kullanılarak mock API'ler sağlanır:
-
-- **Authentication**: Login, logout, token refresh  
-- **Users**: Kullanıcı yönetimi  
-- **Scans**: Tarama işlemleri  
-- **Entities**: Varlık analizi  
-- **Reports**: Rapor yönetimi  
-- **Notifications**: Bildirim sistemi  
-
----
 
 ## 📱 Responsive Design
 

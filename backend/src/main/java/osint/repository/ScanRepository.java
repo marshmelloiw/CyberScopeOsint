@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,5 +29,7 @@ public interface ScanRepository extends JpaRepository<Scan, Long> {
     
     @Query("SELECT COUNT(s) FROM Scan s WHERE s.user.id = :userId")
     long countByUserId(@Param("userId") Long userId);
+
+    long countByStatusIn(Collection<String> statuses);
 }
 

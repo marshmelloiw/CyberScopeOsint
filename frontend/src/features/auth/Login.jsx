@@ -21,10 +21,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showMFA, setShowMFA] = useState(false);
   const [mfaUsername, setMfaUsername] = useState('');
-  const [smsRequired, setSmsRequired] = useState(false);
-  const [smsCode, setSmsCode] = useState('');
   const navigate = useNavigate();
-  const { login, error, clearError } = useAuthStore();
+  const { login, error, clearError, completeLogin } = useAuthStore();
 
   const {
     register,
@@ -43,17 +41,9 @@ const Login = () => {
       const result = await login(data);
       console.log('Login result:', result);
 
-      // Check if MFA is required
-      if (result && result.token_type === 'mfa_required') {
-        setMfaUsername(data.email);
+      if (result?.mfaRequired) {
+        setMfaUsername(result.email || data.email);
         setShowMFA(true);
-        return;
-      }
-
-      // SMS MFA gerekiyorsa
-      if (result && result.smsRequired === true) {
-        setMfaUsername(data.email);
-        setSmsRequired(true);
         return;
       }
 
@@ -69,6 +59,12 @@ const Login = () => {
 
   const handleMFASuccess = (mfaResult) => {
     console.log('MFA verification successful:', mfaResult);
+    try {
+      completeLogin(mfaResult);
+    } catch (err) {
+      console.error('Failed to finalize MFA login:', err);
+      return;
+    }
     navigate('/dashboard');
   };
 
@@ -192,58 +188,15 @@ const Login = () => {
                 </div>
               )}
 
-              {/* SMS doğrulama alanı */}
-              {smsRequired && (
-                <div className="space-y-3 p-3 rounded-lg border border-surface-border">
-                  <label className="text-sm font-medium text-white">SMS Kodu</label>
-                  <Input
-                    placeholder="000000"
-                    maxLength={6}
-                    value={smsCode}
-                    onChange={(e) => setSmsCode(e.target.value)}
-                    className="text-center tracking-widest text-lg"
-                  />
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={async () => {
-                      if (!smsCode || smsCode.length < 4) return;
-                      setIsLoading(true);
-                      try {
-                        const resp = await fetch('http://localhost:8080/api/auth/sms/verify', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ username: mfaUsername || (document.querySelector('input[type="email"]').value), code: smsCode })
-                        });
-                        if (!resp.ok) throw new Error('SMS doğrulama başarısız');
-                        const data = await resp.json();
-                        // Store tokens
-                        localStorage.setItem('authToken', data.token);
-                        // Redirect to dashboard
-                        navigate('/dashboard');
-                      } catch (e) {
-                        console.error(e);
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                  >
-                    {isLoading ? 'Doğrulanıyor...' : 'SMS Kodu ile Giriş Yap'}
-                  </Button>
-                </div>
-              )}
-
               {/* Submit button */}
-              {!smsRequired && (
-                <Button
-                  type="submit"
-                  className="w-full"
-                  loading={isLoading}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-                </Button>
-              )}
+              <Button
+                type="submit"
+                className="w-full"
+                loading={isLoading}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              </Button>
             </form>
 
             {/* Divider */}

@@ -93,4 +93,12 @@ public class ZapService {
         error.put("error", message);
         return error;
     }
+
+    public boolean isConfigured() {
+        return apiKey != null && !apiKey.isEmpty();
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
 }

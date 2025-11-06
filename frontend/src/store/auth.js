@@ -1,5 +1,25 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import api, { endpoints } from '../lib/axios';
+
+const buildUserFromPayload = (payload = {}) => {
+  const email = payload.email || '';
+  const fullName = payload.fullName || '';
+  return {
+    id: payload.userId ?? null,
+    name: fullName || email.split('@')[0] || email,
+    email,
+    role: payload.role || 'viewer',
+    status: payload.verified ? 'active' : 'inactive',
+    verified: !!payload.verified,
+    mfaEnabled: !!payload.mfaEnabled,
+    totp_enabled: !!payload.mfaEnabled,
+    lastActive: new Date().toISOString(),
+    avatar: email
+      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`
+      : undefined,
+  };
+};
 
 const useAuthStore = create(
   persist(
@@ -22,6 +42,31 @@ const useAuthStore = create(
       setLoading: (isLoading) => set({ isLoading }),
 
       setError: (error) => set({ error }),
+
+      completeLogin: (payload) => {
+        if (!payload || !payload.token) {
+          throw new Error('Geçersiz oturum yanıtı');
+        }
+
+        const user = buildUserFromPayload(payload);
+        const refreshToken = payload.refreshToken || null;
+
+        set({
+          user,
+          token: payload.token,
+          refreshToken,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+
+        localStorage.setItem('authToken', payload.token);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        } else {
+          localStorage.removeItem('refreshToken');
+        }
+      },
 
       login: async (credentials) => {
         console.log('Auth store login called with:', credentials);
@@ -74,44 +119,16 @@ try {
           }
           
 
-          // Check if MFA is required
-          if (data?.token_type === 'mfa_required') {
+          if (data?.mfaRequired || data?.tokenType === 'mfa_required') {
+            set({ isLoading: false });
             return {
-              token_type: 'mfa_required',
-              message: 'MFA verification required'
+              mfaRequired: true,
+              email: data?.email || credentials.email,
             };
           }
-          
 
-          // Create user object from response
-          const user = {
-            id: data?.user_id ?? 1,
-            name: credentials.email.split('@')[0],
-            email: credentials.email,
-            role: 'admin', // Backend'den alınacak
-            status: 'active',
-            lastActive: new Date().toISOString(),
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${credentials.email}`,
-            totp_enabled: false,
-          };
-
-          console.log('Setting auth state:', { user, isAuthenticated: true });
-
-          set({
-            user: user,
-            token: data.token, // Backend'den gelen token field'ı
-            refreshToken: data.refresh_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-
-          // Store tokens in localStorage
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('refreshToken', data.refresh_token);
-
-          console.log('Auth state updated, returning result');
-          return { user, token: data.token, refreshToken: data.refresh_token };
+          get().completeLogin(data);
+          return data;
         } catch (error) {
           console.error('Login error in store:', error);
           set({
@@ -142,31 +159,20 @@ try {
         if (!refreshToken) return false;
 
         try {
-          const response = await fetch('/api/auth/refresh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          });
-
-          if (!response.ok) {
+          const { data } = await api.post(endpoints.auth.refresh, { refreshToken });
+          if (!data || !data.token) {
             throw new Error('Token refresh failed');
           }
 
-          let data = null;
-try {
-  data = await response.json();
-} catch {
-  data = {};
-}
-
           set({
             token: data.token,
-            refreshToken: data.refreshToken,
+            refreshToken: data.refreshToken || refreshToken,
           });
 
-          // Update localStorage
           localStorage.setItem('authToken', data.token);
-          localStorage.setItem('refreshToken', data.refreshToken);
+          if (data.refreshToken) {
+            localStorage.setItem('refreshToken', data.refreshToken);
+          }
 
           return true;
         } catch (error) {
@@ -257,7 +263,8 @@ try {
           }
 
           // Real API call to backend
-          const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
+          const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+          const response = await fetch(`${base}/api/auth/forgot-password`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -300,7 +307,8 @@ try {
           }
 
           // Real API call to backend
-          const response = await fetch('http://localhost:8080/api/auth/reset-password', {
+          const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+          const response = await fetch(`${base}/api/auth/reset-password`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

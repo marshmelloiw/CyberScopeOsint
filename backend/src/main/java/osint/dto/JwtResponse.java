@@ -2,20 +2,34 @@ package osint.dto;
 
 public class JwtResponse {
     private String token;
-    private String token_type; // 🆕 Eklendi
+    private String refreshToken;
+    private String tokenType = "Bearer";
     private boolean mfaRequired;
+    private Long userId;
+    private String email;
+    private String fullName;
+    private String role;
+    private boolean verified;
+    private boolean mfaEnabled;
+    private long expiresIn;
 
-    // Constructors
     public JwtResponse() {
     }
 
-    public JwtResponse(String token, String token_type, boolean mfaRequired) {
-        this.token = token;
-        this.token_type = token_type;
-        this.mfaRequired = mfaRequired;
+    private JwtResponse(Builder builder) {
+        this.token = builder.token;
+        this.refreshToken = builder.refreshToken;
+        this.tokenType = builder.tokenType;
+        this.mfaRequired = builder.mfaRequired;
+        this.userId = builder.userId;
+        this.email = builder.email;
+        this.fullName = builder.fullName;
+        this.role = builder.role;
+        this.verified = builder.verified;
+        this.mfaEnabled = builder.mfaEnabled;
+        this.expiresIn = builder.expiresIn;
     }
 
-    // Getters and Setters
     public String getToken() {
         return token;
     }
@@ -24,12 +38,20 @@ public class JwtResponse {
         this.token = token;
     }
 
-    public String getToken_type() {
-        return token_type;
+    public String getRefreshToken() {
+        return refreshToken;
     }
 
-    public void setToken_type(String token_type) {
-        this.token_type = token_type;
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public String getTokenType() {
+        return tokenType;
+    }
+
+    public void setTokenType(String tokenType) {
+        this.tokenType = tokenType;
     }
 
     public boolean isMfaRequired() {
@@ -40,23 +62,91 @@ public class JwtResponse {
         this.mfaRequired = mfaRequired;
     }
 
-    // Builder pattern
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public boolean isVerified() {
+        return verified;
+    }
+
+    public void setVerified(boolean verified) {
+        this.verified = verified;
+    }
+
+    public boolean isMfaEnabled() {
+        return mfaEnabled;
+    }
+
+    public void setMfaEnabled(boolean mfaEnabled) {
+        this.mfaEnabled = mfaEnabled;
+    }
+
+    public long getExpiresIn() {
+        return expiresIn;
+    }
+
+    public void setExpiresIn(long expiresIn) {
+        this.expiresIn = expiresIn;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
 
     public static class Builder {
         private String token;
-        private String token_type = "Bearer"; // 🆕 Varsayılan
+        private String refreshToken;
+        private String tokenType = "Bearer";
         private boolean mfaRequired;
+        private Long userId;
+        private String email;
+        private String fullName;
+        private String role;
+        private boolean verified;
+        private boolean mfaEnabled;
+        private long expiresIn;
 
         public Builder token(String token) {
             this.token = token;
             return this;
         }
 
-        public Builder token_type(String token_type) {
-            this.token_type = token_type;
+        public Builder refreshToken(String refreshToken) {
+            this.refreshToken = refreshToken;
+            return this;
+        }
+
+        public Builder tokenType(String tokenType) {
+            this.tokenType = tokenType;
             return this;
         }
 
@@ -65,8 +155,43 @@ public class JwtResponse {
             return this;
         }
 
+        public Builder userId(Long userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public Builder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public Builder fullName(String fullName) {
+            this.fullName = fullName;
+            return this;
+        }
+
+        public Builder role(String role) {
+            this.role = role;
+            return this;
+        }
+
+        public Builder verified(boolean verified) {
+            this.verified = verified;
+            return this;
+        }
+
+        public Builder mfaEnabled(boolean mfaEnabled) {
+            this.mfaEnabled = mfaEnabled;
+            return this;
+        }
+
+        public Builder expiresIn(long expiresIn) {
+            this.expiresIn = expiresIn;
+            return this;
+        }
+
         public JwtResponse build() {
-            return new JwtResponse(token, token_type, mfaRequired);
+            return new JwtResponse(this);
         }
     }
 }

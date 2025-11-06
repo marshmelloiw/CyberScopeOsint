@@ -71,6 +71,10 @@ public class VirusTotalService {
                 .onErrorReturn(createErrorMap("Failed to fetch URL report from VirusTotal"));
     }
 
+    public boolean isConfigured() {
+        return apiKey != null && !apiKey.isEmpty();
+    }
+
     private Map<String, Object> createErrorMap(String message) {
         Map<String, Object> error = new HashMap<>();
         error.put("error", message);

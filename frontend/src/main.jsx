@@ -6,7 +6,6 @@ import useUIStore from './store/ui'
 
 // Initialize MSW in development - DISABLED FOR BACKEND TESTING
 // if (import.meta.env.DEV) {
-//   import('./mocks/browser.js')
 // }
 
 // Initialize theme

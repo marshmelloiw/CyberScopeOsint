@@ -32,6 +32,10 @@ public class JwtUtil {
                 .signWith(key)
                 .compact();
     }
+
+    public long getExpirationSeconds() {
+        return expirationSeconds;
+    }
 }
 
 

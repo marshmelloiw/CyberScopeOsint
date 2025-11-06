@@ -54,6 +54,17 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        try {
+            JwtResponse jwt = authService.refreshAccessToken(request.getRefreshToken());
+            return ResponseEntity.ok(jwt);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", ex.getMessage()));
+        }
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request.getEmail());
@@ -74,22 +85,14 @@ public class AuthController {
 
     @PostMapping("/mfa/sms/setup")
     public ResponseEntity<?> setupSmsMfa(@Valid @RequestBody SmsMfaSetupRequest request) {
-        // For demo purposes, we'll use a hardcoded email
-        // In production, this would come from the authenticated user's context
-        authService.setupSmsMfa("admin@example.com", request.getPhoneNumber());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(Map.of("error", "SMS MFA henüz desteklenmiyor"));
     }
 
     @PostMapping("/mfa/sms/verify")
     public ResponseEntity<?> verifySmsMfa(@Valid @RequestBody SmsMfaVerifyRequest request) {
-        // For demo purposes, we'll use a hardcoded email
-        // In production, this would come from the authenticated user's context
-        boolean isValid = authService.verifySmsMfa("admin@example.com", request.getCode());
-        if (isValid) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(Map.of("error", "SMS MFA henüz desteklenmiyor"));
     }
 
     @PostMapping("/mfa/setup")
@@ -106,15 +109,12 @@ public class AuthController {
     @PostMapping("/mfa/verify")
     public ResponseEntity<?> verifyTotpMfa(@Valid @RequestBody osint.dto.MfaVerifyRequest request) {
         try {
-            boolean isValid = authService.verifyTotpMfa(request.getUsername(), request.getTotpToken());
-            if (isValid) {
-                authService.enableTotpMfa(request.getUsername());
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().build();
-            }
+            JwtResponse jwt = authService.verifyTotpMfa(request.getUsername(), request.getTotpToken());
+            authService.enableTotpMfa(request.getUsername());
+            return ResponseEntity.ok(jwt);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
