@@ -34,6 +34,8 @@ public class ScanService {
     private final ScanProviderRepository scanProviderRepository;
     private final ScanResultRepository scanResultRepository;
     private final ScanLogRepository scanLogRepository;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     // In-memory cache for quick status lookups (still used for real-time status)
     private final Map<String, ScanStatus> scanStatuses = new ConcurrentHashMap<>();
@@ -50,7 +52,9 @@ public class ScanService {
             ScanTargetRepository scanTargetRepository,
             ScanProviderRepository scanProviderRepository,
             ScanResultRepository scanResultRepository,
-            ScanLogRepository scanLogRepository) {
+            ScanLogRepository scanLogRepository,
+            NotificationService notificationService,
+            UserRepository userRepository) {
         this.shodanService = shodanService;
         this.virusTotalService = virusTotalService;
         this.hibpService = hibpService;
@@ -62,6 +66,8 @@ public class ScanService {
         this.scanProviderRepository = scanProviderRepository;
         this.scanResultRepository = scanResultRepository;
         this.scanLogRepository = scanLogRepository;
+        this.notificationService = notificationService;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -347,9 +353,30 @@ public class ScanService {
                             int findingsCount = calculateFindingsCount(providerResult);
                             scanResult.setFindingsCount(findingsCount);
 
+                            // Calculate risk score based on findings if not already set
+                            if (scanResult.getRiskScore() == null) {
+                                scanResult.setRiskScore(calculateRiskScoreFromFindings(findingsCount, providerResult));
+
+                                // Set risk level based on findings
+                                if (findingsCount > 0) {
+                                    if (findingsCount >= 8) {
+                                        scanResult.setRiskLevel("CRITICAL");
+                                    } else if (findingsCount >= 5) {
+                                        scanResult.setRiskLevel("HIGH");
+                                    } else if (findingsCount >= 3) {
+                                        scanResult.setRiskLevel("MEDIUM");
+                                    } else {
+                                        scanResult.setRiskLevel("LOW");
+                                    }
+                                }
+                            }
+
                             // Save to DB
                             scanResult = scanResultRepository.save(scanResult);
                             scanResultIds.put(provider + "_" + target, scanResult.getId());
+
+                            // Check if risk_score > 7.5 or critical findings and create notification
+                            checkAndCreateNotification(scanResult, scan);
 
                             // Update provider status
                             scanProvider.setStatus(providerResult.containsKey("error") ? "FAILED" : "COMPLETED");
@@ -469,7 +496,18 @@ public class ScanService {
                                         if (scanResultOpt.isPresent()) {
                                             ScanResult scanResult = scanResultOpt.get();
                                             scanResult.setGeminiReport(geminiAnalysis);
-                                            scanResultRepository.save(scanResult);
+
+                                            // Extract risk_score and risk_level from Gemini report if available
+                                            extractRiskFromGeminiReport(geminiAnalysis, scanResult);
+
+                                            scanResult = scanResultRepository.save(scanResult);
+
+                                            // Check if risk_score > 7.5 and create notification
+                                            Optional<Scan> scanOpt = scanRepository
+                                                    .findById(scanResult.getScan().getId());
+                                            if (scanOpt.isPresent()) {
+                                                checkAndCreateNotification(scanResult, scanOpt.get());
+                                            }
                                         }
                                     }
 
@@ -842,6 +880,256 @@ public class ScanService {
         }
 
         return scanList;
+    }
+
+    /**
+     * Check if risk_score > 7.5 or critical findings and create notification if
+     * needed
+     */
+    private void checkAndCreateNotification(ScanResult scanResult, Scan scan) {
+        try {
+            BigDecimal riskScore = scanResult.getRiskScore();
+            Integer findingsCount = scanResult.getFindingsCount();
+            String riskLevel = scanResult.getRiskLevel();
+
+            // Determine if notification should be created
+            boolean shouldCreateNotification = false;
+
+            // Check 1: Risk score > 7.5
+            if (riskScore != null && riskScore.compareTo(new BigDecimal("7.5")) > 0) {
+                shouldCreateNotification = true;
+            }
+            // Check 2: Critical findings (8 or more findings)
+            else if (findingsCount != null && findingsCount >= 8) {
+                shouldCreateNotification = true;
+                // Set risk score if not set
+                if (riskScore == null) {
+                    riskScore = new BigDecimal("8.0"); // Default high risk for critical findings
+                    scanResult.setRiskScore(riskScore);
+                }
+                if (riskLevel == null || riskLevel.isBlank()) {
+                    riskLevel = "CRITICAL";
+                    scanResult.setRiskLevel(riskLevel);
+                }
+            }
+            // Check 3: Risk level is CRITICAL
+            else if (riskLevel != null && riskLevel.toUpperCase().equals("CRITICAL")) {
+                shouldCreateNotification = true;
+                // Set risk score if not set
+                if (riskScore == null) {
+                    riskScore = new BigDecimal("9.0"); // Default critical risk
+                    scanResult.setRiskScore(riskScore);
+                }
+            }
+            // Check 4: High findings count (5 or more)
+            else if (findingsCount != null && findingsCount >= 5) {
+                shouldCreateNotification = true;
+                // Set risk score if not set
+                if (riskScore == null) {
+                    riskScore = new BigDecimal("7.5"); // Default high risk
+                    scanResult.setRiskScore(riskScore);
+                }
+                if (riskLevel == null || riskLevel.isBlank()) {
+                    riskLevel = "HIGH";
+                    scanResult.setRiskLevel(riskLevel);
+                }
+            }
+
+            if (shouldCreateNotification) {
+                Long userId = scan.getUser() != null ? scan.getUser().getId() : null;
+                if (userId == null) {
+                    // Try to get first active user as fallback (for testing purposes)
+                    logger.warn(
+                            "Cannot create notification: user_id is null for scan {}. Attempting to find user from scan context.",
+                            scan.getScanId());
+
+                    try {
+                        // First try to find user with ID 1 (most common case)
+                        Optional<User> user1 = userRepository.findById(1L);
+                        if (user1.isPresent() && Boolean.TRUE.equals(user1.get().getIsVerified())) {
+                            userId = 1L;
+                            logger.info("Using user ID 1 for notification (fallback)");
+                        } else {
+                            // If user 1 doesn't exist or not verified, get first verified user
+                            Optional<User> firstUser = userRepository.findAll().stream()
+                                    .filter(u -> Boolean.TRUE.equals(u.getIsVerified()))
+                                    .findFirst();
+                            if (firstUser.isPresent()) {
+                                userId = firstUser.get().getId();
+                                logger.info("Using fallback user {} for notification", userId);
+                            } else {
+                                logger.error("No verified user found. Cannot create notification for scan {}",
+                                        scan.getScanId());
+                                return;
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error finding fallback user for notification: {}", e.getMessage());
+                        return;
+                    }
+                }
+
+                // Ensure risk level is set
+                if (riskLevel == null || riskLevel.isBlank()) {
+                    if (riskScore != null) {
+                        double score = riskScore.doubleValue();
+                        if (score >= 9.0) {
+                            riskLevel = "CRITICAL";
+                        } else if (score >= 7.5) {
+                            riskLevel = "HIGH";
+                        } else {
+                            riskLevel = "MEDIUM";
+                        }
+                    } else {
+                        riskLevel = "HIGH";
+                    }
+                }
+
+                String target = scanResult.getScanTarget() != null ? scanResult.getScanTarget().getTarget() : "unknown";
+                String provider = scanResult.getProviderName();
+
+                // Build message
+                String message;
+                if (findingsCount != null && findingsCount > 0) {
+                    if (riskScore != null) {
+                        message = String.format(
+                                "Yüksek risk tespit edildi: %s için %s taramasında %d bulgu, risk skoru %.1f (Seviye: %s)",
+                                target, provider, findingsCount, riskScore.doubleValue(), riskLevel);
+                    } else {
+                        message = String.format(
+                                "Yüksek risk tespit edildi: %s için %s taramasında %d bulgu (Seviye: %s)",
+                                target, provider, findingsCount, riskLevel);
+                    }
+                } else {
+                    message = String.format(
+                            "Yüksek risk skoru tespit edildi: %s için %s taramasında risk skoru %.1f (Seviye: %s)",
+                            target, provider, riskScore != null ? riskScore.doubleValue() : 0.0, riskLevel);
+                }
+
+                notificationService.createNotification(
+                        userId,
+                        scan.getId(),
+                        riskScore != null ? riskScore : new BigDecimal("7.5"),
+                        riskLevel,
+                        message);
+
+                logger.info("Notification created for scan {} - findings: {}, risk_score: {}, risk_level: {}",
+                        scan.getScanId(), findingsCount, riskScore, riskLevel);
+            }
+        } catch (Exception e) {
+            logger.error("Error creating notification for scan result {}: {}", scanResult.getId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Calculate risk score from findings count and provider result
+     */
+    private BigDecimal calculateRiskScoreFromFindings(int findingsCount, Map<String, Object> providerResult) {
+        if (findingsCount == 0) {
+            return new BigDecimal("0.0");
+        }
+
+        // Base score from findings count (0-10 scale)
+        double baseScore = Math.min(10.0, findingsCount * 1.2);
+
+        // Check for error in result
+        if (providerResult.containsKey("error")) {
+            baseScore = Math.max(baseScore, 5.0); // At least medium risk if there's an error
+        }
+
+        // Adjust based on findings count thresholds
+        if (findingsCount >= 8) {
+            baseScore = Math.max(baseScore, 8.5); // Critical
+        } else if (findingsCount >= 5) {
+            baseScore = Math.max(baseScore, 7.5); // High
+        } else if (findingsCount >= 3) {
+            baseScore = Math.max(baseScore, 5.0); // Medium
+        }
+
+        return BigDecimal.valueOf(Math.min(10.0, baseScore));
+    }
+
+    /**
+     * Extract risk_score and risk_level from Gemini report
+     */
+    @SuppressWarnings("unchecked")
+    private void extractRiskFromGeminiReport(Map<String, Object> geminiAnalysis, ScanResult scanResult) {
+        try {
+            // Try to extract from structured analysis
+            if (geminiAnalysis.containsKey("analysis")) {
+                Object analysisObj = geminiAnalysis.get("analysis");
+                if (analysisObj instanceof Map) {
+                    Map<String, Object> analysis = (Map<String, Object>) analysisObj;
+
+                    // Look for risk_score in various possible locations
+                    if (analysis.containsKey("risk_score")) {
+                        Object riskScoreObj = analysis.get("risk_score");
+                        if (riskScoreObj instanceof Number) {
+                            scanResult.setRiskScore(BigDecimal.valueOf(((Number) riskScoreObj).doubleValue()));
+                        }
+                    }
+
+                    if (analysis.containsKey("risk_level") || analysis.containsKey("riskLevel")) {
+                        Object riskLevelObj = analysis.getOrDefault("risk_level", analysis.get("riskLevel"));
+                        if (riskLevelObj != null) {
+                            scanResult.setRiskLevel(riskLevelObj.toString().toUpperCase());
+                        }
+                    }
+
+                    // Check in Risk Assessment section
+                    if (analysis.containsKey("Risk Assessment")) {
+                        Object riskAssessmentObj = analysis.get("Risk Assessment");
+                        if (riskAssessmentObj instanceof Map) {
+                            Map<String, Object> riskAssessment = (Map<String, Object>) riskAssessmentObj;
+                            if (riskAssessment.containsKey("score")) {
+                                Object scoreObj = riskAssessment.get("score");
+                                if (scoreObj instanceof Number) {
+                                    scanResult.setRiskScore(BigDecimal.valueOf(((Number) scoreObj).doubleValue()));
+                                }
+                            }
+                            if (riskAssessment.containsKey("level")) {
+                                Object levelObj = riskAssessment.get("level");
+                                if (levelObj != null) {
+                                    scanResult.setRiskLevel(levelObj.toString().toUpperCase());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Try to extract from markdown text using regex
+            if (scanResult.getRiskScore() == null && geminiAnalysis.containsKey("markdown")) {
+                String markdown = geminiAnalysis.get("markdown").toString();
+
+                // Look for risk score pattern: "score 7.5" or "score: 7.5" or "7.5/10"
+                java.util.regex.Pattern scorePattern = java.util.regex.Pattern.compile(
+                        "(?:risk[\\s_-]?score|score)[\\s:]*([0-9]+(?:\\.[0-9]+)?)",
+                        java.util.regex.Pattern.CASE_INSENSITIVE);
+                java.util.regex.Matcher scoreMatcher = scorePattern.matcher(markdown);
+                if (scoreMatcher.find()) {
+                    try {
+                        double score = Double.parseDouble(scoreMatcher.group(1));
+                        scanResult.setRiskScore(BigDecimal.valueOf(score));
+                    } catch (NumberFormatException e) {
+                        logger.debug("Could not parse risk score from markdown");
+                    }
+                }
+
+                // Look for risk level pattern: "HIGH", "MEDIUM", "LOW", "CRITICAL"
+                if (scanResult.getRiskLevel() == null) {
+                    java.util.regex.Pattern levelPattern = java.util.regex.Pattern.compile(
+                            "(?:risk[\\s_-]?level|level)[\\s:]*\\b(CRITICAL|HIGH|MEDIUM|LOW)\\b",
+                            java.util.regex.Pattern.CASE_INSENSITIVE);
+                    java.util.regex.Matcher levelMatcher = levelPattern.matcher(markdown);
+                    if (levelMatcher.find()) {
+                        scanResult.setRiskLevel(levelMatcher.group(1).toUpperCase());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.debug("Error extracting risk from Gemini report: {}", e.getMessage());
+        }
     }
 
     private void addLog(ScanStatus status, String message) {

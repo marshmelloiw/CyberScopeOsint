@@ -1,71 +1,155 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { Bell, AlertTriangle, Shield, Search, CheckCircle, X, Settings, Volume2, VolumeX, Mail, Smartphone } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import api, { endpoints } from '../../lib/axios';
+import useAuthStore from '../../store/auth';
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [showPreferences, setShowPreferences] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuthStore();
 
-  // Mock notifications data
-  const notifications = [
-    {
-      id: 1,
-      type: 'security-alert',
-      title: 'High-risk domain detected',
-      message: 'Domain "malicious-site.com" has been flagged as high-risk with multiple threat indicators.',
-      severity: 'high',
-      timestamp: '2024-01-15T10:30:00Z',
-      read: false,
-      category: 'security',
-      actions: ['View Details', 'Mark as False Positive'],
+  // Notification preferences state
+  const [preferences, setPreferences] = useState({
+    enableNotifications: true,
+    soundAlerts: true,
+    categoryPreferences: {
+      security: true,
+      scan: true,
+      breach: true,
+      system: true,
+      intelligence: true,
     },
-    {
-      id: 2,
-      type: 'scan-complete',
-      title: 'Domain scan completed',
-      message: 'Security scan for "google.com" has completed. 12 findings detected, risk score: 3/10.',
-      severity: 'low',
-      timestamp: '2024-01-15T09:15:00Z',
-      read: true,
-      category: 'scan',
-      actions: ['View Report', 'Download Results'],
-    },
-    {
-      id: 3,
-      type: 'breach-alert',
-      title: 'New data breach detected',
-      message: 'Email "test@example.com" found in 3 new data breaches. Immediate action recommended.',
-      severity: 'medium',
-      timestamp: '2024-01-15T08:45:00Z',
-      read: false,
-      category: 'breach',
-      actions: ['View Details', 'Check Other Emails'],
-    },
-    {
-      id: 4,
-      type: 'system-update',
-      title: 'System maintenance scheduled',
-      message: 'Scheduled maintenance will begin at 02:00 UTC. Expected downtime: 30 minutes.',
-      severity: 'info',
-      timestamp: '2024-01-15T07:00:00Z',
-      read: true,
-      category: 'system',
-      actions: ['View Schedule', 'Reschedule'],
-    },
-    {
-      id: 5,
-      type: 'threat-intel',
-      title: 'New threat intelligence',
-      message: 'New threat indicators added to database. 15 new IP addresses flagged.',
-      severity: 'medium',
-      timestamp: '2024-01-14T16:20:00Z',
-      read: true,
-      category: 'intelligence',
-      actions: ['View Indicators', 'Update Rules'],
-    },
-  ];
+    inAppNotifications: true,
+    emailNotifications: true,
+    pushNotifications: false,
+    digestFrequency: 'daily',
+  });
+  const [savingPreferences, setSavingPreferences] = useState(false);
+
+  // Fetch notifications from API
+  useEffect(() => {
+    fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Fetch preferences when preferences panel is opened
+  useEffect(() => {
+    if (showPreferences && user?.id) {
+      fetchPreferences();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPreferences, user?.id]);
+
+  const fetchPreferences = async () => {
+    try {
+      const userId = user?.id;
+      if (!userId) return;
+
+      const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      const response = await api.get(endpoints.notifications.preferences, {
+        params: { userId: numericUserId }
+      });
+
+      if (response.data) {
+        setPreferences(prev => ({
+          ...prev,
+          ...response.data,
+          // Ensure categoryPreferences is properly merged
+          categoryPreferences: response.data.categoryPreferences || prev.categoryPreferences,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching preferences:', error);
+      // Keep default preferences on error
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const userId = user?.id;
+      console.log('Fetching notifications for userId:', userId, 'user:', user);
+      
+      if (!userId) {
+        console.warn('No userId found, cannot fetch notifications');
+        setNotifications([]);
+        setLoading(false);
+        return;
+      }
+
+      // Ensure userId is a number, not a string
+      const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      console.log('Making API call with userId:', numericUserId, 'type:', typeof numericUserId);
+      
+      const response = await api.get(endpoints.notifications.list, {
+        params: { userId: numericUserId }
+      });
+      
+      console.log('Notifications API response:', response.data);
+      
+      if (response.data && response.data.notifications) {
+        // Map API response to component format
+        const mappedNotifications = response.data.notifications.map(notif => {
+          console.log('Mapping notification:', notif);
+          
+          // Parse timestamp - handle both ISO string and LocalDateTime format
+          let timestamp = notif.createdAt;
+          if (timestamp && typeof timestamp === 'string') {
+            // If it's already a string, use it directly
+            // If it's in format "2024-01-15T10:30:00", add 'Z' for ISO
+            if (!timestamp.includes('Z') && !timestamp.includes('+')) {
+              timestamp = timestamp + 'Z';
+            }
+          } else if (!timestamp) {
+            timestamp = new Date().toISOString();
+          }
+          
+          return {
+            id: notif.id,
+            type: 'security-alert',
+            title: `Yüksek Risk Skoru: ${notif.riskScore || 'N/A'}`,
+            message: notif.message || `Risk skoru ${notif.riskScore || 'N/A'} tespit edildi`,
+            severity: mapRiskLevelToSeverity(notif.riskLevel),
+            timestamp: timestamp,
+            read: notif.isRead || false,
+            category: 'security',
+            actions: ['Detayları Görüntüle'],
+            riskScore: notif.riskScore,
+            riskLevel: notif.riskLevel,
+            scanId: notif.scanId,
+            scanIdString: notif.scanIdString, // UUID string for navigation
+          };
+        });
+        console.log('Mapped notifications:', mappedNotifications);
+        setNotifications(mappedNotifications);
+      } else {
+        console.warn('No notifications in response:', response.data);
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapRiskLevelToSeverity = (riskLevel) => {
+    if (!riskLevel) return 'medium';
+    const level = riskLevel.toUpperCase();
+    if (level === 'CRITICAL') return 'high';
+    if (level === 'HIGH') return 'high';
+    if (level === 'MEDIUM') return 'medium';
+    return 'low';
+  };
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -122,14 +206,79 @@ const Notifications = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id) => {
-    // In a real app, this would update the backend
-    console.log('Marking notification as read:', id);
+  const markAsRead = async (id) => {
+    try {
+      await api.put(`/notifications/${id}/read`);
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, read: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    // In a real app, this would update the backend
-    console.log('Marking all notifications as read');
+  const markAllAsRead = async () => {
+    try {
+      const userId = user?.id;
+      if (!userId) return;
+      
+      await api.put('/notifications/read-all', null, {
+        params: { userId }
+      });
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, read: true }))
+      );
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const savePreferences = async () => {
+    try {
+      setSavingPreferences(true);
+      const userId = user?.id;
+      if (!userId) {
+        console.warn('No userId found, cannot save preferences');
+        return;
+      }
+
+      const response = await api.put(endpoints.notifications.preferences, {
+        userId: userId,
+        ...preferences,
+      });
+
+      console.log('Preferences saved:', response.data);
+      
+      // Update state with saved preferences from response
+      if (response.data) {
+        setPreferences(prev => ({
+          ...prev,
+          enableNotifications: response.data.enableNotifications ?? prev.enableNotifications,
+          soundAlerts: response.data.soundAlerts ?? prev.soundAlerts,
+          inAppNotifications: response.data.inAppNotifications ?? prev.inAppNotifications,
+          emailNotifications: response.data.emailNotifications ?? prev.emailNotifications,
+          pushNotifications: response.data.pushNotifications ?? prev.pushNotifications,
+          digestFrequency: response.data.digestFrequency ?? prev.digestFrequency,
+          categoryPreferences: response.data.categoryPreferences || prev.categoryPreferences,
+        }));
+      }
+      
+      // Close preferences panel after successful save
+      setShowPreferences(false);
+      
+      // Show success message (you can add a toast notification here)
+      alert('Ayarlar başarıyla kaydedildi');
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      // Show error message
+      alert('Ayarlar kaydedilirken bir hata oluştu: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setSavingPreferences(false);
+    }
   };
 
   const NotificationPreferences = () => (
@@ -152,8 +301,26 @@ const Notifications = () => {
                   <p className="text-sm text-surface-muted">Receive notifications in the application</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Volume2 className="h-4 w-4 text-success" />
-                  <span className="text-success text-sm">Enabled</span>
+                  <button
+                    type="button"
+                    onClick={() => setPreferences(prev => ({ ...prev, enableNotifications: !prev.enableNotifications }))}
+                    className={cn(
+                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2",
+                      preferences.enableNotifications ? "bg-primary-600" : "bg-surface-border"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                        preferences.enableNotifications ? "translate-x-6" : "translate-x-1"
+                      )}
+                    />
+                  </button>
+                  {preferences.enableNotifications ? (
+                    <Volume2 className="h-4 w-4 text-success" />
+                  ) : (
+                    <VolumeX className="h-4 w-4 text-surface-muted" />
+                  )}
                 </div>
               </div>
               
@@ -163,8 +330,26 @@ const Notifications = () => {
                   <p className="text-sm text-surface-muted">Play sound for important notifications</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Volume2 className="h-4 w-4 text-success" />
-                  <span className="text-success text-sm">Enabled</span>
+                  <button
+                    type="button"
+                    onClick={() => setPreferences(prev => ({ ...prev, soundAlerts: !prev.soundAlerts }))}
+                    className={cn(
+                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2",
+                      preferences.soundAlerts ? "bg-primary-600" : "bg-surface-border"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                        preferences.soundAlerts ? "translate-x-6" : "translate-x-1"
+                      )}
+                    />
+                  </button>
+                  {preferences.soundAlerts ? (
+                    <Volume2 className="h-4 w-4 text-success" />
+                  ) : (
+                    <VolumeX className="h-4 w-4 text-surface-muted" />
+                  )}
                 </div>
               </div>
             </div>
@@ -186,8 +371,15 @@ const Notifications = () => {
                     <input
                       type="checkbox"
                       id={category}
-                      defaultChecked
-                      className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
+                      checked={preferences.categoryPreferences[category] || false}
+                      onChange={(e) => setPreferences(prev => ({
+                        ...prev,
+                        categoryPreferences: {
+                          ...prev.categoryPreferences,
+                          [category]: e.target.checked
+                        }
+                      }))}
+                      className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500 cursor-pointer"
                     />
                     <label htmlFor={category} className="sr-only">Enable {category} notifications</label>
                   </div>
@@ -209,8 +401,26 @@ const Notifications = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success" />
-                  <span className="text-success text-sm">Enabled</span>
+                  <button
+                    type="button"
+                    onClick={() => setPreferences(prev => ({ ...prev, inAppNotifications: !prev.inAppNotifications }))}
+                    className={cn(
+                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2",
+                      preferences.inAppNotifications ? "bg-primary-600" : "bg-surface-border"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                        preferences.inAppNotifications ? "translate-x-6" : "translate-x-1"
+                      )}
+                    />
+                  </button>
+                  {preferences.inAppNotifications ? (
+                    <CheckCircle className="h-4 w-4 text-success" />
+                  ) : (
+                    <X className="h-4 w-4 text-surface-muted" />
+                  )}
                 </div>
               </div>
               
@@ -226,8 +436,9 @@ const Notifications = () => {
                   <input
                     type="checkbox"
                     id="email"
-                    defaultChecked
-                    className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
+                    checked={preferences.emailNotifications}
+                    onChange={(e) => setPreferences(prev => ({ ...prev, emailNotifications: e.target.checked }))}
+                    className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500 cursor-pointer"
                   />
                   <label htmlFor="email" className="sr-only">Enable email notifications</label>
                 </div>
@@ -245,7 +456,9 @@ const Notifications = () => {
                   <input
                     type="checkbox"
                     id="push"
-                    className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
+                    checked={preferences.pushNotifications}
+                    onChange={(e) => setPreferences(prev => ({ ...prev, pushNotifications: e.target.checked }))}
+                    className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500 cursor-pointer"
                   />
                   <label htmlFor="push" className="sr-only">Enable push notifications</label>
                 </div>
@@ -262,7 +475,11 @@ const Notifications = () => {
                   <p className="font-medium text-white">Digest Frequency</p>
                   <p className="text-sm text-surface-muted">How often to send notification digests</p>
                 </div>
-                <select className="px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                <select 
+                  value={preferences.digestFrequency}
+                  onChange={(e) => setPreferences(prev => ({ ...prev, digestFrequency: e.target.value }))}
+                  className="px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
+                >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
@@ -270,6 +487,16 @@ const Notifications = () => {
                 </select>
               </div>
             </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end pt-4 border-t border-surface-border">
+            <Button 
+              onClick={savePreferences}
+              disabled={savingPreferences}
+            >
+              {savingPreferences ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
           </div>
         </div>
       </CardContent>
@@ -285,7 +512,11 @@ const Notifications = () => {
           <p className="text-surface-muted">Manage your security alerts and notifications</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={markAllAsRead}>
+          <Button 
+            variant="outline" 
+            onClick={markAllAsRead}
+            disabled={unreadCount === 0}
+          >
             <CheckCircle className="h-4 w-4 mr-2" />
             Mark All Read
           </Button>
@@ -305,8 +536,6 @@ const Notifications = () => {
           { id: 'all', label: 'All', count: notifications.length },
           { id: 'unread', label: 'Unread', count: unreadCount },
           { id: 'security', label: 'Security', count: notifications.filter(n => n.category === 'security').length },
-          { id: 'scan', label: 'Scans', count: notifications.filter(n => n.category === 'scan').length },
-          { id: 'breach', label: 'Breaches', count: notifications.filter(n => n.category === 'breach').length },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -338,10 +567,14 @@ const Notifications = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredNotifications.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-surface-muted">Yükleniyor...</p>
+              </div>
+            ) : filteredNotifications.length === 0 ? (
               <div className="text-center py-8">
                 <Bell className="h-12 w-12 text-surface-muted mx-auto mb-4" />
-                <p className="text-surface-muted">No notifications found</p>
+                <p className="text-surface-muted">Bildirim bulunamadı</p>
               </div>
             ) : (
               filteredNotifications.map((notification) => (
@@ -398,7 +631,16 @@ const Notifications = () => {
                       <div className="flex items-center space-x-4 mt-3">
                         <div className="flex space-x-2">
                           {notification.actions.map((action, idx) => (
-                            <Button key={idx} variant="outline" size="sm">
+                            <Button 
+                              key={idx} 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                if (action === 'Detayları Görüntüle' && notification.scanIdString) {
+                                  navigate(`/dashboard/scans/${notification.scanIdString}`);
+                                }
+                              }}
+                            >
                               {action}
                             </Button>
                           ))}
@@ -409,29 +651,6 @@ const Notifications = () => {
                 </div>
               ))
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Bell className="h-6 w-6" />
-              <span>Test Notifications</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Settings className="h-6 w-6" />
-              <span>Notification Rules</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Mail className="h-6 w-6" />
-              <span>Email Templates</span>
-            </Button>
           </div>
         </CardContent>
       </Card>
