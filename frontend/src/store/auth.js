@@ -45,41 +45,47 @@ const useAuthStore = create(
               password: credentials.password,
             }),
           });
+          let data = null;
+try {
+  data = await response.json();
+} catch (e) {
+  console.warn("Boş veya geçersiz JSON döndü:", e);
+  data = {};
+}
 
-          let data;
+          
           if (!response.ok) {
-            // Read body ONCE safely, prefer text then try to JSON-parse
             const text = await response.text();
             let message = `Giriş başarısız (HTTP ${response.status})`;
             if (text) {
               try {
                 const parsed = JSON.parse(text);
-                message = parsed.message || parsed.detail || message;
+                message = parsed.error || parsed.message || message;
               } catch (_) {
                 message = text;
               }
             }
-            throw new Error(message);
-          } else {
-            try {
-              data = await response.json();
-            } catch (_) {
-              throw new Error('Sunucudan beklenmeyen yanıt alındı');
+          
+            if (message.includes("aktif değil")) {
+              throw new Error("Hesabınız henüz aktif değil. Lütfen yöneticinizin onayını bekleyin.");
             }
+          
+            throw new Error(message);
           }
-          console.log('Login response:', data);
+          
 
           // Check if MFA is required
-          if (data.token_type === 'mfa_required') {
+          if (data?.token_type === 'mfa_required') {
             return {
               token_type: 'mfa_required',
               message: 'MFA verification required'
             };
           }
+          
 
           // Create user object from response
           const user = {
-            id: data.user_id || 1,
+            id: data?.user_id ?? 1,
             name: credentials.email.split('@')[0],
             email: credentials.email,
             role: 'admin', // Backend'den alınacak
@@ -146,7 +152,13 @@ const useAuthStore = create(
             throw new Error('Token refresh failed');
           }
 
-          const data = await response.json();
+          let data = null;
+try {
+  data = await response.json();
+} catch {
+  data = {};
+}
+
           set({
             token: data.token,
             refreshToken: data.refreshToken,
@@ -194,12 +206,38 @@ const useAuthStore = create(
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Kayıt başarısız');
+            // Boş hata response'una karşı koruma
+            let message = 'Kayıt başarısız';
+            try {
+              const text = await response.text();
+              if (text) {
+                const errorData = JSON.parse(text);
+                message = errorData.detail || errorData.message || message;
+              }
+            } catch (_) {}
+            throw new Error(message);
           }
-
-          const data = await response.json();
+          
+          // ✅ Backend 201 Created döndürüyor ama body boş -> try/catch ekliyoruz
+          let data = null;
+          try {
+            const text = await response.text();
+            if (text) {
+              data = JSON.parse(text);
+            }
+          } catch (_) {
+            // boş body, sorun değil
+          }
+          
           console.log('Register response:', data);
+          
+          set({
+            isLoading: false,
+            error: null,
+          });
+          
+          return { message: 'Kayıt başarılı' };
+          
 
           set({
             isLoading: false,

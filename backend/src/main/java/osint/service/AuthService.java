@@ -21,7 +21,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    
+
     // In-memory storage for TOTP secrets (not in DB schema)
     // In production, consider using Redis or another external storage
     private final Map<String, String> totpSecrets = new ConcurrentHashMap<>();
@@ -53,21 +53,23 @@ public class AuthService {
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid credentials");
         }
-        
+
         // Check if user is active (isVerified = true means active)
         if (user.getIsVerified() == null || !user.getIsVerified()) {
             throw new IllegalArgumentException("Hesabınız aktif değil. Lütfen yöneticinizle iletişime geçin.");
         }
-        
+
         // Update last login timestamp
         user.setLastLogin(java.time.LocalDateTime.now());
         userRepository.save(user);
-        
+
         String mockJwt = "mock-" + UUID.randomUUID();
         return JwtResponse.builder()
                 .token(mockJwt)
+                .token_type("Bearer") // 🆕 eklendi
                 .mfaRequired(false)
                 .build();
+
     }
 
     public void forgotPassword(String email) {

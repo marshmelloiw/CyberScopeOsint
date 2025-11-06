@@ -53,9 +53,8 @@ public class User {
         // createdAt will be set by database default
     }
 
-    public User(Long id, String email, String passwordHash, Set<Role> roles) {
+    public User(String email, String passwordHash, Set<Role> roles) {
         this();
-        this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
         this.roles = roles != null ? roles : new HashSet<>();
@@ -255,15 +254,17 @@ public class User {
         }
 
         public User build() {
-            User user = new User(id, email, passwordHash, roles);
+            User user = new User(email, passwordHash, roles);
             user.setFullName(fullName);
             user.setRole(role);
             user.setIsVerified(isVerified);
             user.setMfaEnabled(mfaEnabled);
             user.setPhoneNumber(phoneNumber);
             user.setUserFile(userFile);
-            if (createdAt != null) user.setCreatedAt(createdAt);
-            if (lastLogin != null) user.setLastLogin(lastLogin);
+            if (createdAt != null)
+                user.setCreatedAt(createdAt);
+            if (lastLogin != null)
+                user.setLastLogin(lastLogin);
             return user;
         }
     }
