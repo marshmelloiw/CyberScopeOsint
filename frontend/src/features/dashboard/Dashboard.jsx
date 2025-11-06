@@ -9,12 +9,20 @@ import {
   Search,
   FileSearch,
   Loader2,
+  Key,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import api, { endpoints } from '../../lib/axios';
+import useAuthStore from '../../store/auth';
+import { ROLE } from '../../constants/roles';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const role = user?.role ?? ROLE.VIEWER;
+  const isAdmin = role === ROLE.ADMIN;
+  const isAnalyst = role === ROLE.ANALYST;
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -72,6 +80,73 @@ const Dashboard = () => {
   const recentAlerts = summary?.recentAlerts ?? [];
   const providerStatus = summary?.providers ?? {};
 
+  const quickActions = useMemo(() => {
+    const actions = [
+      {
+        key: 'reports',
+        label: 'Raporları Görüntüle',
+        description: 'Analiz raporlarına göz atın',
+        icon: FileSearch,
+        onClick: () => navigate('/dashboard/reports'),
+        variant: 'secondary',
+      },
+    ];
+
+    if (isAdmin || isAnalyst) {
+      actions.unshift({
+        key: 'new-scan',
+        label: 'Yeni Tarama',
+        description: 'Hemen yeni bir keşif başlatın',
+        icon: Search,
+        onClick: () => navigate('/dashboard/scans/new'),
+        variant: 'primary',
+      });
+    }
+
+    if (isAdmin) {
+      actions.push({
+        key: 'user-management',
+        label: 'Kullanıcı Yönetimi',
+        description: 'Rolleri ve erişimleri yönetin',
+        icon: Shield,
+        onClick: () => navigate('/dashboard/users'),
+        variant: 'tertiary',
+      });
+      actions.push({
+        key: 'settings',
+        label: 'Sistem Ayarları',
+        description: 'Platform yapılandırmasını düzenleyin',
+        icon: SettingsIcon,
+        onClick: () => navigate('/dashboard/settings'),
+        variant: 'tertiary',
+      });
+    }
+
+    if (role === ROLE.VIEWER) {
+      actions.push({
+        key: 'notifications',
+        label: 'Bildirimler',
+        description: 'Güncel bildirimleri inceleyin',
+        icon: AlertTriangle,
+        onClick: () => navigate('/dashboard/notifications'),
+        variant: 'secondary',
+      });
+    }
+
+    if (isAdmin && !actions.some((a) => a.key === 'apikeys')) {
+      actions.push({
+        key: 'apikeys',
+        label: 'API Anahtarları',
+        description: 'Harici servis entegrasyonlarını yönetin',
+        icon: Key,
+        onClick: () => navigate('/dashboard/apikeys'),
+        variant: 'secondary',
+      });
+    }
+
+    return actions;
+  }, [isAdmin, isAnalyst, navigate, role]);
+
   const getSeverityColor = (severity = 'low') => {
     switch (severity.toLowerCase()) {
       case 'high':
@@ -120,6 +195,19 @@ const Dashboard = () => {
     { label: 'OWASP ZAP', active: !!providerStatus.zap },
     { label: 'Gemini AI', active: !!providerStatus.gemini },
   ]), [providerStatus]);
+
+  const getQuickActionClasses = (variant) => {
+    switch (variant) {
+      case 'primary':
+        return 'bg-primary-600 text-white hover:bg-primary-700';
+      case 'secondary':
+        return 'bg-surface-panel border border-surface-border text-white hover:bg-surface-border';
+      case 'tertiary':
+        return 'bg-surface-panel border border-primary-600/40 text-primary-200 hover:bg-primary-600/10';
+      default:
+        return 'bg-surface-panel border border-surface-border text-white hover:bg-surface-border';
+    }
+  };
 
   if (loading) {
     return (
@@ -219,47 +307,51 @@ const Dashboard = () => {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <button
-                onClick={() => navigate('/dashboard/scans/new')}
-                className="w-full rounded-lg bg-primary-600 p-3 text-left text-white hover:bg-primary-700 transition-colors"
-              >
-                <div className="flex items-center space-x-2">
-                  <Search className="h-5 w-5" />
-                  <span>Yeni Tarama</span>
-                </div>
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/reports')}
-                className="w-full rounded-lg bg-surface-panel p-3 text-left text-white hover:bg-surface-border transition-colors border border-surface-border"
-              >
-                <div className="flex items-center space-x-2">
-                  <FileSearch className="h-5 w-5" />
-                  <span>Rapor Oluştur</span>
-                </div>
-              </button>
+              {quickActions.map(({ key, label, description, icon: Icon, onClick, variant }) => (
+                <button
+                  key={key}
+                  onClick={onClick}
+                  className={cn(
+                    'w-full rounded-lg p-3 text-left transition-colors',
+                    getQuickActionClasses(variant)
+                  )}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon className="h-5 w-5" />
+                    <div>
+                      <p className="font-medium">{label}</p>
+                      {description && (
+                        <p className="text-xs text-surface-muted/80">{description}</p>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>System Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {systemStatusRows.map((row) => (
-                  <div key={row.label} className="flex items-center justify-between">
-                    <span className="text-sm text-surface-muted">{row.label}</span>
-                    <span className="flex items-center space-x-2">
-                      <div className={cn('h-2 w-2 rounded-full', row.active ? 'bg-success' : 'bg-danger')} />
-                      <span className={cn('text-sm', row.active ? 'text-success' : 'text-danger')}>
-                        {row.active ? 'Aktif' : 'Pasif'}
+          {isAdmin && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>System Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {systemStatusRows.map((row) => (
+                    <div key={row.label} className="flex items-center justify-between">
+                      <span className="text-sm text-surface-muted">{row.label}</span>
+                      <span className="flex items-center space-x-2">
+                        <div className={cn('h-2 w-2 rounded-full', row.active ? 'bg-success' : 'bg-danger')} />
+                        <span className={cn('text-sm', row.active ? 'text-success' : 'text-danger')}>
+                          {row.active ? 'Aktif' : 'Pasif'}
+                        </span>
                       </span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

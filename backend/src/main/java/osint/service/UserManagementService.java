@@ -1,6 +1,8 @@
 package osint.service;
 
+import osint.model.Role;
 import osint.model.User;
+import osint.repository.RoleRepository;
 import osint.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,16 +21,19 @@ import java.util.stream.Collectors;
 @Service
 public class UserManagementService {
     private static final Logger logger = LoggerFactory.getLogger(UserManagementService.class);
+    private static final Set<String> ALLOWED_ROLES = Set.of("admin", "analyst", "viewer");
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired
-    public UserManagementService(UserRepository userRepository) {
+    public UserManagementService(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
 
     /**
@@ -83,17 +88,20 @@ public class UserManagementService {
                     ? passwordEncoder.encode(password)
                     : passwordEncoder.encode("TempPassword123!"); // Default password
 
+            String normalizedRole = normalizeRole(role);
+
             User user = User.builder()
                     .email(email)
                     .passwordHash(passwordHash)
                     .fullName(fullName)
-                    .role(role != null ? role : "viewer")
                     .isVerified(true) // New users are active by default so they can login immediately
                     .mfaEnabled(false)
                     .phoneNumber(phoneNumber)
                     .userFile(userFile)
                     .createdAt(LocalDateTime.now())
                     .build();
+
+            assignRole(user, normalizedRole);
 
             user = userRepository.save(user);
             logger.info("Created user: {} with email: {}", user.getId(), email);
@@ -142,7 +150,7 @@ public class UserManagementService {
 
             // Update role
             if (role != null && !role.isEmpty()) {
-                user.setRole(role);
+                assignRole(user, normalizeRole(role));
             }
 
             // Update status (we'll use isVerified to track status)
@@ -285,7 +293,8 @@ public class UserManagementService {
         response.put("id", user.getId());
         response.put("email", user.getEmail());
         response.put("name", user.getFullName() != null ? user.getFullName() : user.getEmail());
-        response.put("role", user.getRole() != null ? user.getRole() : "viewer");
+        String primaryRole = determinePrimaryRole(user);
+        response.put("role", primaryRole);
 
         // Determine status based on isVerified
         String status = "active";
@@ -306,7 +315,7 @@ public class UserManagementService {
         response.put("avatar", "https://api.dicebear.com/7.x/avataaars/svg?seed=" + avatarSeed);
 
         // Permissions based on role
-        List<String> permissions = getPermissionsByRole(user.getRole());
+        List<String> permissions = getPermissionsByRole(primaryRole);
         response.put("permissions", permissions);
 
         response.put("lastActive", user.getLastLogin() != null ? user.getLastLogin().toString() : null);
@@ -322,7 +331,7 @@ public class UserManagementService {
             return Arrays.asList("read");
         }
 
-        switch (role.toLowerCase()) {
+        switch (normalizeRole(role)) {
             case "admin":
                 return Arrays.asList("read", "write", "scan", "reports", "admin");
             case "analyst":
@@ -347,10 +356,11 @@ public class UserManagementService {
 
             // CSV Data
             for (User user : users) {
+                String primaryRole = determinePrimaryRole(user);
                 csv.append(user.getId()).append(",");
                 csv.append(escapeCsv(user.getEmail())).append(",");
                 csv.append(escapeCsv(user.getFullName() != null ? user.getFullName() : user.getEmail())).append(",");
-                csv.append(escapeCsv(user.getRole() != null ? user.getRole() : "viewer")).append(",");
+                csv.append(escapeCsv(primaryRole)).append(",");
                 csv.append(user.getIsVerified() != null && user.getIsVerified() ? "active" : "inactive").append(",");
                 csv.append(user.getMfaEnabled() != null && user.getMfaEnabled() ? "Yes" : "No").append(",");
                 csv.append(user.getCreatedAt() != null ? user.getCreatedAt().toString() : "").append(",");
@@ -407,7 +417,7 @@ public class UserManagementService {
             // Role distribution
             Map<String, Long> roleDistribution = allUsers.stream()
                     .collect(Collectors.groupingBy(
-                            u -> u.getRole() != null ? u.getRole() : "unknown",
+                            this::determinePrimaryRole,
                             Collectors.counting()));
 
             // Recent activity (last 7 days)
@@ -452,5 +462,59 @@ public class UserManagementService {
             logger.error("Error generating security audit: {}", e.getMessage(), e);
             throw new RuntimeException("Güvenlik denetimi raporu oluşturulamadı: " + e.getMessage(), e);
         }
+    }
+
+    private String determinePrimaryRole(User user) {
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            if (user.getRoles().stream().anyMatch(role -> "admin".equalsIgnoreCase(role.getName()))) {
+                return "admin";
+            }
+            if (user.getRoles().stream().anyMatch(role -> "analyst".equalsIgnoreCase(role.getName()))) {
+                return "analyst";
+            }
+            if (user.getRoles().stream().anyMatch(role -> "viewer".equalsIgnoreCase(role.getName()))) {
+                return "viewer";
+            }
+
+            Optional<String> firstRole = user.getRoles().stream()
+                    .map(Role::getName)
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(name -> !name.isEmpty())
+                    .findFirst();
+            if (firstRole.isPresent()) {
+                return normalizeRole(firstRole.get());
+            }
+        }
+
+        return normalizeRole(user.getRole());
+    }
+
+    private Role resolveRoleEntity(String normalizedRole) {
+        return roleRepository.findByName(normalizedRole)
+                .orElseThrow(() -> new RuntimeException("Rol bulunamadı: " + normalizedRole));
+    }
+
+    private void assignRole(User user, String normalizedRole) {
+        Role roleEntity = resolveRoleEntity(normalizedRole);
+        user.setRole(normalizedRole);
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
+        user.getRoles().clear();
+        user.getRoles().add(roleEntity);
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.trim().isEmpty()) {
+            return "viewer";
+        }
+
+        String normalized = role.trim().toLowerCase();
+        if (!ALLOWED_ROLES.contains(normalized)) {
+            logger.warn("Unknown role '{}' provided, defaulting to viewer", role);
+            return "viewer";
+        }
+        return normalized;
     }
 }

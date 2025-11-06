@@ -4,9 +4,11 @@ import osint.dto.JwtResponse;
 import osint.dto.MfaSetupResponse;
 import osint.repository.PasswordResetTokenRepository;
 import osint.repository.RefreshTokenRepository;
+import osint.repository.RoleRepository;
 import osint.repository.UserRepository;
 import osint.model.PasswordResetToken;
 import osint.model.RefreshToken;
+import osint.model.Role;
 import osint.model.User;
 import osint.util.JwtUtil;
 import osint.util.TOTPVerifier;
@@ -28,7 +30,11 @@ import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -37,18 +43,23 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final RoleRepository roleRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final JwtUtil jwtUtil;
     private final long refreshTokenValiditySeconds;
     private final TOTPVerifier totpVerifier = new TOTPVerifier();
+    private static final Set<String> ALLOWED_ROLES = Set.of("admin", "analyst", "viewer");
+    private static final String DEFAULT_ROLE = "viewer";
 
     public AuthService(UserRepository userRepository,
+            RoleRepository roleRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
             RefreshTokenRepository refreshTokenRepository,
             @Value("${security.jwt.secret:change-me-change-me-change-me-123456}") String jwtSecret,
             @Value("${security.jwt.expiration:3600}") long jwtExpirationSeconds,
             @Value("${security.jwt.refresh-expiration:604800}") long refreshTokenValiditySeconds) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtUtil = new JwtUtil(jwtSecret, jwtExpirationSeconds);
@@ -111,10 +122,11 @@ public class AuthService {
                 .fullName(name)
                 .passwordHash(hash)
                 .userFile(filePath)
-                .role("USER") // Default role: USER, ADMIN, or CORPORATE
+                .role(DEFAULT_ROLE)
                 .isVerified(false) // Requires admin approval
                 .mfaEnabled(false)
                 .build();
+        assignRole(user, DEFAULT_ROLE);
         userRepository.save(user);
 
         // Return success message (no token - user needs admin approval)
@@ -314,13 +326,15 @@ public class AuthService {
     }
 
     private String generateAccessToken(User user) {
+        String role = determinePrimaryRole(user);
         return jwtUtil.generateToken(user.getEmail(), Map.of(
                 "userId", user.getId(),
-                "role", user.getRole() != null ? user.getRole() : "USER"
+                "role", role
         ));
     }
 
     private JwtResponse buildJwtResponse(User user, String accessToken, String refreshTokenValue) {
+        String normalizedRole = determinePrimaryRole(user);
         return JwtResponse.builder()
                 .token(accessToken)
                 .refreshToken(refreshTokenValue)
@@ -329,10 +343,64 @@ public class AuthService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .role(user.getRole())
+                .role(normalizedRole)
                 .verified(Boolean.TRUE.equals(user.getIsVerified()))
                 .mfaEnabled(Boolean.TRUE.equals(user.getMfaEnabled()))
                 .expiresIn(jwtUtil.getExpirationSeconds())
                 .build();
+    }
+
+    private String determinePrimaryRole(User user) {
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            if (user.getRoles().stream().anyMatch(role -> "admin".equalsIgnoreCase(role.getName()))) {
+                return "admin";
+            }
+            if (user.getRoles().stream().anyMatch(role -> "analyst".equalsIgnoreCase(role.getName()))) {
+                return "analyst";
+            }
+            if (user.getRoles().stream().anyMatch(role -> "viewer".equalsIgnoreCase(role.getName()))) {
+                return "viewer";
+            }
+
+            Optional<String> firstRole = user.getRoles().stream()
+                    .map(Role::getName)
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(name -> !name.isEmpty())
+                    .findFirst();
+            if (firstRole.isPresent()) {
+                return normalizeRole(firstRole.get());
+            }
+        }
+
+        return normalizeRole(user.getRole());
+    }
+
+    private Role resolveRoleEntity(String normalizedRole) {
+        return roleRepository.findByName(normalizedRole)
+                .orElseThrow(() -> new IllegalArgumentException("Rol bulunamadı: " + normalizedRole));
+    }
+
+    private void assignRole(User user, String normalizedRole) {
+        Role roleEntity = resolveRoleEntity(normalizedRole);
+        user.setRole(normalizedRole);
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
+        user.getRoles().clear();
+        user.getRoles().add(roleEntity);
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.trim().isEmpty()) {
+            return DEFAULT_ROLE;
+        }
+
+        String normalizedRole = role.trim().toLowerCase();
+        if (!ALLOWED_ROLES.contains(normalizedRole)) {
+            logger.warn("Unknown role '{}' provided while building auth payload, defaulting to {}", role, DEFAULT_ROLE);
+            return DEFAULT_ROLE;
+        }
+        return normalizedRole;
     }
 }

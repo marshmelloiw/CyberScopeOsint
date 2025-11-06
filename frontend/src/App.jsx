@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import useUIStore from './store/ui';
 import useAuthStore from './store/auth';
+import { ROLE } from './constants/roles';
 
 // Layout components
 import AppShell from './components/layout/AppShell';
@@ -28,6 +29,7 @@ import Notifications from './features/notifications/Notifications';
 import Settings from './features/settings/Settings';
 import APIKeys from './features/apikeys/APIKeys';
 import UserManagement from './features/users/UserManagement';
+import Forbidden from './features/errors/Forbidden';
 
 // Mock server setup
 // MSW is initialized in main.jsx during development
@@ -54,6 +56,17 @@ const ProtectedRoute = ({ children }) => {
   }
 
   console.log('Authenticated, rendering children');
+  return children;
+};
+
+const RoleProtectedRoute = ({ allowedRoles, children }) => {
+  const { user } = useAuthStore();
+  const role = user?.role ?? ROLE.VIEWER;
+
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to="/403" replace />;
+  }
+
   return children;
 };
 
@@ -109,6 +122,8 @@ function App() {
               }
             />
 
+            <Route path="/403" element={<Forbidden />} />
+
             {/* Protected routes - Dashboard and app routes */}
             <Route
               path="/dashboard"
@@ -121,10 +136,38 @@ function App() {
               <Route index element={<Dashboard />} />
 
               {/* Scans routes */}
-              <Route path="scans" element={<ScansList />} />
-              <Route path="scans/history" element={<ScansList />} />
-              <Route path="scans/new" element={<NewScan />} />
-              <Route path="scans/:scanId" element={<ScanDetail />} />
+              <Route
+                path="scans"
+                element={
+                  <RoleProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.ANALYST]}>
+                    <ScansList />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="scans/history"
+                element={
+                  <RoleProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.ANALYST]}>
+                    <ScansList />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="scans/new"
+                element={
+                  <RoleProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.ANALYST]}>
+                    <NewScan />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="scans/:scanId"
+                element={
+                  <RoleProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.ANALYST]}>
+                    <ScanDetail />
+                  </RoleProtectedRoute>
+                }
+              />
 
               {/* Reports routes */}
               <Route path="reports" element={<Reports />} />
@@ -134,13 +177,34 @@ function App() {
               <Route path="notifications" element={<Notifications />} />
 
               {/* Settings routes */}
-              <Route path="settings" element={<Settings />} />
+              <Route
+                path="settings"
+                element={
+                  <RoleProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.ANALYST, ROLE.VIEWER]}>
+                    <Settings />
+                  </RoleProtectedRoute>
+                }
+              />
 
               {/* API Keys routes */}
-              <Route path="apikeys" element={<APIKeys />} />
+              <Route
+                path="apikeys"
+                element={
+                  <RoleProtectedRoute allowedRoles={[ROLE.ADMIN]}>
+                    <APIKeys />
+                  </RoleProtectedRoute>
+                }
+              />
 
               {/* User Management routes */}
-              <Route path="users" element={<UserManagement />} />
+              <Route
+                path="users"
+                element={
+                  <RoleProtectedRoute allowedRoles={[ROLE.ADMIN]}>
+                    <UserManagement />
+                  </RoleProtectedRoute>
+                }
+              />
 
               {/* Add more routes here as we build them */}
               {/* Catch-all route removed to allow proper navigation */}

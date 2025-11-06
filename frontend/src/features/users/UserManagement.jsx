@@ -17,6 +17,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [roleUpdateLoading, setRoleUpdateLoading] = useState({});
   const [inviteData, setInviteData] = useState({
     email: '',
     role: 'viewer',
@@ -430,6 +431,25 @@ const UserManagement = () => {
         break;
     }
   }, [users]);
+
+  const handleRoleChange = async (userId, newRole) => {
+    if (!newRole) return;
+
+    setRoleUpdateLoading((prev) => ({ ...prev, [userId]: true }));
+    try {
+      await api.put(endpoints.users.update(userId), { role: newRole });
+      setUsers((prevUsers) => prevUsers.map((user) => (user.id === userId ? { ...user, role: newRole } : user)));
+    } catch (err) {
+      console.error('Error updating role:', err);
+      alert('Rol güncellenemedi: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setRoleUpdateLoading((prev) => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+    }
+  };
 
   const InviteUserForm = useMemo(() => (
     <Card>
@@ -996,12 +1016,31 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td className="p-3">
-                      <span className={cn(
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        getRoleColor(user.role)
-                      )}>
-                        {roles.find(r => r.id === user.role)?.name || user.role}
-                      </span>
+                      <div className="space-y-2">
+                        <span
+                          className={cn(
+                            'px-2 py-1 rounded-full text-xs font-medium',
+                            getRoleColor(user.role)
+                          )}
+                        >
+                          {roles.find(r => r.id === user.role)?.name || user.role}
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <select
+                            value={user.role}
+                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                            disabled={!!roleUpdateLoading[user.id]}
+                            className="w-full px-3 py-1 text-xs bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-60"
+                          >
+                            {roles.map((roleOption) => (
+                              <option key={roleOption.id} value={roleOption.id}>
+                                {roleOption.name}
+                              </option>
+                            ))}
+                          </select>
+                          {roleUpdateLoading[user.id] && <Loader2 className="h-4 w-4 animate-spin text-primary-500" />}
+                        </div>
+                      </div>
                     </td>
                     <td className="p-3">
                       <span className={cn(
