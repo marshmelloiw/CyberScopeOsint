@@ -10,6 +10,8 @@ import osint.model.RefreshToken;
 import osint.model.User;
 import osint.util.JwtUtil;
 import osint.util.TOTPVerifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +33,7 @@ import java.util.UUID;
 
 @Service
 public class AuthService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -52,9 +55,23 @@ public class AuthService {
         this.refreshTokenValiditySeconds = refreshTokenValiditySeconds;
     }
 
-    public Map<String, Object> register(String name, String email, MultipartFile file) {
-        if (userRepository.existsByEmail(email)) {
+    public Map<String, Object> register(String name, String email, String password, MultipartFile file) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email zorunludur");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new IllegalArgumentException("Email already in use");
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Şifre zorunludur");
+        }
+
+        if (password.trim().length() < 8) {
+            throw new IllegalArgumentException("Şifre en az 8 karakter olmalıdır");
         }
 
         // Validate file
@@ -86,13 +103,11 @@ public class AuthService {
             throw new IllegalArgumentException("Dosya yüklenirken hata oluştu: " + e.getMessage());
         }
 
-        // Generate a random password (not used for login, but required by DB schema)
-        String randomPassword = UUID.randomUUID().toString();
-        String hash = passwordEncoder.encode(randomPassword);
+        String hash = passwordEncoder.encode(password.trim());
 
         // Create user
         User user = User.builder()
-                .email(email)
+                .email(normalizedEmail)
                 .fullName(name)
                 .passwordHash(hash)
                 .userFile(filePath)
@@ -111,13 +126,25 @@ public class AuthService {
     }
 
     public JwtResponse login(String email, String rawPassword) {
-        User user = userRepository.findByEmail(email)
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+
+        logger.debug("Attempting login for email={}", normalizedEmail);
+
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre"));
-        if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
+        String sanitizedPassword = rawPassword != null ? rawPassword.trim() : "";
+
+        if (!passwordEncoder.matches(sanitizedPassword, user.getPasswordHash())) {
+            logger.warn("Password mismatch for user id={} email={}", user.getId(), normalizedEmail);
             throw new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre");
         }
 
         if (!Boolean.TRUE.equals(user.getIsVerified())) {
+            logger.warn("Login blocked for unverified user id={} email={}", user.getId(), normalizedEmail);
             throw new IllegalArgumentException("Hesabınız aktif değil. Lütfen yöneticinizle iletişime geçin.");
         }
 

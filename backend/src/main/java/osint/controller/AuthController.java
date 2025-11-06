@@ -27,9 +27,10 @@ public class AuthController {
     public ResponseEntity<?> register(
             @RequestParam("name") String name,
             @RequestParam("email") String email,
+            @RequestParam("password") String password,
             @RequestParam("file") MultipartFile file) {
         try {
-            Map<String, Object> response = authService.register(name, email, file);
+            Map<String, Object> response = authService.register(name, email, password, file);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

@@ -12,9 +12,15 @@ import { Upload } from 'lucide-react';
 const registerSchema = z.object({
   name: z.string().min(2, 'Ad en az 2 karakter olmalıdır'),
   email: z.string().email('Geçerli bir email adresi giriniz'),
-  file: z.instanceof(FileList).refine((files) => files.length > 0, 'Dosya seçilmelidir')
+  password: z.string().min(8, 'Şifre en az 8 karakter olmalıdır'),
+  confirmPassword: z.string().min(8, 'Şifre tekrarı en az 8 karakter olmalıdır'),
+  file: z.instanceof(FileList)
+    .refine((files) => files.length > 0, 'Dosya seçilmelidir')
     .refine((files) => files[0]?.type === 'application/pdf', 'Sadece PDF dosyası yüklenebilir'),
-  agreeToTerms: z.boolean().refine(val => val === true, 'Kullanım şartlarını kabul etmelisiniz'),
+  agreeToTerms: z.boolean().refine((val) => val === true, 'Kullanım şartlarını kabul etmelisiniz'),
+}).refine((data) => data.password === data.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Şifreler eşleşmiyor',
 });
 
 const Register = () => {
@@ -52,6 +58,7 @@ const Register = () => {
       const result = await registerUser({
         name: data.name,
         email: data.email,
+        password: data.password,
         file: file,
       });
       console.log('Register result:', result);
@@ -104,6 +111,24 @@ const Register = () => {
                 placeholder="ornek@email.com"
                 error={errors.email?.message}
                 {...register('email')}
+              />
+
+              {/* Password field */}
+              <Input
+                label="Şifre"
+                type="password"
+                placeholder="••••••••"
+                error={errors.password?.message}
+                {...register('password')}
+              />
+
+              {/* Confirm password field */}
+              <Input
+                label="Şifre (Tekrar)"
+                type="password"
+                placeholder="••••••••"
+                error={errors.confirmPassword?.message}
+                {...register('confirmPassword')}
               />
 
               {/* File upload field */}

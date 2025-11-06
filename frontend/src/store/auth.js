@@ -80,44 +80,61 @@ const useAuthStore = create(
 
           // Real API call to backend
           const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:8080';
+          const normalizedEmail = credentials.email?.trim().toLowerCase();
+          const normalizedPassword = credentials.password?.trim();
+
+          if (!normalizedEmail || !normalizedPassword) {
+            throw new Error('Email ve şifre gerekli');
+          }
+
           const response = await fetch(`${base}/api/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
+              email: normalizedEmail,
+              password: normalizedPassword,
             }),
           });
-          let data = null;
-try {
-  data = await response.json();
-} catch (e) {
-  console.warn("Boş veya geçersiz JSON döndü:", e);
-  data = {};
-}
 
-          
+          let rawText = '';
+          let data = null;
+
+          try {
+            rawText = await response.text();
+          } catch (e) {
+            console.warn('Yanıt metni okunamadı:', e);
+          }
+
+          if (rawText) {
+            try {
+              data = JSON.parse(rawText);
+            } catch (e) {
+              console.warn('Boş veya geçersiz JSON döndü:', e);
+            }
+          }
+
           if (!response.ok) {
-            const text = await response.text();
             let message = `Giriş başarısız (HTTP ${response.status})`;
-            if (text) {
-              try {
-                const parsed = JSON.parse(text);
-                message = parsed.error || parsed.message || message;
-              } catch (_) {
-                message = text;
-              }
+
+            if (data && typeof data === 'object') {
+              message = data.error || data.message || data.detail || message;
+            } else if (rawText) {
+              message = rawText;
             }
-          
-            if (message.includes("aktif değil")) {
-              throw new Error("Hesabınız henüz aktif değil. Lütfen yöneticinizin onayını bekleyin.");
+
+            if (message.toLowerCase().includes('aktif değil')) {
+              throw new Error('Hesabınız henüz aktif değil. Lütfen yöneticinizin onayını bekleyin.');
             }
-          
+
             throw new Error(message);
           }
-          
+
+          if (!data || typeof data !== 'object') {
+            throw new Error('Sunucudan geçerli bir yanıt alınamadı.');
+          }
+
 
           if (data?.mfaRequired || data?.tokenType === 'mfa_required') {
             set({ isLoading: false });
@@ -194,14 +211,19 @@ try {
         console.log('Auth store register called with:', userData);
         set({ isLoading: true, error: null });
         try {
-          if (!userData.name || !userData.email || !userData.file) {
-            throw new Error('Tüm alanlar gerekli (Ad, Email, Dosya)');
+          if (!userData.name || !userData.email || !userData.password || !userData.file) {
+            throw new Error('Tüm alanlar gerekli (Ad, Email, Şifre, Dosya)');
+          }
+
+          if (userData.password.trim().length < 8) {
+            throw new Error('Şifre en az 8 karakter olmalıdır');
           }
 
           // Create FormData for file upload
           const formData = new FormData();
           formData.append('name', userData.name);
           formData.append('email', userData.email);
+          formData.append('password', userData.password.trim());
           formData.append('file', userData.file);
 
           // Real API call to backend with multipart/form-data
