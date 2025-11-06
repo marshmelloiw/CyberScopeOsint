@@ -129,9 +129,13 @@ const Notifications = () => {
         });
         console.log('Mapped notifications:', mappedNotifications);
         setNotifications(mappedNotifications);
+        // Dispatch event to update header count
+        window.dispatchEvent(new CustomEvent('notificationUpdated'));
       } else {
         console.warn('No notifications in response:', response.data);
         setNotifications([]);
+        // Dispatch event to update header count even if empty
+        window.dispatchEvent(new CustomEvent('notificationUpdated'));
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -215,6 +219,8 @@ const Notifications = () => {
           notif.id === id ? { ...notif, read: true } : notif
         )
       );
+      // Dispatch event to update header count
+      window.dispatchEvent(new CustomEvent('notificationUpdated'));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -232,6 +238,8 @@ const Notifications = () => {
       setNotifications(prev => 
         prev.map(notif => ({ ...notif, read: true }))
       );
+      // Dispatch event to update header count
+      window.dispatchEvent(new CustomEvent('notificationUpdated'));
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
