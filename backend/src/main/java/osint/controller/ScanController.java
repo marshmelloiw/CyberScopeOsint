@@ -2,6 +2,7 @@ package osint.controller;
 
 import osint.service.ScanService;
 import osint.service.ReportPdfService;
+import osint.service.ReportHtmlService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,11 +17,13 @@ public class ScanController {
     
     private final ScanService scanService;
     private final ReportPdfService reportPdfService;
+    private final ReportHtmlService reportHtmlService;
     
     @Autowired
-    public ScanController(ScanService scanService, ReportPdfService reportPdfService) {
+    public ScanController(ScanService scanService, ReportPdfService reportPdfService, ReportHtmlService reportHtmlService) {
         this.scanService = scanService;
         this.reportPdfService = reportPdfService;
+        this.reportHtmlService = reportHtmlService;
     }
     
     @PostMapping("/start")
@@ -132,6 +135,30 @@ public class ScanController {
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
                 "error", "PDF raporu oluşturulamadı: " + e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/{scanId}/report/html")
+    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    public ResponseEntity<?> downloadReportHtml(@PathVariable String scanId) {
+        try {
+            String htmlContent = reportHtmlService.generateHtmlReport(scanId);
+            byte[] htmlBytes = htmlContent.getBytes("UTF-8");
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_HTML);
+            headers.setContentDispositionFormData("attachment", "report_" + scanId + ".html");
+            headers.setContentLength(htmlBytes.length);
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(htmlBytes);
+        } catch (Exception e) {
+            System.err.println("Error generating HTML report: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "HTML raporu oluşturulamadı: " + e.getMessage()
             ));
         }
     }

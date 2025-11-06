@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import RiskBadge from '../../components/common/RiskBadge';
-import { Search, FileText, Eye, Trash2, Globe, Mail, MapPin, Users, Loader2, RefreshCw, AlertCircle, Download } from 'lucide-react';
+import { Search, FileText, Eye, Trash2, Globe, Mail, MapPin, Users, Loader2, RefreshCw, AlertCircle, Download, FileCode } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import api, { endpoints } from '../../lib/axios';
 
@@ -334,6 +334,37 @@ const Reports = () => {
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Download PDF
+                    </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try {
+                            const response = await api.get(`/scans/${report.scanId}/report/html`, {
+                              responseType: 'blob'
+                            });
+                            
+                            // Create blob URL and trigger download
+                            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/html' }));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', `report_${report.scanId}.html`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            window.URL.revokeObjectURL(url);
+                          } catch (err) {
+                            console.error('Error downloading HTML:', err);
+                            const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
+                            alert('HTML indirilirken hata oluştu: ' + errorMsg);
+                          }
+                        }}
+                      >
+                        <FileCode className="h-4 w-4 mr-2" />
+                        Download HTML
                     </Button>
                   </div>
                 </div>

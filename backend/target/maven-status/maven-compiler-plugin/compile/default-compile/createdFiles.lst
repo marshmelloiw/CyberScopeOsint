@@ -62,6 +62,7 @@ osint\repository\NotificationPreferencesRepository.class
 osint\service\ZapService.class
 osint\service\NotificationService.class
 osint\model\Scan.class
+osint\service\ReportHtmlService.class
 osint\model\ScanTarget.class
 osint\repository\PasswordResetTokenRepository.class
 osint\service\HaveIBeenPwnedService.class

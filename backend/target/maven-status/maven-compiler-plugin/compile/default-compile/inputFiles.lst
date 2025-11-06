@@ -34,6 +34,7 @@ C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\serv
 C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\service\HaveIBeenPwnedService.java
 C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\model\PasswordResetToken.java
 C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\repository\ScanRepository.java
+C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\service\ReportHtmlService.java
 C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\repository\ScanResultRepository.java
 C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\repository\NotificationPreferencesRepository.java
 C:\Users\Damla\Documents\GitHub\CyberScopeOsint\backend\src\main\java\osint\controller\DashboardController.java
