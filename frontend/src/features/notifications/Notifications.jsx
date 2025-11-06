@@ -113,13 +113,13 @@ const Notifications = () => {
           
           return {
             id: notif.id,
-            type: 'security-alert',
+      type: 'security-alert',
             title: `Yüksek Risk Skoru: ${notif.riskScore || 'N/A'}`,
             message: notif.message || `Risk skoru ${notif.riskScore || 'N/A'} tespit edildi`,
             severity: mapRiskLevelToSeverity(notif.riskLevel),
             timestamp: timestamp,
             read: notif.isRead || false,
-            category: 'security',
+      category: 'security',
             actions: ['Detayları Görüntüle'],
             riskScore: notif.riskScore,
             riskLevel: notif.riskLevel,
@@ -325,7 +325,7 @@ const Notifications = () => {
                     />
                   </button>
                   {preferences.enableNotifications ? (
-                    <Volume2 className="h-4 w-4 text-success" />
+                  <Volume2 className="h-4 w-4 text-success" />
                   ) : (
                     <VolumeX className="h-4 w-4 text-surface-muted" />
                   )}
@@ -354,7 +354,7 @@ const Notifications = () => {
                     />
                   </button>
                   {preferences.soundAlerts ? (
-                    <Volume2 className="h-4 w-4 text-success" />
+                  <Volume2 className="h-4 w-4 text-success" />
                   ) : (
                     <VolumeX className="h-4 w-4 text-surface-muted" />
                   )}
@@ -425,7 +425,7 @@ const Notifications = () => {
                     />
                   </button>
                   {preferences.inAppNotifications ? (
-                    <CheckCircle className="h-4 w-4 text-success" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                   ) : (
                     <X className="h-4 w-4 text-surface-muted" />
                   )}

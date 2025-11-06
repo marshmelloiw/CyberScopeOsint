@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import RiskBadge from '../../components/common/RiskBadge';
-import { Search, FileText, Eye, Trash2, Globe, Mail, MapPin, Users, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Search, FileText, Eye, Trash2, Globe, Mail, MapPin, Users, Loader2, RefreshCw, AlertCircle, Download } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import api, { endpoints } from '../../lib/axios';
 
@@ -303,6 +303,37 @@ const Reports = () => {
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
+                    </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try {
+                            const response = await api.get(`/scans/${report.scanId}/report/pdf`, {
+                              responseType: 'blob'
+                            });
+                            
+                            // Create blob URL and trigger download
+                            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', `report_${report.scanId}.pdf`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            window.URL.revokeObjectURL(url);
+                          } catch (err) {
+                            console.error('Error downloading PDF:', err);
+                            const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
+                            alert('PDF indirilirken hata oluştu: ' + errorMsg);
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
                     </Button>
                   </div>
                 </div>

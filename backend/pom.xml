@@ -101,6 +101,12 @@
             <artifactId>flyway-database-postgresql</artifactId>
             <version>10.8.1</version>
         </dependency>
+        <!-- Apache PDFBox for PDF generation -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>

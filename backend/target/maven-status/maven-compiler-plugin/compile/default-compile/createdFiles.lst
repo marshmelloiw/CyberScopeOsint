@@ -31,6 +31,7 @@ osint\model\Role.class
 osint\service\SmsService.class
 osint\dto\SmsMfaSetupRequest.class
 osint\model\EntityFinding.class
+osint\service\ReportPdfService.class
 osint\controller\UserManagementController.class
 osint\controller\NotificationController.class
 osint\service\ScanService$LogEntry.class

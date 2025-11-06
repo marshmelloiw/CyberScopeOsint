@@ -1,7 +1,10 @@
 package osint.controller;
 
 import osint.service.ScanService;
+import osint.service.ReportPdfService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,10 +15,12 @@ import java.util.Map;
 public class ScanController {
     
     private final ScanService scanService;
+    private final ReportPdfService reportPdfService;
     
     @Autowired
-    public ScanController(ScanService scanService) {
+    public ScanController(ScanService scanService, ReportPdfService reportPdfService) {
         this.scanService = scanService;
+        this.reportPdfService = reportPdfService;
     }
     
     @PostMapping("/start")
@@ -104,6 +109,29 @@ public class ScanController {
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
                 "error", "Raporlar alınamadı: " + e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/{scanId}/report/pdf")
+    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    public ResponseEntity<?> downloadReportPdf(@PathVariable String scanId) {
+        try {
+            byte[] pdfBytes = reportPdfService.generatePdfReport(scanId);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "report_" + scanId + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+        } catch (Exception e) {
+            System.err.println("Error generating PDF report: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "PDF raporu oluşturulamadı: " + e.getMessage()
             ));
         }
     }
