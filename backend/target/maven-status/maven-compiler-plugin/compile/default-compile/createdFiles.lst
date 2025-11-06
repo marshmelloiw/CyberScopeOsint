@@ -39,6 +39,7 @@ osint\repository\RefreshTokenRepository.class
 osint\dto\JwtResponse.class
 osint\OsintBackendApplication.class
 osint\service\AuthService.class
+osint\service\TwitterService.class
 osint\dto\RegisterRequest.class
 osint\model\User.class
 osint\repository\ScanLogRepository.class
@@ -74,7 +75,9 @@ osint\repository\ScanProviderRepository.class
 osint\dto\MfaSetupRequest.class
 osint\model\ScanResult.class
 osint\service\GeminiService.class
+osint\controller\TwitterController.class
 osint\dto\ResetPasswordRequest.class
 osint\service\ScanService$ScanRequest.class
+osint\service\TwitterService$TwitterServiceException.class
 osint\service\ScanService$ScanStatus.class
 osint\dto\ForgotPasswordRequest.class

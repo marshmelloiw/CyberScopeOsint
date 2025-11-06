@@ -8,25 +8,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Locale;
-import java.util.Optional;
+
+import osint.service.TwitterService.TwitterServiceException;
 
 @Service
 public class ScanService {
 
     private static final Logger logger = LoggerFactory.getLogger(ScanService.class);
+    private static final int TWITTER_DEFAULT_MAX_RESULTS = 50;
 
     private final ShodanService shodanService;
     private final VirusTotalService virusTotalService;
     private final HaveIBeenPwnedService hibpService;
     private final GeminiService geminiService;
     private final ZapService zapService;
+    private final TwitterService twitterService;
 
     private final EntityRepository entityRepository;
     private final ScanRepository scanRepository;
@@ -47,6 +50,7 @@ public class ScanService {
             HaveIBeenPwnedService hibpService,
             GeminiService geminiService,
             ZapService zapService,
+            TwitterService twitterService,
             EntityRepository entityRepository,
             ScanRepository scanRepository,
             ScanTargetRepository scanTargetRepository,
@@ -60,6 +64,7 @@ public class ScanService {
         this.hibpService = hibpService;
         this.geminiService = geminiService;
         this.zapService = zapService;
+        this.twitterService = twitterService;
         this.entityRepository = entityRepository;
         this.scanRepository = scanRepository;
         this.scanTargetRepository = scanTargetRepository;
@@ -183,6 +188,9 @@ public class ScanService {
                                     providerResult = zapService.scanUrl(target).block();
                                 }
                                 break;
+                            case "TWITTER":
+                                providerResult = handleTwitterProvider(target);
+                                break;
                             default:
                                 logger.warn("Unknown provider: '{}'", provider);
                                 providerResult = Map.of("error", "Provider not supported: " + provider);
@@ -285,6 +293,10 @@ public class ScanService {
                                 if (request.getType().equals("url")) {
                                     providerResult = zapService.scanUrl(target).block();
                                 }
+                                break;
+                            case "TWITTER":
+                                logger.info("Matched TWITTER for type: {}", request.getType());
+                                providerResult = handleTwitterProvider(target);
                                 break;
                             default:
                                 logger.warn("Unknown provider: '{}' (normalized: '{}')", provider, providerUpper);
@@ -429,6 +441,56 @@ public class ScanService {
 
             status.setStatus("FAILED");
             status.setErrorMessage(e.getMessage());
+        }
+    }
+
+    private Map<String, Object> handleTwitterProvider(String target) {
+        if (!StringUtils.hasText(target)) {
+            return Map.of("error", "Twitter target cannot be empty");
+        }
+
+        String normalized = target.trim();
+
+        try {
+            String query = normalized;
+            String location = null;
+
+            if (normalized.contains("|")) {
+                String[] parts = normalized.split("\\|", 2);
+                query = parts[0].trim();
+                location = parts.length > 1 ? parts[1].trim() : null;
+            }
+
+            if (!StringUtils.hasText(query)) {
+                return Map.of("error", "Twitter search query cannot be empty");
+            }
+
+            Map<String, Object> response = twitterService.searchRecentTweets(
+                    query,
+                    null,
+                    StringUtils.hasText(location) ? location : null,
+                    TWITTER_DEFAULT_MAX_RESULTS
+            ).block();
+
+            if (response == null) {
+                return Map.of("error", "No response from Twitter API");
+            }
+
+            Map<String, Object> mutableResponse = new HashMap<>(response);
+            mutableResponse.putIfAbsent("target", normalized);
+            mutableResponse.putIfAbsent("provider", "Twitter");
+            return mutableResponse;
+        } catch (TwitterServiceException ex) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", ex.getErrorCode());
+            error.put("status", ex.getStatusCode());
+            if (ex.getBody() != null) {
+                error.put("details", ex.getBody());
+            }
+            return error;
+        } catch (Exception ex) {
+            logger.error("Twitter provider error for target {}: {}", target, ex.getMessage(), ex);
+            return Map.of("error", ex.getMessage());
         }
     }
 

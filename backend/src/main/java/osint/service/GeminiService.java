@@ -86,6 +86,10 @@ public class GeminiService {
     }
 
     private String buildAnalysisPrompt(Map<String, Object> scanResults, String scanType) {
+        if (isTwitterScan(scanResults, scanType)) {
+            return buildTwitterPrompt(scanResults);
+        }
+
         StringBuilder prompt = new StringBuilder();
         
         prompt.append("You are a senior cybersecurity expert analyzing OSINT scan results. ");
@@ -107,6 +111,63 @@ public class GeminiService {
         prompt.append("Scan Results Data:\n");
         prompt.append(formatResultsForPrompt(scanResults));
         prompt.append("\n\nProvide the Markdown report now.");
+
+        return prompt.toString();
+    }
+
+    private boolean isTwitterScan(Map<String, Object> scanResults, String scanType) {
+        if (scanType != null && scanType.equalsIgnoreCase("social")) {
+            for (Object value : scanResults.values()) {
+                if (value instanceof Map) {
+                    Map<?, ?> result = (Map<?, ?>) value;
+                    Object provider = result.get("provider");
+                    if (provider instanceof String && ((String) provider).equalsIgnoreCase("Twitter")) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        for (Map.Entry<String, Object> entry : scanResults.entrySet()) {
+            String key = entry.getKey();
+            if (key != null && key.toLowerCase().contains("twitter")) {
+                return true;
+            }
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                Map<?, ?> valueMap = (Map<?, ?>) value;
+                Object provider = valueMap.get("provider");
+                if (provider instanceof String && ((String) provider).equalsIgnoreCase("Twitter")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private String buildTwitterPrompt(Map<String, Object> scanResults) {
+        StringBuilder prompt = new StringBuilder();
+
+        prompt.append("You are a senior cyber threat intelligence analyst specializing in social media monitoring on Twitter (X). ");
+        prompt.append("Assess the provided tweet search results to identify phishing, social engineering, misinformation, or malware distribution campaigns.\n\n");
+
+        prompt.append("Deliver a concise but comprehensive GitHub-flavored Markdown report with the following sections:\n");
+        prompt.append("1. ## Executive Overview (overall risk level and key themes)\n");
+        prompt.append("2. ## Threat Indicators (list suspicious accounts, URLs, hashtags, media)\n");
+        prompt.append("3. ## Tactics & Techniques (map observations to MITRE ATT&CK where possible)\n");
+        prompt.append("4. ## Potential Impact (who or what could be targeted, likelihood, severity)\n");
+        prompt.append("5. ## Recommended Actions (monitoring steps, takedown suggestions, user awareness)\n\n");
+
+        prompt.append("Guidance:\n");
+        prompt.append("- Highlight patterns such as repeated phishing keywords, shortened URLs, or coordinated bot behavior.\n");
+        prompt.append("- Flag high-risk elements (e.g., credential harvesting forms, malicious attachments).\n");
+        prompt.append("- Note data gaps or limitations.\n");
+        prompt.append("- Keep tone professional and actionable.\n\n");
+
+        prompt.append("Twitter Search Dataset:\n");
+        prompt.append(formatResultsForPrompt(scanResults));
+        prompt.append("\n\nGenerate the Markdown report now.\n");
 
         return prompt.toString();
     }

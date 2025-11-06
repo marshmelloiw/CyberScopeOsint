@@ -12,7 +12,7 @@ spring:
     import: optional:file:.env
   
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope local}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:123}
@@ -44,6 +44,10 @@ spring:
 
 # OSINT API Keys Configuration
 osint:
+  twitter:
+    api-key: ${TWITTER_API_KEY:P4brtpH8Cr8d8XT2M2PMDiELr}
+    api-secret: ${TWITTER_API_SECRET:VpMc4lNDAI4UWZZlSWSwZonFPxkghf37VHSTKGCQS7xOUoxYq3}
+    bearer-token: ${TWITTER_BEARER_TOKEN:AAAAAAAAAAAAAAAAAAAAAEpE5QEAAAAAJ0UVTTXVj6yYdOiGKdJKLH5Uc9c%3D7rByVUEtGZQY0uHiy6vwtVnSYbaI8atWSYAl5rgNwc25S3YTtA}
   shodan:
     api-key: ${SHODAN_API_KEY:Vg3Cqg9KxB32E0ZhT1JRraMiYLeBAjdf}
   virustotal:
