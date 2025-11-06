@@ -89,20 +89,24 @@ public class GeminiService {
         StringBuilder prompt = new StringBuilder();
         
         prompt.append("You are a senior cybersecurity expert analyzing OSINT scan results. ");
-        prompt.append("Provide a comprehensive, detailed security analysis report in text format.\n\n");
-        prompt.append("Your report should include:\n");
-        prompt.append("1. Executive Summary: A 2-3 sentence overview of the overall security posture\n");
-        prompt.append("2. Risk Assessment: Risk level (LOW, MEDIUM, HIGH, CRITICAL) and score (0-10)\n");
-        prompt.append("3. Key Findings: Important security discoveries from the scan\n");
-        prompt.append("4. Identified Vulnerabilities: All security vulnerabilities found\n");
-        prompt.append("5. Security Recommendations: Actionable steps to improve security\n");
-        prompt.append("6. Threat Indicators: Any suspicious or concerning indicators\n\n");
+        prompt.append("Provide a comprehensive, detailed security analysis report in GitHub-flavored Markdown format.\n\n");
+        prompt.append("Requirements:\n");
+        prompt.append("- Use Markdown headings (##, ###) for each section.\n");
+        prompt.append("- Use bullet lists or numbered lists where appropriate.\n");
+        prompt.append("- Do NOT return HTML or JSON.\n");
+        prompt.append("- Focus on actionable, professional insights.\n\n");
+        prompt.append("Your report must include the following sections:\n");
+        prompt.append("1. ## Executive Summary\n");
+        prompt.append("2. ## Risk Assessment (include level LOW/MEDIUM/HIGH/CRITICAL and score 0-10)\n");
+        prompt.append("3. ## Key Findings\n");
+        prompt.append("4. ## Identified Vulnerabilities\n");
+        prompt.append("5. ## Security Recommendations\n");
+        prompt.append("6. ## Threat Indicators\n\n");
         
         prompt.append("Scan Type: ").append(scanType.toUpperCase()).append("\n\n");
         prompt.append("Scan Results Data:\n");
         prompt.append(formatResultsForPrompt(scanResults));
-        prompt.append("\n\nProvide a detailed, professional security analysis based on the above data. ");
-        prompt.append("Be thorough and focus on actionable insights.");
+        prompt.append("\n\nProvide the Markdown report now.");
 
         return prompt.toString();
     }
@@ -154,14 +158,15 @@ public class GeminiService {
                                                 Map<String, Object> parsed = mapper.readValue(text, Map.class);
                                                 result.put("analysis", parsed);
                                                 result.put("raw_text", text);
+                                                result.put("markdown", convertStructuredReportToMarkdown(parsed));
                                             } catch (Exception e) {
-                                                // If JSON parsing fails, return raw text as analysis
-                                                logger.warn("Failed to parse Gemini JSON response, returning raw text as analysis");
-                                                // Always provide analysis field - use raw_text if JSON parsing fails
+                                                logger.warn("Failed to parse Gemini JSON response, returning raw text as markdown");
                                                 result.put("analysis", text);
                                                 result.put("raw_text", text);
-                                                result.put("note", "Response format is plain text, not JSON");
+                                                result.put("markdown", text);
+                                                result.put("note", "Response format treated as Markdown text");
                                             }
+                                            result.put("format", "markdown");
                                             return result;
                                         }
                                     }
@@ -178,6 +183,93 @@ public class GeminiService {
             logger.error("Error parsing Gemini response", e);
             return createErrorMap("Error parsing response: " + e.getMessage());
         }
+    }
+
+    private String convertStructuredReportToMarkdown(Map<String, Object> data) {
+        StringBuilder markdown = new StringBuilder();
+        data.forEach((key, value) -> {
+            String heading = formatTitle(key);
+            if (!heading.isBlank()) {
+                markdown.append("## ").append(heading).append("\n\n");
+            }
+            appendValueMarkdown(markdown, value, 0);
+            markdown.append("\n\n");
+        });
+        String output = markdown.toString().replaceAll("\n{3,}", "\n\n").trim();
+        return output.isEmpty() ? "*(no data)*" : output;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void appendValueMarkdown(StringBuilder sb, Object value, int indentLevel) {
+        if (value == null) {
+            sb.append(indent(indentLevel)).append("- *(no data)*\n");
+            return;
+        }
+
+        if (value instanceof Map<?, ?> map) {
+            if (map.isEmpty()) {
+                sb.append(indent(indentLevel)).append("- *(no data)*\n");
+                return;
+            }
+            map.forEach((k, v) -> {
+                String title = formatTitle(String.valueOf(k));
+                if (isSimpleValue(v)) {
+                    sb.append(indent(indentLevel)).append("- **").append(title).append("**: ")
+                            .append(formatSimple(v)).append("\n");
+                } else {
+                    sb.append(indent(indentLevel)).append("- **").append(title).append("**\n");
+                    appendValueMarkdown(sb, v, indentLevel + 1);
+                }
+            });
+            return;
+        }
+
+        if (value instanceof Iterable<?> iterable) {
+            boolean empty = true;
+            for (Object item : iterable) {
+                empty = false;
+                if (isSimpleValue(item)) {
+                    sb.append(indent(indentLevel)).append("- ").append(formatSimple(item)).append("\n");
+                } else {
+                    sb.append(indent(indentLevel)).append("-\n");
+                    appendValueMarkdown(sb, item, indentLevel + 1);
+                }
+            }
+            if (empty) {
+                sb.append(indent(indentLevel)).append("- *(no data)*\n");
+            }
+            return;
+        }
+
+        sb.append(indent(indentLevel)).append(formatSimple(value)).append("\n");
+    }
+
+    private String indent(int level) {
+        return "  ".repeat(Math.max(0, level));
+    }
+
+    private boolean isSimpleValue(Object value) {
+        return value == null || value instanceof String || value instanceof Number || value instanceof Boolean;
+    }
+
+    private String formatSimple(Object value) {
+        if (value == null) {
+            return "*(no data)*";
+        }
+        if (value instanceof Boolean) {
+            return (Boolean) value ? "Yes" : "No";
+        }
+        return String.valueOf(value).trim();
+    }
+
+    private String formatTitle(String key) {
+        if (key == null || key.isBlank()) {
+            return "";
+        }
+        String withSpaces = key.replaceAll("[_-]", " ")
+                .replaceAll("(?<!^)([A-Z])", " $1");
+        String cleaned = withSpaces.trim();
+        return cleaned.isEmpty() ? key : cleaned.substring(0, 1).toUpperCase() + cleaned.substring(1);
     }
 
     private Map<String, Object> createErrorMap(String message) {

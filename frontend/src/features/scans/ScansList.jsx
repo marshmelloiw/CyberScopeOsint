@@ -278,7 +278,7 @@ const ScansList = () => {
                       </span>
                     </td>
                     <td className="p-3">
-                        <RiskBadge score={getRiskScore(scan)} />
+                        <RiskBadge risk={getRiskScore(scan)} />
                     </td>
                     <td className="p-3">
                       <span className="text-white">{scan.findings}</span>

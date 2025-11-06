@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import Button from '../../components/ui/Button';
 import { ArrowLeft, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import api from '../../lib/axios';
+import MarkdownRenderer from '../../components/common/MarkdownRenderer';
+import { resolveReportMarkdown } from '../../lib/reportMarkdown';
 
 const GeminiReportDetail = () => {
   const { scanId } = useParams();
@@ -176,65 +178,27 @@ const GeminiReportDetail = () => {
                     </div>
                     
                     {/* Display report content */}
-                    {reportData.analysis ? (
-                      <div className="prose prose-invert max-w-none space-y-4">
-                        <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                          {reportData.analysis}
-                        </div>
-                      </div>
-                    ) : reportData.raw_text ? (
-                      <div className="prose prose-invert max-w-none space-y-4">
-                        <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                          {reportData.raw_text}
-                        </div>
-                      </div>
-                    ) : typeof report === 'string' ? (
-                      <div className="prose prose-invert max-w-none space-y-4">
-                        <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                          {report}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="prose prose-invert max-w-none space-y-4">
-                        {reportData.summary && (
-                          <div>
-                            <h4 className="text-white font-semibold mb-2 text-lg">Özet</h4>
-                            <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                              {reportData.summary}
-                            </div>
+                    {
+                      (() => {
+                        const markdownContent = resolveReportMarkdown(
+                          typeof report === 'string' ? report : reportData
+                        );
+
+                        if (!markdownContent) {
+                          return (
+                            <pre className="text-xs text-surface-muted overflow-x-auto bg-surface-border p-4 rounded">
+                              {JSON.stringify(reportData, null, 2)}
+                            </pre>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-4">
+                            <MarkdownRenderer content={markdownContent} />
                           </div>
-                        )}
-                        {reportData.analysis && (
-                          <div>
-                            <h4 className="text-white font-semibold mb-2 text-lg">Detaylı Analiz</h4>
-                            <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                              {reportData.analysis}
-                            </div>
-                          </div>
-                        )}
-                        {reportData.recommendations && (
-                          <div>
-                            <h4 className="text-white font-semibold mb-2 text-lg">Öneriler</h4>
-                            <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                              {reportData.recommendations}
-                            </div>
-                          </div>
-                        )}
-                        {reportData.keyFindings && (
-                          <div>
-                            <h4 className="text-white font-semibold mb-2 text-lg">Önemli Bulgular</h4>
-                            <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                              {reportData.keyFindings}
-                            </div>
-                          </div>
-                        )}
-                        {!reportData.summary && !reportData.analysis && !reportData.recommendations && !reportData.keyFindings && (
-                          <pre className="text-xs text-surface-muted overflow-x-auto bg-surface-border p-4 rounded">
-                            {JSON.stringify(reportData, null, 2)}
-                          </pre>
-                        )}
-                      </div>
-                    )}
+                        );
+                      })()
+                    }
                   </div>
                 );
               })}

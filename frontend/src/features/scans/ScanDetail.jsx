@@ -5,7 +5,9 @@ import Button from '../../components/ui/Button';
 import RiskBadge from '../../components/common/RiskBadge';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle, XCircle, Globe, Mail, MapPin, Users, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import api, { endpoints } from '../../lib/axios';
+import api from '../../lib/axios';
+import MarkdownRenderer from '../../components/common/MarkdownRenderer';
+import { resolveReportMarkdown } from '../../lib/reportMarkdown';
 
 const ScanDetail = () => {
   const { scanId } = useParams();
@@ -173,7 +175,7 @@ const ScanDetail = () => {
             </div>
             <div>
               <p className="text-sm text-surface-muted mb-1">Risk Seviyesi</p>
-              <RiskBadge score={scan.status === 'COMPLETED' ? 5 : 0} />
+              <RiskBadge risk={scan.status === 'COMPLETED' ? 5 : 0} />
             </div>
             <div>
               <p className="text-sm text-surface-muted mb-1">Başlangıç</p>
@@ -265,47 +267,28 @@ const ScanDetail = () => {
                             {report.status === 'completed' ? '✓ Tamamlandı' : '⏳ Oluşturuluyor...'}
                           </span>
                         </div>
-                        {report && typeof report === 'object' && (
-                          <div className="prose prose-invert max-w-none space-y-4">
-                            {report.summary && (
-                              <div>
-                                <h4 className="text-white font-semibold mb-2 text-lg">Özet</h4>
-                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                                  {report.summary}
-                                </div>
-                              </div>
-                            )}
-                            {report.analysis && (
-                              <div>
-                                <h4 className="text-white font-semibold mb-2 text-lg">Detaylı Analiz</h4>
-                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                                  {report.analysis}
-                                </div>
-                              </div>
-                            )}
-                            {report.recommendations && (
-                              <div>
-                                <h4 className="text-white font-semibold mb-2 text-lg">Öneriler</h4>
-                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                                  {report.recommendations}
-                                </div>
-                              </div>
-                            )}
-                            {report.keyFindings && (
-                              <div>
-                                <h4 className="text-white font-semibold mb-2 text-lg">Önemli Bulgular</h4>
-                                <div className="text-surface-muted whitespace-pre-wrap bg-surface-border p-4 rounded-lg">
-                                  {report.keyFindings}
-                                </div>
-                              </div>
-                            )}
-                            {!report.summary && !report.analysis && !report.recommendations && !report.keyFindings && (
+                        {(() => {
+                          const markdownContent = resolveReportMarkdown(report);
+
+                          if (markdownContent) {
+                            return (
+                              <MarkdownRenderer
+                                content={markdownContent}
+                                className="space-y-4"
+                              />
+                            );
+                          }
+
+                          if (report && typeof report === 'object') {
+                            return (
                               <pre className="text-xs text-surface-muted overflow-x-auto bg-surface-border p-4 rounded">
                                 {JSON.stringify(report, null, 2)}
                               </pre>
-                            )}
-                          </div>
-                        )}
+                            );
+                          }
+
+                          return null;
+                        })()}
                       </div>
                     );
                   })}

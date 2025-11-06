@@ -257,7 +257,7 @@ const Reports = () => {
                       <div>
                           <span className="text-surface-muted">Risk:</span>
                           <span className="ml-2">
-                            <RiskBadge score={report.riskScore} />
+                            <RiskBadge risk={Number(report.riskScore ?? 0)} />
                           </span>
                       </div>
                     </div>

@@ -203,7 +203,7 @@ const Dashboard = () => {
               )}
               <div className="mt-4 text-center">
                 <button
-                  onClick={() => navigate('/notifications')}
+                  onClick={() => navigate('/dashboard/notifications')}
                   className="text-sm text-primary-500 hover:text-primary-400 transition-colors"
                 >
                   Tüm uyarıları görüntüle →
