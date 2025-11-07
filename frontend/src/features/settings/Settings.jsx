@@ -534,7 +534,7 @@ const Settings = () => {
             {/* Theme Selection */}
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white mb-3">Theme</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div
                   className={cn(
                     'p-4 border rounded-lg cursor-pointer transition-all',
@@ -577,29 +577,6 @@ const Settings = () => {
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">Light</p>
                       <p className="text-sm text-gray-600 dark:text-surface-muted">Light theme</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={cn(
-                    'p-4 border rounded-lg cursor-pointer transition-all',
-                    appearanceData.theme === 'auto'
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
-                      : 'border-gray-300 dark:border-surface-border hover:border-primary-400 bg-white dark:bg-surface-panel/30'
-                  )}
-                  onClick={() => handleThemeChange('auto')}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Palette className={cn(
-                      'h-5 w-5',
-                      appearanceData.theme === 'auto' 
-                        ? 'text-primary-600 dark:text-primary-400' 
-                        : 'text-gray-600 dark:text-primary-400'
-                    )} />
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">Auto</p>
-                      <p className="text-sm text-gray-600 dark:text-surface-muted">Follow system</p>
                     </div>
                   </div>
                 </div>
