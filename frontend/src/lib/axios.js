@@ -81,7 +81,7 @@ export const endpoints = {
     register: '/auth/register',
     mfa: '/auth/mfa/verify',
     refresh: '/auth/refresh',
-    forgotPassword: '/auth/forgot-password',
+    forgotPassword: '/auth/forgotpassword',
     resetPassword: '/auth/reset-password',
     changePassword: '/auth/change-password',
   },

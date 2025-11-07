@@ -107,11 +107,11 @@ function App() {
             />
             <Route
               path="/auth/forgot-password"
-              element={
-                <AuthRoute>
-                  <ForgotPassword />
-                </AuthRoute>
-              }
+              element={<ForgotPassword />}
+            />
+            <Route
+              path="/forgotpassword"
+              element={<ForgotPassword />}
             />
             <Route
               path="/auth/reset-password"

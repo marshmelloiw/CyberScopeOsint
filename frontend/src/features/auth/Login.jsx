@@ -112,7 +112,7 @@ const Login = () => {
         {/* Logo and title */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/src/assets/logo.svg" alt="Card" className="h-16 w-16" />
+            <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">CyberScope OSINT</h1>
           <p className="text-primary-200">Güvenlik tehditlerini keşfedin ve analiz edin</p>
@@ -174,7 +174,7 @@ const Login = () => {
                   <span className="text-sm text-white">Beni hatırla</span>
                 </label>
                 <Link
-                  to="/auth/forgot-password"
+                  to="/forgotpassword"
                   className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
                 >
                   Şifremi unuttum
