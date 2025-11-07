@@ -12,7 +12,7 @@ spring:
     import: optional:file:.env
   
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope local}
     driver-class-name: org.postgresql.Driver
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:123}
@@ -57,8 +57,13 @@ osint:
   gemini:
     api-key: ${GEMINI_API_KEY:AIzaSyCE7kdwhNHHY0htwf_BHIoQ53LLs8WExH4}
   zap:
-    api-key: ${ZAP_API_KEY:1ucgq9qu0b6tdgcl4914if6icc}
-    base-url: ${ZAP_BASE_URL:http://localhost:8080}
+    api-key: ${ZAP_API_KEY:n0jjn18pt5al07pu83iejvr6t5}
+    base-url: ${ZAP_BASE_URL:http://localhost:9091}
+    auto-start: ${ZAP_AUTO_START:false}
+    daemon-command: ${ZAP_DAEMON_COMMAND:}
+    daemon-working-directory: ${ZAP_DAEMON_WORKING_DIR:}
+    startup-timeout-seconds: ${ZAP_STARTUP_TIMEOUT_SECONDS:120}
+    max-body-size-bytes: ${ZAP_MAX_BODY_SIZE_BYTES:4194304}
 logging:
   level:
     osint: DEBUG

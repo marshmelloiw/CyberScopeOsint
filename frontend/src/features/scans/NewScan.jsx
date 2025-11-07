@@ -1,16 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import axios from '../../lib/axios';
-import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText, Terminal, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Globe, Mail, MapPin, Users, FileText, Terminal, Loader2, Shield } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import MarkdownRenderer from '../../components/common/MarkdownRenderer';
 import { resolveReportMarkdown } from '../../lib/reportMarkdown';
 
+const PROVIDER_LABELS = {
+  ZAP: 'OWASP ZAP',
+};
+
+const TYPE_LABELS = {
+  url: 'Web Application Scan',
+};
+
 const NewScan = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -28,11 +37,30 @@ const NewScan = () => {
   const [scanStatus, setScanStatus] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const pollingIntervalRef = useRef(null);
+  const queryParamsInitializedRef = useRef(false);
+
+  const getProviderLabel = (provider) => {
+    if (!provider) return provider;
+    const normalized = provider.toUpperCase();
+    return PROVIDER_LABELS[normalized] || provider;
+  };
+
+  const getTypeLabel = (type) => {
+    if (!type) return '';
+    const normalized = type.toLowerCase();
+    if (TYPE_LABELS[normalized]) {
+      return TYPE_LABELS[normalized];
+    }
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
+
+  const formatProviderList = (list) => list.map(getProviderLabel).join(', ');
 
   const scanTypes = [
     { id: 'domain', name: 'Domain Analysis', icon: Globe, description: 'Analyze domain security, DNS, and reputation' },
     { id: 'email', name: 'Email Breach Check', icon: Mail, description: 'Check email addresses against data breaches' },
     { id: 'ip', name: 'IP Address Analysis', icon: MapPin, description: 'Analyze IP addresses for threats and vulnerabilities' },
+    { id: 'url', name: 'Web Application Scan (OWASP ZAP)', icon: Shield, description: 'Run OWASP ZAP against web applications for vulnerability discovery' },
     { id: 'social', name: 'Social Media Monitor', icon: Users, description: 'Monitor social media accounts for threats' },
   ];
 
@@ -40,11 +68,33 @@ const NewScan = () => {
     domain: ['VirusTotal', 'Shodan', 'Whois', 'AbuseIPDB', 'URLVoid'],
     email: ['HaveIBeenPwned', 'DeHashed', 'Intelligence X', 'LeakCheck'],
     ip: ['Shodan', 'VirusTotal', 'AbuseIPDB', 'IPQualityScore', 'IP2Location'],
+    url: ['ZAP'],
     social: ['Twitter', 'LinkedIn', 'GitHub', 'Reddit', 'Telegram'],
   };
 
+  const normalizeProvidersForType = (type, currentProviders = []) => {
+    if (!type) {
+      return currentProviders;
+    }
+    const allowed = providers[type] || [];
+    let normalized = currentProviders.filter((provider) => allowed.includes(provider));
+    if (type === 'url' && allowed.includes('ZAP') && !normalized.includes('ZAP')) {
+      normalized = [...normalized, 'ZAP'];
+    }
+    return normalized;
+  };
+
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      if (field === 'type') {
+        return {
+          ...prev,
+          type: value,
+          providers: normalizeProvidersForType(value, prev.providers),
+        };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   const handleTargetsChange = (value) => {
@@ -53,17 +103,51 @@ const NewScan = () => {
   };
 
   const handleProviderToggle = (provider) => {
-    setFormData(prev => ({
-      ...prev,
-      providers: prev.providers.includes(provider)
-        ? prev.providers.filter(p => p !== provider)
-        : [...prev.providers, provider]
-    }));
+    setFormData((prev) => {
+      const currentType = prev.type;
+      const allowed = providers[currentType] || [];
+      if (!allowed.includes(provider)) {
+        return prev;
+      }
+
+      const alreadySelected = prev.providers.includes(provider);
+      if (alreadySelected) {
+        if (currentType === 'url' && provider === 'ZAP') {
+          return prev;
+        }
+        return {
+          ...prev,
+          providers: prev.providers.filter((item) => item !== provider),
+        };
+      }
+
+      return {
+        ...prev,
+        providers: [...prev.providers, provider],
+      };
+    });
   };
 
   const handleTagsChange = (value) => {
     const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag);
     setFormData(prev => ({ ...prev, tags }));
+  };
+
+  const getTargetsPlaceholder = () => {
+    switch (formData.type) {
+      case 'domain':
+        return 'google.com\nfacebook.com';
+      case 'email':
+        return 'test@example.com\nadmin@company.com';
+      case 'ip':
+        return '8.8.8.8\n1.1.1.1';
+      case 'url':
+        return 'https://example.com\nhttps://app.company.com';
+      case 'social':
+        return '@username1\n@username2';
+      default:
+        return 'target-1\ntarget-2';
+    }
   };
 
   const nextStep = () => {
@@ -73,6 +157,65 @@ const NewScan = () => {
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
+
+  useEffect(() => {
+    if (queryParamsInitializedRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const hasParams = Array.from(params.keys()).length > 0;
+    if (!hasParams) {
+      return;
+    }
+
+    queryParamsInitializedRef.current = true;
+
+    setFormData((prev) => {
+      let next = { ...prev };
+
+      const typeParam = params.get('type');
+      if (typeParam && scanTypes.some((type) => type.id === typeParam)) {
+        next.type = typeParam;
+      }
+
+      const providerTokens = [
+        ...params.getAll('provider'),
+        ...(params.get('providers') ? params.get('providers').split(',') : []),
+      ]
+        .map((token) => token.trim())
+        .filter(Boolean);
+
+      if (providerTokens.length > 0) {
+        const allowed = providers[next.type] || [];
+        const filtered = providerTokens.filter((token) => allowed.includes(token));
+        next.providers = normalizeProvidersForType(
+          next.type,
+          filtered.length > 0 ? filtered : next.providers
+        );
+      } else if (next.type) {
+        next.providers = normalizeProvidersForType(next.type, next.providers);
+      }
+
+      const targetsParam = params.get('targets') || params.get('target');
+      if (targetsParam) {
+        const parsedTargets = targetsParam
+          .split(/[,\n]/)
+          .map((target) => target.trim())
+          .filter(Boolean);
+        if (parsedTargets.length > 0) {
+          next.targets = parsedTargets;
+        }
+      }
+
+      const nameParam = params.get('name');
+      if (nameParam) {
+        next.name = nameParam;
+      }
+
+      return next;
+    });
+  }, [location.search, providers, scanTypes]);
 
   // Poll scan status
   useEffect(() => {
@@ -170,9 +313,9 @@ const NewScan = () => {
       // Add initial logs
       setScanLogs([
         { timestamp: Date.now(), message: `Starting scan: ${formData.name}` },
-        { timestamp: Date.now(), message: `Type: ${formData.type}` },
+        { timestamp: Date.now(), message: `Type: ${getTypeLabel(formData.type) || formData.type}` },
         { timestamp: Date.now(), message: `Targets: ${formData.targets.join(', ')}` },
-        { timestamp: Date.now(), message: `Providers: ${formData.providers.join(', ')}` },
+        { timestamp: Date.now(), message: `Providers: ${formatProviderList(formData.providers) || '—'}` },
         { timestamp: Date.now(), message: 'Initializing scan execution...' },
       ]);
       
@@ -274,9 +417,7 @@ const NewScan = () => {
             Targets (one per line)
           </label>
           <textarea
-            placeholder={formData.type === 'domain' ? 'google.com\nfacebook.com' : 
-                       formData.type === 'email' ? 'test@example.com\nadmin@company.com' :
-                       formData.type === 'ip' ? '8.8.8.8\n1.1.1.1' : '@username1\n@username2'}
+            placeholder={getTargetsPlaceholder()}
             onChange={(e) => handleTargetsChange(e.target.value)}
             className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white placeholder:text-surface-muted focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
             rows={4}
@@ -312,7 +453,7 @@ const NewScan = () => {
                 onClick={() => handleProviderToggle(provider)}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-white">{provider}</span>
+                  <span className="text-white">{getProviderLabel(provider)}</span>
                   {formData.providers.includes(provider) && (
                     <Check className="h-5 w-5 text-primary-500" />
                   )}
@@ -325,6 +466,7 @@ const NewScan = () => {
         <div className="p-4 bg-surface-panel/50 rounded-lg">
           <p className="text-sm text-surface-muted">
             <strong>Selected:</strong> {formData.providers.length} provider(s)
+            {formData.providers.length > 0 && ` — ${formatProviderList(formData.providers)}`}
           </p>
           <p className="text-sm text-surface-muted mt-1">
             More providers = more comprehensive results, but longer scan time
@@ -384,9 +526,9 @@ const NewScan = () => {
           <h4 className="font-medium text-white mb-2">Scan Summary</h4>
           <div className="space-y-2 text-sm text-surface-muted">
             <p><strong>Name:</strong> {formData.name}</p>
-            <p><strong>Type:</strong> {formData.type}</p>
+            <p><strong>Type:</strong> {getTypeLabel(formData.type)}</p>
             <p><strong>Targets:</strong> {formData.targets.length}</p>
-            <p><strong>Providers:</strong> {formData.providers.length}</p>
+            <p><strong>Providers:</strong> {formData.providers.length > 0 ? formatProviderList(formData.providers) : '—'}</p>
             <p><strong>Schedule:</strong> {formData.schedule}</p>
           </div>
         </div>
@@ -465,7 +607,7 @@ const NewScan = () => {
                   ? 'Gemini AI is analyzing your scan results. Separate reports are being generated for each provider...'
                   : scanStatus === 'COMPLETED'
                   ? 'Scan completed! AI analysis reports are being generated in the background...'
-                  : `Analyzing targets with ${formData.providers.join(', ')}...`}
+                  : `Analyzing targets with ${formatProviderList(formData.providers) || 'selected providers'}...`}
               </p>
               {scanLogs.length > 0 && (
                 <div className="mt-6 space-y-2 text-left max-h-64 overflow-y-auto bg-surface-panel p-4 rounded-lg">
@@ -502,7 +644,7 @@ const NewScan = () => {
                               <Card key={`${target}-${providerName}`} className={hasError ? 'border-error' : ''}>
                                 <CardHeader>
                                   <CardTitle className="text-base flex items-center gap-2">
-                                    <span className="px-2 py-0.5 rounded bg-surface-panel border border-surface-border text-white/90">{providerName}</span>
+                                    <span className="px-2 py-0.5 rounded bg-surface-panel border border-surface-border text-white/90">{getProviderLabel(providerName)}</span>
                                     {hasError ? (
                                       <span className="text-error">✗</span>
                                     ) : (
@@ -549,6 +691,8 @@ const NewScan = () => {
                       return Object.keys(providersMap).map((provider) => {
                         const reportKey = `${provider}_${target}`;
                         const report = reports[reportKey];
+                        const baseProviderLabel = getProviderLabel(provider);
+                        const baseTargetLabel = target;
                       
                       // Check if report exists and its status
                       if (!report) {
@@ -557,7 +701,7 @@ const NewScan = () => {
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 text-warning animate-spin" />
-                                {provider} - {target} - AI Analysis Pending
+                                {baseProviderLabel} - {baseTargetLabel} - AI Analysis Pending
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -570,12 +714,14 @@ const NewScan = () => {
                       }
                       
                       if (report.status === 'generating') {
+                        const providerLabel = getProviderLabel(report.provider || provider);
+                        const targetLabel = report.target || target;
                         return (
                           <Card key={reportKey} className="border-warning/30">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 text-warning animate-spin" />
-                                {report.provider || provider} - {report.target || target} - Generating AI Analysis...
+                                {providerLabel} - {targetLabel} - Generating AI Analysis...
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -591,12 +737,14 @@ const NewScan = () => {
                       }
                       
                       if (report.status === 'failed' || report.has_error) {
+                        const providerLabel = getProviderLabel(report.provider || provider);
+                        const targetLabel = report.target || target;
                         return (
                           <Card key={reportKey} className="border-error">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 text-error">
                                 <span>⚠️</span>
-                                {report.provider || provider} - {report.target || target} - AI Analysis Failed
+                                {providerLabel} - {targetLabel} - AI Analysis Failed
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -610,12 +758,14 @@ const NewScan = () => {
                       }
                       
                       if (report.status === 'completed') {
+                        const providerLabel = getProviderLabel(report.provider || provider);
+                        const targetLabel = report.target || target;
                         return (
                           <Card key={reportKey} className="border-primary/30">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <span className="text-primary-500">🤖</span>
-                                {report.provider || provider} - {report.target || target} - AI Security Analysis
+                                {providerLabel} - {targetLabel} - AI Security Analysis
                               </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">

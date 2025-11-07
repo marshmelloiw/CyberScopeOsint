@@ -11,6 +11,7 @@ import {
   Loader2,
   Key,
   Settings as SettingsIcon,
+  Zap,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import api, { endpoints } from '../../lib/axios';
@@ -194,6 +195,14 @@ const Dashboard = () => {
     ];
 
     if (isAdmin || isAnalyst) {
+      actions.unshift({
+        key: 'zap-scan',
+        label: 'ZAP Taraması',
+        description: 'OWASP ZAP ile URL güvenlik taraması başlatın',
+        icon: Zap,
+        onClick: () => navigate('/dashboard/scans/new?type=url&providers=ZAP'),
+        variant: 'primary',
+      });
       actions.unshift({
         key: 'new-scan',
         label: 'Yeni Tarama',

@@ -3,11 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import RiskBadge from '../../components/common/RiskBadge';
-import { ArrowLeft, Loader2, AlertCircle, CheckCircle, XCircle, Globe, Mail, MapPin, Users, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle, XCircle, Globe, Mail, MapPin, Users, Trash2, Shield } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import api from '../../lib/axios';
 import MarkdownRenderer from '../../components/common/MarkdownRenderer';
 import { resolveReportMarkdown } from '../../lib/reportMarkdown';
+
+const PROVIDER_LABELS = {
+  ZAP: 'OWASP ZAP',
+};
+
+const TYPE_LABELS = {
+  url: 'Web Application',
+};
 
 const ScanDetail = () => {
   const { scanId } = useParams();
@@ -50,11 +58,27 @@ const ScanDetail = () => {
     }
   }, [scanId]);
 
+  const getProviderLabel = (provider) => {
+    if (!provider) return provider;
+    const normalized = provider.toUpperCase();
+    return PROVIDER_LABELS[normalized] || provider;
+  };
+
+  const getTypeLabel = (type) => {
+    if (!type) return 'Unknown';
+    const normalized = type.toLowerCase();
+    if (TYPE_LABELS[normalized]) {
+      return TYPE_LABELS[normalized];
+    }
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
+
   const getTypeIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'domain': return <Globe className="h-5 w-5" />;
       case 'email': return <Mail className="h-5 w-5" />;
       case 'ip': return <MapPin className="h-5 w-5" />;
+      case 'url': return <Shield className="h-5 w-5" />;
       case 'social': return <Users className="h-5 w-5" />;
       default: return <Globe className="h-5 w-5" />;
     }
@@ -170,7 +194,7 @@ const ScanDetail = () => {
               <p className="text-sm text-surface-muted mb-1">Tip</p>
               <div className="flex items-center space-x-2">
                 {getTypeIcon(result.type)}
-                <span className="text-white capitalize">{result.type}</span>
+                <span className="text-white">{getTypeLabel(result.type)}</span>
               </div>
             </div>
             <div>
@@ -202,7 +226,7 @@ const ScanDetail = () => {
               <div className="flex flex-wrap gap-2">
                 {result.providers.map((provider, idx) => (
                   <span key={idx} className="px-3 py-1 bg-primary-600 rounded-lg text-white">
-                    {provider}
+                    {getProviderLabel(provider)}
                   </span>
                 ))}
               </div>
@@ -256,12 +280,14 @@ const ScanDetail = () => {
               ) : (
                 <div className="space-y-6">
                   {Object.entries(geminiReports).map(([key, report]) => {
-                    const [provider, target] = key.split('_');
+                    const [provider, ...targetParts] = key.split('_');
+                    const target = targetParts.join('_');
+                    const providerLabel = getProviderLabel(provider);
                     return (
                       <div key={key} className="border border-surface-border rounded-lg p-6 bg-surface-panel/50">
                         <div className="mb-4 pb-4 border-b border-surface-border">
                           <h3 className="text-lg font-semibold text-white mb-2">
-                            {provider} - {target}
+                            {providerLabel} - {target}
                           </h3>
                           <span className="text-sm text-surface-muted">
                             {report.status === 'completed' ? '✓ Tamamlandı' : '⏳ Oluşturuluyor...'}
@@ -342,8 +368,8 @@ const ScanDetail = () => {
                       {targetResults && typeof targetResults === 'object' && (
                         <div className="space-y-4">
                           {Object.entries(targetResults).map(([provider, providerData]) => (
-                            <div key={provider} className="bg-surface-panel rounded-lg p-4">
-                              <h4 className="font-medium text-white mb-2">{provider}</h4>
+                          <div key={provider} className="bg-surface-panel rounded-lg p-4">
+                            <h4 className="font-medium text-white mb-2">{getProviderLabel(provider)}</h4>
                               {providerData && typeof providerData === 'object' && (
                                 <pre className="text-xs text-surface-muted overflow-x-auto bg-surface-border p-3 rounded">
                                   {JSON.stringify(providerData, null, 2)}

@@ -90,6 +90,10 @@ public class GeminiService {
             return buildTwitterPrompt(scanResults);
         }
 
+        if (isZapScan(scanResults, scanType)) {
+            return buildZapPrompt(scanResults);
+        }
+
         StringBuilder prompt = new StringBuilder();
         
         prompt.append("You are a senior cybersecurity expert analyzing OSINT scan results. ");
@@ -146,6 +150,30 @@ public class GeminiService {
         return false;
     }
 
+    private boolean isZapScan(Map<String, Object> scanResults, String scanType) {
+        if (scanType != null && scanType.equalsIgnoreCase("url")) {
+            return true;
+        }
+
+        for (Map.Entry<String, Object> entry : scanResults.entrySet()) {
+            String key = entry.getKey();
+            if (key != null && key.toLowerCase().contains("zap")) {
+                return true;
+            }
+
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                Map<?, ?> valueMap = (Map<?, ?>) value;
+                Object provider = valueMap.get("provider");
+                if (provider instanceof String && ((String) provider).equalsIgnoreCase("zap")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private String buildTwitterPrompt(Map<String, Object> scanResults) {
         StringBuilder prompt = new StringBuilder();
 
@@ -166,6 +194,34 @@ public class GeminiService {
         prompt.append("- Keep tone professional and actionable.\n\n");
 
         prompt.append("Twitter Search Dataset:\n");
+        prompt.append(formatResultsForPrompt(scanResults));
+        prompt.append("\n\nGenerate the Markdown report now.\n");
+
+        return prompt.toString();
+    }
+
+    private String buildZapPrompt(Map<String, Object> scanResults) {
+        StringBuilder prompt = new StringBuilder();
+
+        prompt.append("You are an experienced application security engineer reviewing the raw JSON output from OWASP ZAP scans. ");
+        prompt.append("Interpret spider, active scan, and alert data to identify real web application risks.\n\n");
+
+        prompt.append("Produce a GitHub-flavored Markdown report with the following sections:\n");
+        prompt.append("1. ## Executive Summary (overall risk posture, primary exposure)\n");
+        prompt.append("2. ## Overall Risk (state risk level LOW/MEDIUM/HIGH/CRITICAL and a 0-10 score)\n");
+        prompt.append("3. ## Critical & High Findings (group alerts by risk, include affected URLs, parameters, CWE/OWASP Top 10 mapping, pluginId, and evidence)\n");
+        prompt.append("4. ## Medium Findings (summarize notable medium severity issues)\n");
+        prompt.append("5. ## Remediation Recommendations (actionable fixes, prioritised)\n");
+        prompt.append("6. ## Additional Observations (scan coverage, false positives, follow-up actions)\n\n");
+
+        prompt.append("Guidance:\n");
+        prompt.append("- Prioritise alerts by their risk level and alert count.\n");
+        prompt.append("- Highlight repeated vulnerable endpoints or parameters.\n");
+        prompt.append("- Reference pluginId, alert, riskdesc, and other ZAP metadata where helpful.\n");
+        prompt.append("- Note scan progress (spider/active scan status) or errors if present.\n");
+        prompt.append("- Keep tone professional and focused on remediation.\n\n");
+
+        prompt.append("OWASP ZAP JSON data:\n");
         prompt.append(formatResultsForPrompt(scanResults));
         prompt.append("\n\nGenerate the Markdown report now.\n");
 

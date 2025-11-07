@@ -5,6 +5,7 @@ import osint.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ public class ScanService {
     private final ScanLogRepository scanLogRepository;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final ApplicationContext applicationContext;
 
     // In-memory cache for quick status lookups (still used for real-time status)
     private final Map<String, ScanStatus> scanStatuses = new ConcurrentHashMap<>();
@@ -58,7 +60,8 @@ public class ScanService {
             ScanResultRepository scanResultRepository,
             ScanLogRepository scanLogRepository,
             NotificationService notificationService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            ApplicationContext applicationContext) {
         this.shodanService = shodanService;
         this.virusTotalService = virusTotalService;
         this.hibpService = hibpService;
@@ -73,6 +76,7 @@ public class ScanService {
         this.scanLogRepository = scanLogRepository;
         this.notificationService = notificationService;
         this.userRepository = userRepository;
+        this.applicationContext = applicationContext;
     }
 
     @Transactional
@@ -113,7 +117,7 @@ public class ScanService {
             addLogToDB(scan.getId(), "INFO", "Scan started: " + request.getName());
 
             // Execute async with DB persistence
-            executeScanAsyncWithDB(scan.getId(), scanId, request);
+            getSelf().executeScanAsyncWithDB(scan.getId(), scanId, request);
 
             return scanId;
         } catch (Exception e) {
@@ -122,14 +126,14 @@ public class ScanService {
             ScanStatus status = new ScanStatus(scanId, "RUNNING", new ArrayList<>(), null);
             scanStatuses.put(scanId, status);
             // Try to execute without DB persistence as fallback
-            executeScanAsyncWithoutDB(scanId, request);
+            getSelf().executeScanAsyncWithoutDB(scanId, request);
             return scanId;
         }
     }
 
     // Fallback method for when DB tables don't exist yet
     @Async("taskExecutor")
-    private void executeScanAsyncWithoutDB(String scanId, ScanRequest request) {
+    public void executeScanAsyncWithoutDB(String scanId, ScanRequest request) {
         ScanStatus status = scanStatuses.get(scanId);
         if (status == null) {
             status = new ScanStatus(scanId, "RUNNING", new ArrayList<>(), null);
@@ -185,7 +189,7 @@ public class ScanService {
                                 break;
                             case "ZAP":
                                 if (request.getType().equals("url")) {
-                                    providerResult = zapService.scanUrl(target).block();
+                                    providerResult = zapService.performFullScan(target).block();
                                 }
                                 break;
                             case "TWITTER":
@@ -229,7 +233,7 @@ public class ScanService {
 
     @Async("taskExecutor")
     @Transactional
-    private void executeScanAsyncWithDB(Long scanDbId, String scanId, ScanRequest request) {
+    public void executeScanAsyncWithDB(Long scanDbId, String scanId, ScanRequest request) {
         ScanStatus status = scanStatuses.get(scanId);
         if (status == null) {
             status = new ScanStatus(scanId, "RUNNING", new ArrayList<>(), null);
@@ -291,7 +295,7 @@ public class ScanService {
                             case "ZAP":
                                 logger.info("Matched ZAP for type: {}", request.getType());
                                 if (request.getType().equals("url")) {
-                                    providerResult = zapService.scanUrl(target).block();
+                                    providerResult = zapService.performFullScan(target).block();
                                 }
                                 break;
                             case "TWITTER":
@@ -442,6 +446,10 @@ public class ScanService {
             status.setStatus("FAILED");
             status.setErrorMessage(e.getMessage());
         }
+    }
+
+    private ScanService getSelf() {
+        return applicationContext.getBean(ScanService.class);
     }
 
     private Map<String, Object> handleTwitterProvider(String target) {

@@ -8,6 +8,14 @@ import { Search, Plus, Filter, Eye, Play, Pause, Trash2, Loader2, RefreshCw } fr
 import { cn } from '../../lib/utils';
 import api, { endpoints } from '../../lib/axios';
 
+const PROVIDER_LABELS = {
+  ZAP: 'OWASP ZAP',
+};
+
+const TYPE_LABELS = {
+  url: 'Web Application',
+};
+
 const ScansList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -16,6 +24,23 @@ const ScansList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const getProviderLabel = (provider) => {
+    if (!provider) return provider;
+    const normalized = provider.toUpperCase();
+    return PROVIDER_LABELS[normalized] || provider;
+  };
+
+  const getTypeLabel = (type) => {
+    if (!type) return 'Unknown';
+    const normalized = type.toLowerCase();
+    if (TYPE_LABELS[normalized]) {
+      return TYPE_LABELS[normalized];
+    }
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
+
+  const formatProviderList = (list = []) => list.map(getProviderLabel).join(', ');
 
   // Fetch scans from API
   const fetchScans = useCallback(async (showRefreshing = false) => {
@@ -39,7 +64,7 @@ const ScansList = () => {
         // Generate name if not provided
         let name = scan.name;
         if (!name && targets.length > 0) {
-          const typeName = scan.type ? scan.type.charAt(0).toUpperCase() + scan.type.slice(1) : 'Scan';
+          const typeName = scan.type ? getTypeLabel(scan.type) : 'Scan';
           name = `${typeName} - ${targets.join(', ')}`;
         }
         
@@ -94,6 +119,7 @@ const ScansList = () => {
       case 'domain': return '🌐';
       case 'email': return '📧';
       case 'ip': return '🔌';
+      case 'url': return '🛡️';
       case 'social': return '👥';
       default: return '🔍';
     }
@@ -187,6 +213,7 @@ const ScansList = () => {
               <option value="domain">Domain</option>
               <option value="email">Email</option>
               <option value="ip">IP Address</option>
+              <option value="url">Web Application</option>
               <option value="social">Social Media</option>
             </select>
           </div>
@@ -258,15 +285,15 @@ const ScansList = () => {
                           </p>
                           {scan.providers.length > 0 && (
                             <p className="text-xs text-surface-muted mt-1">
-                              Providers: {scan.providers.join(', ')}
-                        </p>
+                              Providers: {formatProviderList(scan.providers)}
+                            </p>
                           )}
                       </div>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center space-x-2">
                         <span className="text-lg">{getTypeIcon(scan.type)}</span>
-                        <span className="capitalize text-white">{scan.type}</span>
+                        <span className="text-white">{getTypeLabel(scan.type)}</span>
                       </div>
                     </td>
                     <td className="p-3">
