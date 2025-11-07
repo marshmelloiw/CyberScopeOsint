@@ -80,6 +80,19 @@ body {
   color: #0f172a !important;
 }
 
+/* Landing page should always have white text, even in light mode */
+.light .landing-page,
+.light .landing-page h1,
+.light .landing-page h2,
+.light .landing-page h3,
+.light .landing-page p,
+.light .landing-page span,
+.light .landing-page div,
+.light .landing-page button,
+.light .landing-page .text-white {
+  color: #ffffff !important;
+}
+
 .light .text-surface-muted {
   color: #475569 !important;
 }
