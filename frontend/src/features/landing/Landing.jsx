@@ -56,9 +56,7 @@ function Landing() {
             Detect Threats Early<br />
           </h1>
           <p className="mt-6 text-base md:text-lg text-white leading-relaxed">
-            CyberScope OSINT consolidates data from Shodan, VirusTotal and Have I Been Pwned to deliver
-            unified visibility, alerts and reporting. Real-time analysis and advanced risk scoring help
-            security teams make faster decisions and respond to incidents earlier.
+          CyberScope consolidates data collected from multiple OSINT tools to provide unified visibility, alerts, and AI-powered real-time reporting. Its real-time analysis and advanced risk scoring system help security teams make faster decisions and respond to incidents earlier.
           </p>
         </div>
 
