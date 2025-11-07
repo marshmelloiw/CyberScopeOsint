@@ -94,34 +94,34 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
   const renderSetupStep = () => (
     <div className="text-center space-y-6">
       <div className="flex justify-center">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-          <Shield className="w-8 h-8 text-blue-600" />
+        <div className="w-16 h-16 bg-blue-100 dark:bg-primary-500/20 rounded-full flex items-center justify-center">
+          <Shield className="w-8 h-8 text-blue-600 dark:text-primary-300" />
         </div>
       </div>
 
       <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           İki Faktörlü Kimlik Doğrulama
         </h3>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-surface-muted">
           Hesabınızı daha güvenli hale getirmek için MFA'yı etkinleştirin
         </p>
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-center space-x-3 text-sm text-gray-600">
-          <Smartphone className="w-4 h-4" />
+        <div className="flex items-center justify-center space-x-3 text-sm text-gray-600 dark:text-surface-muted">
+          <Smartphone className="w-4 h-4 text-gray-600 dark:text-primary-300" />
           <span>Google Authenticator, Authy veya benzeri bir app kullanın</span>
         </div>
 
-        <div className="flex items-center justify-center space-x-3 text-sm text-gray-600">
-          <QrCode className="w-4 h-4" />
+        <div className="flex items-center justify-center space-x-3 text-sm text-gray-600 dark:text-surface-muted">
+          <QrCode className="w-4 h-4 text-gray-600 dark:text-primary-300" />
           <span>QR kodu tarayarak hesabınızı ekleyin</span>
         </div>
       </div>
 
       {error && (
-        <div className="flex items-center space-x-2 text-red-600 text-sm bg-red-50 p-3 rounded">
+        <div className="flex items-center space-x-2 text-red-600 dark:text-danger text-sm bg-red-50 dark:bg-danger/20 p-3 rounded border border-red-200 dark:border-danger/30">
           <AlertCircle className="w-4 h-4" />
           <span>{error}</span>
         </div>
@@ -148,17 +148,17 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
   const renderVerificationStep = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           QR Kodu Tarayın
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 dark:text-surface-muted mb-4">
           Authenticator app'inizde QR kodu tarayın veya kodu manuel olarak girin
         </p>
       </div>
 
       {/* QR Code Display */}
       <div className="flex justify-center">
-        <div className="bg-white p-4 rounded-lg border">
+        <div className="bg-white dark:bg-surface-panel p-4 rounded-lg border border-gray-200 dark:border-surface-border">
           {qrCodeImage ? (
             <img
               src={qrCodeImage}
@@ -166,9 +166,9 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
               className="w-48 h-48 rounded"
             />
           ) : (
-            <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
-              <QrCode className="w-24 h-24 text-gray-400" />
-              <div className="text-xs text-gray-500 text-center">
+            <div className="w-48 h-48 bg-gray-100 dark:bg-surface-panel/50 rounded flex flex-col items-center justify-center space-y-2">
+              <QrCode className="w-24 h-24 text-gray-400 dark:text-primary-300" />
+              <div className="text-xs text-gray-500 dark:text-surface-muted text-center">
                 QR Kod<br />
                 Yükleniyor...
               </div>
@@ -179,8 +179,8 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
 
       {/* Manual Secret Entry */}
       <div className="text-center">
-        <p className="text-sm text-gray-600 mb-2">Veya manuel olarak girin:</p>
-        <div className="bg-gray-50 p-3 rounded font-mono text-sm">
+        <p className="text-sm text-gray-600 dark:text-surface-muted mb-2">Veya manuel olarak girin:</p>
+        <div className="bg-gray-50 dark:bg-surface-panel/50 p-3 rounded font-mono text-sm text-gray-900 dark:text-primary-100 border border-transparent dark:border-surface-border/60">
           {qrCodeData?.totpSecret}
         </div>
       </div>
@@ -188,22 +188,22 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
       {/* TOTP Verification Form */}
       <form onSubmit={handleSubmit(verifyAndEnableMFA)} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-surface-muted mb-2">
             TOTP Token
           </label>
           <Input
             {...register('totp_token')}
             placeholder="6 haneli kodu girin"
             maxLength={6}
-            className="text-center text-lg tracking-widest"
+            className="text-center text-lg tracking-widest bg-surface-panel dark:bg-surface-panel text-gray-900 dark:text-white"
           />
           {errors.totp_token && (
-            <p className="text-red-600 text-sm mt-1">{errors.totp_token.message}</p>
+            <p className="text-red-600 dark:text-danger text-sm mt-1">{errors.totp_token.message}</p>
           )}
         </div>
 
         {error && (
-          <div className="flex items-center space-x-2 text-red-600 text-sm">
+          <div className="flex items-center space-x-2 text-red-600 dark:text-danger text-sm">
             <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
           </div>
@@ -231,22 +231,22 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
   const renderSuccessStep = () => (
     <div className="text-center space-y-6">
       <div className="flex justify-center">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-          <CheckCircle className="w-8 h-8 text-green-600" />
+        <div className="w-16 h-16 bg-green-100 dark:bg-success/20 rounded-full flex items-center justify-center">
+          <CheckCircle className="w-8 h-8 text-green-600 dark:text-success" />
         </div>
       </div>
 
       <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           MFA Başarıyla Etkinleştirildi!
         </h3>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-surface-muted">
           Artık hesabınız iki faktörlü kimlik doğrulama ile korunuyor
         </p>
       </div>
 
-      <div className="bg-green-50 p-4 rounded-lg">
-        <p className="text-sm text-green-800">
+      <div className="bg-green-50 dark:bg-success/10 p-4 rounded-lg border border-green-200 dark:border-success/30">
+        <p className="text-sm text-green-800 dark:text-success">
           <strong>Önemli:</strong> Backup kodlarınızı güvenli bir yerde saklayın.
           Telefonunuzu kaybederseniz, bu kodlar olmadan hesabınıza erişemeyebilirsiniz.
         </p>
@@ -255,8 +255,8 @@ const MFASetup = ({ onSetupComplete, onCancel }) => {
   );
 
   return (
-    <Card className="max-w-md mx-auto">
-      <div className="p-6">
+    <Card className="max-w-md mx-auto bg-surface-panel/80 dark:bg-surface-panel/80 border border-surface-border/60">
+      <div className="p-6 space-y-4 text-gray-900 dark:text-white">
         {step === 'setup' && renderSetupStep()}
         {step === 'verification' && renderVerificationStep()}
         {step === 'success' && renderSuccessStep()}

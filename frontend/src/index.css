@@ -65,14 +65,48 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-surface-bg);
-  color: var(--color-surface-muted);
+  color: #d9e2ff;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background-color: var(--color-surface-bg);
+  color: #d9e2ff;
 }
 
 /* Light mode specific overrides */
 .light body {
   background-color: var(--color-surface-bg);
   color: #0f172a;
+}
+
+/* Dark mode overrides for stray light backgrounds */
+.dark .bg-white,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200,
+.dark .bg-gray-300,
+.dark .bg-slate-50,
+.dark .bg-slate-100,
+.dark .bg-zinc-100 {
+  background-color: var(--color-surface-panel) !important;
+  color: inherit;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-gray-600 {
+  color: var(--color-surface-muted) !important;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-slate-200 {
+  border-color: var(--color-surface-border) !important;
 }
 
 /* Light mode text colors */
@@ -161,15 +195,15 @@ code {
 
 /* Glass morphism effects */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(11, 18, 32, 0.92);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(30, 43, 74, 0.7);
 }
 
 .glass-dark {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(7, 13, 26, 0.88);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(30, 43, 74, 0.6);
 }
 
 /* Light mode glass effects */
