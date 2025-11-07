@@ -300,13 +300,13 @@ const Dashboard = () => {
   const getQuickActionClasses = (variant) => {
     switch (variant) {
       case 'primary':
-        return 'bg-primary-600 text-white hover:bg-primary-700';
+        return 'bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-600 dark:text-white dark:hover:bg-primary-700';
       case 'secondary':
-        return 'bg-surface-panel border border-surface-border text-white hover:bg-surface-border';
+        return 'bg-surface-panel border border-surface-border text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-surface-border transition-all';
       case 'tertiary':
-        return 'bg-surface-panel border border-primary-600/40 text-primary-200 hover:bg-primary-600/10';
+        return 'bg-surface-panel border border-primary-500/50 text-primary-700 dark:text-primary-200 hover:bg-primary-50 dark:hover:bg-primary-600/10 hover:border-primary-600 dark:hover:border-primary-500 transition-all';
       default:
-        return 'bg-surface-panel border border-surface-border text-white hover:bg-surface-border';
+        return 'bg-surface-panel border border-surface-border text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-surface-border transition-all';
     }
   };
 
@@ -418,11 +418,27 @@ const Dashboard = () => {
                   )}
                 >
                   <div className="flex items-center space-x-3">
-                    <Icon className="h-5 w-5" />
-                    <div>
+                    <Icon className={cn(
+                      'h-5 w-5 flex-shrink-0',
+                      variant === 'primary' 
+                        ? 'text-white' 
+                        : variant === 'tertiary'
+                        ? 'text-primary-600 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-gray-300'
+                    )} />
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium">{label}</p>
                       {description && (
-                        <p className="text-xs text-surface-muted/80">{description}</p>
+                        <p className={cn(
+                          'text-xs mt-0.5',
+                          variant === 'primary'
+                            ? 'text-white/90'
+                            : variant === 'tertiary'
+                            ? 'text-primary-600/80 dark:text-primary-300/80'
+                            : 'text-gray-600 dark:text-gray-400'
+                        )}>
+                          {description}
+                        </p>
                       )}
                     </div>
                   </div>

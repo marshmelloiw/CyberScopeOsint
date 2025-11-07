@@ -201,15 +201,15 @@ const Settings = () => {
                 </Button>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">{profileData.name}</h3>
-                <p className="text-surface-muted">{profileData.role}</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{profileData.name}</h3>
+                <p className="text-gray-600 dark:text-surface-muted">{profileData.role}</p>
               </div>
             </div>
 
             {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Full Name</label>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Full Name</label>
                 <Input
                   value={profileData.name}
                   onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
@@ -218,7 +218,7 @@ const Settings = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Email Address</label>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Email Address</label>
                 <Input
                   type="email"
                   value={profileData.email}
@@ -228,7 +228,7 @@ const Settings = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Role</label>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Role</label>
                 <Input
                   value={profileData.role}
                   onChange={(e) => setProfileData(prev => ({ ...prev, role: e.target.value }))}
@@ -237,7 +237,7 @@ const Settings = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Avatar URL</label>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Avatar URL</label>
                 <Input
                   value={profileData.avatar}
                   onChange={(e) => setProfileData(prev => ({ ...prev, avatar: e.target.value }))}
@@ -260,30 +260,30 @@ const Settings = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div>
-                <p className="font-medium text-white">Account Status</p>
-                <p className="text-sm text-surface-muted">Your account status and verification</p>
+                <p className="font-medium text-gray-900 dark:text-white">Account Status</p>
+                <p className="text-sm text-gray-600 dark:text-surface-muted">Your account status and verification</p>
               </div>
-              <span className="px-3 py-1 bg-success/20 text-success text-sm rounded-full">
+              <span className="px-3 py-1 bg-emerald-50 dark:bg-success/20 text-emerald-700 dark:text-success text-sm rounded-full">
                 Active
               </span>
             </div>
 
-            <div className="flex justify-between items-center p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div>
-                <p className="font-medium text-white">Member Since</p>
-                <p className="text-sm text-surface-muted">When you joined the platform</p>
+                <p className="font-medium text-gray-900 dark:text-white">Member Since</p>
+                <p className="text-sm text-gray-600 dark:text-surface-muted">When you joined the platform</p>
               </div>
-              <span className="text-white">January 2024</span>
+              <span className="text-gray-900 dark:text-white">January 2024</span>
             </div>
 
-            <div className="flex justify-between items-center p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div>
-                <p className="font-medium text-white">Last Login</p>
-                <p className="text-sm text-surface-muted">Your most recent login</p>
+                <p className="font-medium text-gray-900 dark:text-white">Last Login</p>
+                <p className="text-sm text-gray-600 dark:text-surface-muted">Your most recent login</p>
               </div>
-              <span className="text-white">Today at 10:30 AM</span>
+              <span className="text-gray-900 dark:text-white">Today at 10:30 AM</span>
             </div>
           </div>
         </CardContent>
@@ -301,7 +301,7 @@ const Settings = () => {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Current Password</label>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Current Password</label>
               <div className="relative">
                 <Input
                   type={showPassword ? 'text' : 'password'}
@@ -312,7 +312,7 @@ const Settings = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-muted hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-surface-muted hover:text-gray-700 dark:hover:text-white"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -320,7 +320,7 @@ const Settings = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-2">New Password</label>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">New Password</label>
               <Input
                 type="password"
                 value={securityData.newPassword}
@@ -330,7 +330,7 @@ const Settings = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Confirm New Password</label>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Confirm New Password</label>
               <div className="relative">
                 <Input
                   type={showConfirmPassword ? 'text' : 'password'}
@@ -341,7 +341,7 @@ const Settings = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-muted hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-surface-muted hover:text-gray-700 dark:hover:text-white"
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -362,15 +362,15 @@ const Settings = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div>
-                <p className="font-medium text-white">2FA Status</p>
-                <p className="text-sm text-surface-muted">Add an extra layer of security to your account</p>
+                <p className="font-medium text-gray-900 dark:text-white">2FA Status</p>
+                <p className="text-sm text-gray-600 dark:text-surface-muted">Add an extra layer of security to your account</p>
               </div>
               <div className="flex items-center space-x-2">
                 {user?.totp_enabled ? (
                   <>
-                    <span className="px-3 py-1 bg-success/20 text-success text-sm rounded-full">
+                    <span className="px-3 py-1 bg-emerald-50 dark:bg-success/20 text-emerald-700 dark:text-success text-sm rounded-full">
                       Enabled
                     </span>
                     <Button
@@ -390,7 +390,7 @@ const Settings = () => {
                   </>
                 ) : (
                   <>
-                    <span className="px-3 py-1 bg-warning/20 text-warning text-sm rounded-full">
+                    <span className="px-3 py-1 bg-amber-50 dark:bg-warning/20 text-amber-700 dark:text-warning text-sm rounded-full">
                       Disabled
                     </span>
                     <Button
@@ -406,29 +406,30 @@ const Settings = () => {
             </div>
 
             {/* SMS MFA */}
-            <div className="p-3 bg-surface-panel/50 rounded-lg space-y-3">
+            <div className="p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-white">SMS MFA</p>
-                  <p className="text-sm text-surface-muted">Telefon numaranıza SMS ile kod gönderilir</p>
+                  <p className="font-medium text-gray-900 dark:text-white">SMS MFA</p>
+                  <p className="text-sm text-gray-600 dark:text-surface-muted">Telefon numaranıza SMS ile kod gönderilir</p>
                 </div>
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={securityData.smsMfaEnabled}
                     onChange={(e) => setSecurityData(prev => ({ ...prev, smsMfaEnabled: e.target.checked }))}
+                    className="rounded border-gray-300 dark:border-surface-border bg-white dark:bg-surface-panel text-primary-600 focus:ring-primary-500"
                   />
-                  <span className="text-sm text-white">Aktif</span>
+                  <span className="text-sm text-gray-900 dark:text-white">Aktif</span>
                 </label>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Ülke</label>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Ülke</label>
                   <select
                     value={securityData.countryCode}
                     onChange={(e) => setSecurityData(prev => ({ ...prev, countryCode: e.target.value }))}
-                    className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-white dark:bg-surface-panel border border-gray-300 dark:border-surface-border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="+90">Türkiye (+90)</option>
                     <option value="+1">ABD/Canada (+1)</option>
@@ -440,7 +441,7 @@ const Settings = () => {
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-white mb-2">Telefon Numarası</label>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Telefon Numarası</label>
                   <Input
                     type="tel"
                     inputMode="numeric"
@@ -461,21 +462,21 @@ const Settings = () => {
                     }}
                   />
                 </div>
-                <p className="text-sm text-surface-muted">
+                <p className="text-sm text-gray-600 dark:text-surface-muted">
                   SMS tabanlı MFA şu anda desteklenmiyor.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div>
-                <p className="font-medium text-white">Session Timeout</p>
-                <p className="text-sm text-surface-muted">Automatically log out after inactivity</p>
+                <p className="font-medium text-gray-900 dark:text-white">Session Timeout</p>
+                <p className="text-sm text-gray-600 dark:text-surface-muted">Automatically log out after inactivity</p>
               </div>
               <select
                 value={securityData.sessionTimeout}
                 onChange={(e) => setSecurityData(prev => ({ ...prev, sessionTimeout: e.target.value }))}
-                className="px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="px-3 py-2 bg-white dark:bg-surface-panel border border-gray-300 dark:border-surface-border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value={15}>15 minutes</option>
                 <option value={30}>30 minutes</option>
@@ -494,26 +495,26 @@ const Settings = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div className="flex items-center space-x-3">
-                <Shield className="h-5 w-5 text-success" />
+                <Shield className="h-5 w-5 text-emerald-600 dark:text-success" />
                 <div>
-                  <p className="font-medium text-white">Password changed</p>
-                  <p className="text-sm text-surface-muted">Today at 9:15 AM</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Password changed</p>
+                  <p className="text-sm text-gray-600 dark:text-surface-muted">Today at 9:15 AM</p>
                 </div>
               </div>
-              <span className="text-xs text-surface-muted">IP: 192.168.1.100</span>
+              <span className="text-xs text-gray-600 dark:text-surface-muted">IP: 192.168.1.100</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div className="flex items-center space-x-3">
-                <Globe className="h-5 w-5 text-info" />
+                <Globe className="h-5 w-5 text-blue-600 dark:text-info" />
                 <div>
-                  <p className="font-medium text-white">Login from new device</p>
-                  <p className="text-sm text-surface-muted">Yesterday at 2:30 PM</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Login from new device</p>
+                  <p className="text-sm text-gray-600 dark:text-surface-muted">Yesterday at 2:30 PM</p>
                 </div>
               </div>
-              <span className="text-xs text-surface-muted">IP: 203.0.113.45</span>
+              <span className="text-xs text-gray-600 dark:text-surface-muted">IP: 203.0.113.45</span>
             </div>
           </div>
         </CardContent>
@@ -532,22 +533,27 @@ const Settings = () => {
           <div className="space-y-6">
             {/* Theme Selection */}
             <div>
-              <h4 className="font-medium text-white mb-3">Theme</h4>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Theme</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
                   className={cn(
                     'p-4 border rounded-lg cursor-pointer transition-all',
                     appearanceData.theme === 'dark'
-                      ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-surface-border hover:border-primary-400'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
+                      : 'border-gray-300 dark:border-surface-border hover:border-primary-400 bg-white dark:bg-surface-panel/30'
                   )}
                   onClick={() => handleThemeChange('dark')}
                 >
                   <div className="flex items-center space-x-3">
-                    <Moon className="h-5 w-5 text-primary-400" />
+                    <Moon className={cn(
+                      'h-5 w-5',
+                      appearanceData.theme === 'dark' 
+                        ? 'text-primary-600 dark:text-primary-400' 
+                        : 'text-gray-600 dark:text-primary-400'
+                    )} />
                     <div>
-                      <p className="font-medium text-white">Dark</p>
-                      <p className="text-sm text-surface-muted">Default dark theme</p>
+                      <p className="font-medium text-gray-900 dark:text-white">Dark</p>
+                      <p className="text-sm text-gray-600 dark:text-surface-muted">Default dark theme</p>
                     </div>
                   </div>
                 </div>
@@ -556,16 +562,21 @@ const Settings = () => {
                   className={cn(
                     'p-4 border rounded-lg cursor-pointer transition-all',
                     appearanceData.theme === 'light'
-                      ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-surface-border hover:border-primary-400'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
+                      : 'border-gray-300 dark:border-surface-border hover:border-primary-400 bg-white dark:bg-surface-panel/30'
                   )}
                   onClick={() => handleThemeChange('light')}
                 >
                   <div className="flex items-center space-x-3">
-                    <Sun className="h-5 w-5 text-primary-400" />
+                    <Sun className={cn(
+                      'h-5 w-5',
+                      appearanceData.theme === 'light' 
+                        ? 'text-primary-600 dark:text-primary-400' 
+                        : 'text-gray-600 dark:text-primary-400'
+                    )} />
                     <div>
-                      <p className="font-medium text-white">Light</p>
-                      <p className="text-sm text-surface-muted">Light theme</p>
+                      <p className="font-medium text-gray-900 dark:text-white">Light</p>
+                      <p className="text-sm text-gray-600 dark:text-surface-muted">Light theme</p>
                     </div>
                   </div>
                 </div>
@@ -574,16 +585,21 @@ const Settings = () => {
                   className={cn(
                     'p-4 border rounded-lg cursor-pointer transition-all',
                     appearanceData.theme === 'auto'
-                      ? 'border-primary-500 bg-primary-500/10'
-                      : 'border-surface-border hover:border-primary-400'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
+                      : 'border-gray-300 dark:border-surface-border hover:border-primary-400 bg-white dark:bg-surface-panel/30'
                   )}
                   onClick={() => handleThemeChange('auto')}
                 >
                   <div className="flex items-center space-x-3">
-                    <Palette className="h-5 w-5 text-primary-400" />
+                    <Palette className={cn(
+                      'h-5 w-5',
+                      appearanceData.theme === 'auto' 
+                        ? 'text-primary-600 dark:text-primary-400' 
+                        : 'text-gray-600 dark:text-primary-400'
+                    )} />
                     <div>
-                      <p className="font-medium text-white">Auto</p>
-                      <p className="text-sm text-surface-muted">Follow system</p>
+                      <p className="font-medium text-gray-900 dark:text-white">Auto</p>
+                      <p className="text-sm text-gray-600 dark:text-surface-muted">Follow system</p>
                     </div>
                   </div>
                 </div>
@@ -593,11 +609,11 @@ const Settings = () => {
             {/* Other Settings */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Density</label>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Density</label>
                 <select
                   value={appearanceData.density}
                   onChange={(e) => setAppearanceData(prev => ({ ...prev, density: e.target.value }))}
-                  className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white dark:bg-surface-panel border border-gray-300 dark:border-surface-border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="compact">Compact</option>
                   <option value="comfortable">Comfortable</option>
@@ -606,16 +622,16 @@ const Settings = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Animations</label>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Animations</label>
                 <div className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     id="animations"
                     checked={appearanceData.animations}
                     onChange={(e) => setAppearanceData(prev => ({ ...prev, animations: e.target.checked }))}
-                    className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
+                    className="rounded border-gray-300 dark:border-surface-border bg-white dark:bg-surface-panel text-primary-600 focus:ring-primary-500"
                   />
-                  <label htmlFor="animations" className="text-white">Enable animations</label>
+                  <label htmlFor="animations" className="text-gray-900 dark:text-white">Enable animations</label>
                 </div>
               </div>
             </div>
@@ -630,13 +646,13 @@ const Settings = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
               <div>
-                <p className="font-medium text-white">Sidebar Collapsed</p>
-                <p className="text-sm text-surface-muted">Collapse the sidebar by default</p>
+                <p className="font-medium text-gray-900 dark:text-white">Sidebar Collapsed</p>
+                <p className="text-sm text-gray-600 dark:text-surface-muted">Collapse the sidebar by default</p>
               </div>
               <div className="flex items-center space-x-3">
-                <span className="text-sm text-surface-muted">
+                <span className="text-sm text-gray-600 dark:text-surface-muted">
                   {sidebarCollapsed ? 'Collapsed' : 'Expanded'}
                 </span>
                 <Button variant="outline" size="sm" onClick={toggleSidebar}>
@@ -663,8 +679,8 @@ const Settings = () => {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Settings</h1>
-        <p className="text-surface-muted">Manage your account and application preferences</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        <p className="text-gray-600 dark:text-surface-muted">Manage your account and application preferences</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -683,7 +699,7 @@ const Settings = () => {
                         'w-full flex items-center space-x-3 px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors',
                         activeTab === tab.id
                           ? 'bg-primary-600 text-white'
-                          : 'text-surface-muted hover:bg-surface-panel hover:text-white'
+                          : 'text-gray-700 dark:text-surface-muted hover:bg-gray-100 dark:hover:bg-surface-panel hover:text-gray-900 dark:hover:text-white'
                       )}
                     >
                       <IconComponent className="h-5 w-5" />

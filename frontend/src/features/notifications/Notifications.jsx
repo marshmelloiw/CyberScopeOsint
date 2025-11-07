@@ -167,14 +167,14 @@ const Notifications = () => {
 
   const getSeverityBadge = (severity) => {
     const colors = {
-      high: 'bg-danger/20 text-danger border-danger/30',
-      medium: 'bg-warning/20 text-warning border-warning/30',
-      low: 'bg-success/20 text-success border-success/30',
-      info: 'bg-info/20 text-info border-info/30',
+      high: 'bg-red-50 dark:bg-danger/20 text-red-700 dark:text-danger border-red-200 dark:border-danger/30',
+      medium: 'bg-amber-50 dark:bg-warning/20 text-amber-700 dark:text-warning border-amber-200 dark:border-warning/30',
+      low: 'bg-emerald-50 dark:bg-success/20 text-emerald-700 dark:text-success border-emerald-200 dark:border-success/30',
+      info: 'bg-blue-50 dark:bg-info/20 text-blue-700 dark:text-info border-blue-200 dark:border-info/30',
     };
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${colors[severity] || 'bg-surface-muted/20 text-surface-muted border-surface-muted/30'}`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${colors[severity] || 'bg-gray-100 dark:bg-surface-muted/20 text-gray-700 dark:text-surface-muted border-gray-200 dark:border-surface-muted/30'}`}>
         {severity.toUpperCase()}
       </span>
     );
@@ -301,12 +301,12 @@ const Notifications = () => {
         <div className="space-y-6">
           {/* General Settings */}
           <div>
-            <h4 className="font-medium text-white mb-3">General Settings</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">General Settings</h4>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div>
-                  <p className="font-medium text-white">Enable Notifications</p>
-                  <p className="text-sm text-surface-muted">Receive notifications in the application</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Enable Notifications</p>
+                  <p className="text-sm text-gray-600 dark:text-surface-muted">Receive notifications in the application</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -332,10 +332,10 @@ const Notifications = () => {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div>
-                  <p className="font-medium text-white">Sound Alerts</p>
-                  <p className="text-sm text-surface-muted">Play sound for important notifications</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Sound Alerts</p>
+                  <p className="text-sm text-gray-600 dark:text-surface-muted">Play sound for important notifications</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -365,13 +365,13 @@ const Notifications = () => {
 
           {/* Category Preferences */}
           <div>
-            <h4 className="font-medium text-white mb-3">Category Preferences</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Category Preferences</h4>
             <div className="space-y-3">
               {['security', 'scan', 'breach', 'system', 'intelligence'].map((category) => (
-                <div key={category} className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+                <div key={category} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                   <div>
-                    <p className="font-medium text-white capitalize">{category} Alerts</p>
-                    <p className="text-sm text-surface-muted">
+                    <p className="font-medium text-gray-900 dark:text-white capitalize">{category} Alerts</p>
+                    <p className="text-sm text-gray-600 dark:text-surface-muted">
                       Receive notifications for {category} related events
                     </p>
                   </div>
@@ -398,14 +398,14 @@ const Notifications = () => {
 
           {/* Delivery Methods */}
           <div>
-            <h4 className="font-medium text-white mb-3">Delivery Methods</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Delivery Methods</h4>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <Bell className="h-5 w-5 text-primary" />
+                  <Bell className="h-5 w-5 text-primary-600 dark:text-primary" />
                   <div>
-                    <p className="font-medium text-white">In-App Notifications</p>
-                    <p className="text-sm text-surface-muted">Show notifications in the application</p>
+                    <p className="font-medium text-gray-900 dark:text-white">In-App Notifications</p>
+                    <p className="text-sm text-gray-600 dark:text-surface-muted">Show notifications in the application</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -432,12 +432,12 @@ const Notifications = () => {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-primary" />
+                  <Mail className="h-5 w-5 text-primary-600 dark:text-primary" />
                   <div>
-                    <p className="font-medium text-white">Email Notifications</p>
-                    <p className="text-sm text-surface-muted">Send notifications via email</p>
+                    <p className="font-medium text-gray-900 dark:text-white">Email Notifications</p>
+                    <p className="text-sm text-gray-600 dark:text-surface-muted">Send notifications via email</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -452,12 +452,12 @@ const Notifications = () => {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <Smartphone className="h-5 w-5 text-primary" />
+                  <Smartphone className="h-5 w-5 text-primary-600 dark:text-primary" />
                   <div>
-                    <p className="font-medium text-white">Push Notifications</p>
-                    <p className="text-sm text-surface-muted">Send push notifications to mobile devices</p>
+                    <p className="font-medium text-gray-900 dark:text-white">Push Notifications</p>
+                    <p className="text-sm text-gray-600 dark:text-surface-muted">Send push notifications to mobile devices</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -476,17 +476,17 @@ const Notifications = () => {
 
           {/* Frequency Settings */}
           <div>
-            <h4 className="font-medium text-white mb-3">Frequency Settings</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Frequency Settings</h4>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-surface-panel/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div>
-                  <p className="font-medium text-white">Digest Frequency</p>
-                  <p className="text-sm text-surface-muted">How often to send notification digests</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Digest Frequency</p>
+                  <p className="text-sm text-gray-600 dark:text-surface-muted">How often to send notification digests</p>
                 </div>
                 <select 
                   value={preferences.digestFrequency}
                   onChange={(e) => setPreferences(prev => ({ ...prev, digestFrequency: e.target.value }))}
-                  className="px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
+                  className="px-3 py-2 bg-white dark:bg-surface-panel border border-gray-300 dark:border-surface-border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -516,8 +516,8 @@ const Notifications = () => {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Notifications</h1>
-          <p className="text-surface-muted">Manage your security alerts and notifications</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+          <p className="text-gray-600 dark:text-surface-muted">Manage your security alerts and notifications</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button 
@@ -539,7 +539,7 @@ const Notifications = () => {
       {showPreferences && <NotificationPreferences />}
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-surface-panel/50 p-1 rounded-lg">
+      <div className="flex space-x-1 bg-gray-100 dark:bg-surface-panel/50 p-1 rounded-lg">
         {[
           { id: 'all', label: 'All', count: notifications.length },
           { id: 'unread', label: 'Unread', count: unreadCount },
@@ -552,11 +552,16 @@ const Notifications = () => {
               'flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
               activeTab === tab.id
                 ? 'bg-primary-600 text-white'
-                : 'text-surface-muted hover:text-white hover:bg-surface-panel'
+                : 'text-gray-700 dark:text-surface-muted hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-surface-panel'
             )}
           >
             <span>{tab.label}</span>
-            <span className="px-2 py-1 bg-surface-panel/50 rounded-full text-xs">
+            <span className={cn(
+              'px-2 py-1 rounded-full text-xs',
+              activeTab === tab.id
+                ? 'bg-white/20 text-white'
+                : 'bg-white dark:bg-surface-panel/50 text-gray-600 dark:text-gray-300'
+            )}>
               {tab.count}
             </span>
           </button>
@@ -566,23 +571,23 @@ const Notifications = () => {
       {/* Notifications list */}
       <Card>
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">
             {activeTab === 'all' ? 'All Notifications' : 
              activeTab === 'unread' ? 'Unread Notifications' : 
              `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Notifications`}
-            <span className="ml-2 text-surface-muted">({filteredNotifications.length})</span>
+            <span className="ml-2 text-gray-600 dark:text-surface-muted">({filteredNotifications.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {loading ? (
               <div className="text-center py-8">
-                <p className="text-surface-muted">Yükleniyor...</p>
+                <p className="text-gray-600 dark:text-surface-muted">Yükleniyor...</p>
               </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="text-center py-8">
-                <Bell className="h-12 w-12 text-surface-muted mx-auto mb-4" />
-                <p className="text-surface-muted">Bildirim bulunamadı</p>
+                <Bell className="h-12 w-12 text-gray-400 dark:text-surface-muted mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-surface-muted">Bildirim bulunamadı</p>
               </div>
             ) : (
               filteredNotifications.map((notification) => (
@@ -591,9 +596,9 @@ const Notifications = () => {
                   className={cn(
                     'p-4 border rounded-lg transition-colors',
                     notification.read 
-                      ? 'border-surface-border/50 bg-surface-panel/30' 
-                      : 'border-primary-500/30 bg-primary-500/10',
-                    'hover:bg-surface-panel/50'
+                      ? 'border-gray-200 dark:border-surface-border/50 bg-white dark:bg-surface-panel/30' 
+                      : 'border-primary-500/50 dark:border-primary-500/30 bg-primary-50 dark:bg-primary-500/10',
+                    'hover:bg-gray-50 dark:hover:bg-surface-panel/50'
                   )}
                 >
                   <div className="flex items-start space-x-4">
@@ -603,24 +608,26 @@ const Notifications = () => {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3 flex-wrap">
                           <h3 className={cn(
                             'text-lg font-semibold',
-                            notification.read ? 'text-white' : 'text-primary-400'
+                            notification.read 
+                              ? 'text-gray-900 dark:text-white' 
+                              : 'text-primary-700 dark:text-primary-400'
                           )}>
                             {notification.title}
                           </h3>
                           {getSeverityBadge(notification.severity)}
                           {!notification.read && (
-                            <span className="px-2 py-1 bg-primary-500 text-white text-xs rounded-full">
+                            <span className="px-2 py-1 bg-primary-600 text-white text-xs rounded-full font-medium">
                               NEW
                             </span>
                           )}
                         </div>
                         
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm text-surface-muted">
-                            {new Date(notification.timestamp).toLocaleDateString()}
+                          <span className="text-sm text-gray-600 dark:text-surface-muted">
+                            {new Date(notification.timestamp).toLocaleDateString('tr-TR')}
                           </span>
                           {!notification.read && (
                             <Button
@@ -634,7 +641,7 @@ const Notifications = () => {
                         </div>
                       </div>
                       
-                      <p className="text-surface-muted mt-2">{notification.message}</p>
+                      <p className="text-gray-700 dark:text-surface-muted mt-2">{notification.message}</p>
                       
                       <div className="flex items-center space-x-4 mt-3">
                         <div className="flex space-x-2">
