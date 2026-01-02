@@ -15,8 +15,8 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope}
     driver-class-name: org.postgresql.Driver
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:123}
+    username: ${SPRING_DATASOURCE_USERNAME:change_me_in_production}
+    password: ${SPRING_DATASOURCE_PASSWORD:change_me_in_production}
   
   jpa:
     hibernate:

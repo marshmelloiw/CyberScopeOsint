@@ -28,8 +28,8 @@ services:
     container_name: cyberscope-backend
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cyberscope
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 123
+      SPRING_DATASOURCE_USERNAME: change_me_in_production
+      SPRING_DATASOURCE_PASSWORD: change_me_in_production
       SPRING_PROFILES_ACTIVE: dev
       # API Keys - set these via .env file or environment variables
       TWITTER_API_KEY: ${TWITTER_API_KEY:-}
