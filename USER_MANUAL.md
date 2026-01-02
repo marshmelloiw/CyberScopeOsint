@@ -75,7 +75,7 @@ Create the database:
 
 ```sql
 CREATE DATABASE cyberscope_local;
-CREATE USER cyber WITH PASSWORD 'cyberpass';
+CREATE USER cyber WITH PASSWORD 'your_secure_password';
 GRANT ALL PRIVILEGES ON DATABASE cyberscope_local TO cyber;
 \q
 ```
@@ -155,7 +155,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/cyberscope_local
     username: cyber
-    password: cyberpass
+    password: your_database_password
   
   jpa:
     hibernate:
@@ -268,7 +268,7 @@ INSERT INTO roles (id, name)
 VALUES (nextval('roles_id_seq'), 'ROLE_ADMIN') 
 ON CONFLICT DO NOTHING;
 
--- Create admin user (password: admin123)
+-- Create admin user (set your own secure password)
 INSERT INTO users (
     user_id, email, password_hash, full_name, 
     role, is_verified, mfa_enabled, created_at
@@ -276,7 +276,7 @@ INSERT INTO users (
 VALUES (
     nextval('users_user_id_seq'),
     'admin@cyberscope.com',
-    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG',
+    '[Generate your own password hash using BCrypt]',
     'System Administrator',
     'admin',
     'true',
@@ -286,8 +286,8 @@ VALUES (
 ```
 
 **Login Credentials:**
-- Email: `admin@cyberscope.com`
-- Password: `admin123`
+- Email: `admin@example.com`
+- Password: `[secure password]`
 
 **⚠️ IMPORTANT**: Change password after first login!
 

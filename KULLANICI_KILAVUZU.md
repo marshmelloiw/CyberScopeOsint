@@ -75,7 +75,7 @@ Veritabanını oluşturun:
 
 ```sql
 CREATE DATABASE cyberscope_local;
-CREATE USER cyber WITH PASSWORD 'cyberpass';
+CREATE USER cyber WITH PASSWORD 'your_secure_password';
 GRANT ALL PRIVILEGES ON DATABASE cyberscope_local TO cyber;
 \q
 ```
@@ -162,7 +162,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/cyberscope_local
     username: cyber
-    password: cyberpass
+    password: your_database_password
     driver-class-name: org.postgresql.Driver
   
   jpa:
@@ -294,7 +294,7 @@ INSERT INTO roles (id, name)
 VALUES (nextval('roles_id_seq'), 'ROLE_ADMIN') 
 ON CONFLICT DO NOTHING;
 
--- Admin kullanıcısı oluştur (şifre: admin123)
+-- Admin kullanıcısı oluştur (kendi güvenli şifrenizi belirleyin)
 INSERT INTO users (
     user_id, email, password_hash, full_name, 
     role, is_verified, mfa_enabled, created_at
@@ -302,7 +302,7 @@ INSERT INTO users (
 VALUES (
     nextval('users_user_id_seq'),
     'admin@cyberscope.com',
-    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG',
+    '[Kendi şifre hash\'inizi BCrypt ile oluşturun]',
     'Sistem Yöneticisi',
     'admin',
     'true',
@@ -312,8 +312,8 @@ VALUES (
 ```
 
 **Giriş Bilgileri:**
-- **Email**: `admin@cyberscope.com`
-- **Şifre**: `admin123`
+- **Email**: `admin@example.com`
+- **Şifre**: `[güvenli şifre]`
 
 **⚠️ ÇOK ÖNEMLİ**: İlk girişten sonra **mutlaka** şifreyi değiştirin!
 
