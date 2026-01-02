@@ -301,7 +301,6 @@ const Dashboard = () => {
     { label: 'Database', active: providerStatus.databaseConnected !== false },
     { label: 'Shodan', active: !!providerStatus.shodan },
     { label: 'VirusTotal', active: !!providerStatus.virusTotal },
-    { label: 'HaveIBeenPwned', active: !!providerStatus.hibp },
     { label: 'OWASP ZAP', active: !!providerStatus.zap },
     { label: 'Gemini AI', active: !!providerStatus.gemini },
   ]), [providerStatus]);
