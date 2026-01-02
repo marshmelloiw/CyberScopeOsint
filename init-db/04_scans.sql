@@ -21,10 +21,7 @@ CREATE TABLE IF NOT EXISTS public.scans
         REFERENCES public.users (user_id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE SET NULL
-)
-
-
-ALTER TABLE IF EXISTS public.scans
+);
 
 GRANT ALL ON TABLE public.scans TO cyber;
 
@@ -34,32 +31,36 @@ GRANT ALL ON TABLE public.scans TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_scans_created_at
     ON public.scans USING btree
-    (created_at COLLATE pg_catalog."default" DESC NULLS FIRST)
+    (created_at COLLATE pg_catalog."default" DESC NULLS FIRST);
+
 -- Index: idx_scans_scan_id
 
 -- DROP INDEX IF EXISTS public.idx_scans_scan_id;
 
 CREATE INDEX IF NOT EXISTS idx_scans_scan_id
     ON public.scans USING btree
-    (scan_id COLLATE pg_catalog."default" ASC NULLS LAST)
+    (scan_id COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_scans_status
 
 -- DROP INDEX IF EXISTS public.idx_scans_status;
 
 CREATE INDEX IF NOT EXISTS idx_scans_status
     ON public.scans USING btree
-    (status COLLATE pg_catalog."default" ASC NULLS LAST)
+    (status COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_scans_type
 
 -- DROP INDEX IF EXISTS public.idx_scans_type;
 
 CREATE INDEX IF NOT EXISTS idx_scans_type
     ON public.scans USING btree
-    (type COLLATE pg_catalog."default" ASC NULLS LAST)
+    (type COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_scans_user_id
 
 -- DROP INDEX IF EXISTS public.idx_scans_user_id;
 
 CREATE INDEX IF NOT EXISTS idx_scans_user_id
     ON public.scans USING btree
-    (user_id ASC NULLS LAST)
+    (user_id ASC NULLS LAST);

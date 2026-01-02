@@ -14,10 +14,7 @@ CREATE TABLE IF NOT EXISTS public.scan_logs
         REFERENCES public.scans (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
-
-
-ALTER TABLE IF EXISTS public.scan_logs
+);
 
 GRANT ALL ON TABLE public.scan_logs TO cyber;
 
@@ -27,11 +24,12 @@ GRANT ALL ON TABLE public.scan_logs TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_scan_logs_scan_id
     ON public.scan_logs USING btree
-    (scan_id ASC NULLS LAST)
+    (scan_id ASC NULLS LAST);
+
 -- Index: idx_scan_logs_timestamp
 
 -- DROP INDEX IF EXISTS public.idx_scan_logs_timestamp;
 
 CREATE INDEX IF NOT EXISTS idx_scan_logs_timestamp
     ON public.scan_logs USING btree
-    ("timestamp" COLLATE pg_catalog."default" DESC NULLS FIRST)
+    ("timestamp" COLLATE pg_catalog."default" DESC NULLS FIRST);

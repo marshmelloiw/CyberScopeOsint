@@ -25,10 +25,7 @@ CREATE TABLE IF NOT EXISTS public.notification_preferences
         REFERENCES public.users (user_id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
-
-
-ALTER TABLE IF EXISTS public.notification_preferences
+);
 
 GRANT ALL ON TABLE public.notification_preferences TO cyber;
 
@@ -38,4 +35,4 @@ GRANT ALL ON TABLE public.notification_preferences TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_notification_preferences_user_id
     ON public.notification_preferences USING btree
-    (user_id ASC NULLS LAST)
+    (user_id ASC NULLS LAST);

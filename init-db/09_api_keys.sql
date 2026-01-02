@@ -22,11 +22,8 @@ CREATE TABLE IF NOT EXISTS public.api_keys
     CONSTRAINT fk_apikeys_user FOREIGN KEY (user_id)
         REFERENCES public.users (user_id) MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE CASCADEa
-)
-
-
-ALTER TABLE IF EXISTS public.api_keys
+        ON DELETE CASCADE
+);
 
 GRANT ALL ON TABLE public.api_keys TO cyber;
 
@@ -36,25 +33,28 @@ GRANT ALL ON TABLE public.api_keys TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_api_key
     ON public.api_keys USING btree
-    (api_key COLLATE pg_catalog."default" ASC NULLS LAST)
+    (api_key COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_api_keys_created_at
 
 -- DROP INDEX IF EXISTS public.idx_api_keys_created_at;
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_created_at
     ON public.api_keys USING btree
-    (created_at COLLATE pg_catalog."default" DESC NULLS FIRST)
+    (created_at COLLATE pg_catalog."default" DESC NULLS FIRST);
+
 -- Index: idx_api_keys_status
 
 -- DROP INDEX IF EXISTS public.idx_api_keys_status;
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_status
     ON public.api_keys USING btree
-    (status COLLATE pg_catalog."default" ASC NULLS LAST)
+    (status COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_api_keys_user_id
 
 -- DROP INDEX IF EXISTS public.idx_api_keys_user_id;
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_user_id
     ON public.api_keys USING btree
-    (user_id ASC NULLS LAST)
+    (user_id ASC NULLS LAST);

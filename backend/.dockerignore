@@ -1,0 +1,16 @@
+target/
+.mvn/
+mvnw
+mvnw.cmd
+*.log
+*.jar
+!target/*.jar
+.idea/
+.vscode/
+*.iml
+.env
+node_modules/
+uploads/
+data/
+osint-backend.log
+

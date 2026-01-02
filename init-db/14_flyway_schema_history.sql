@@ -15,10 +15,7 @@ CREATE TABLE IF NOT EXISTS public.flyway_schema_history
     execution_time integer,
     success character varying(50) COLLATE pg_catalog."default",
     CONSTRAINT flyway_schema_history_pkey PRIMARY KEY (installed_rank)
-)
-
-
-ALTER TABLE IF EXISTS public.flyway_schema_history
+);
 
 GRANT ALL ON TABLE public.flyway_schema_history TO cyber;
 

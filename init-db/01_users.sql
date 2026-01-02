@@ -18,10 +18,7 @@ CREATE TABLE IF NOT EXISTS public.users
     last_login character varying(50) COLLATE pg_catalog."default",
     user_file character varying(128) COLLATE pg_catalog."default",
     CONSTRAINT users_pkey PRIMARY KEY (user_id)
-)
-
-
-ALTER TABLE IF EXISTS public.users
+);
 
 GRANT ALL ON TABLE public.users TO cyber;
 
@@ -31,32 +28,36 @@ GRANT ALL ON TABLE public.users TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_users_created_at
     ON public.users USING btree
-    (created_at COLLATE pg_catalog."default" DESC NULLS FIRST)
+    (created_at COLLATE pg_catalog."default" DESC NULLS FIRST);
+
 -- Index: idx_users_is_verified
 
 -- DROP INDEX IF EXISTS public.idx_users_is_verified;
 
 CREATE INDEX IF NOT EXISTS idx_users_is_verified
     ON public.users USING btree
-    (is_verified COLLATE pg_catalog."default" ASC NULLS LAST)
+    (is_verified COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_users_phone_number
 
 -- DROP INDEX IF EXISTS public.idx_users_phone_number;
 
 CREATE INDEX IF NOT EXISTS idx_users_phone_number
     ON public.users USING btree
-    (phone_number COLLATE pg_catalog."default" ASC NULLS LAST)
+    (phone_number COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_users_role
 
 -- DROP INDEX IF EXISTS public.idx_users_role;
 
 CREATE INDEX IF NOT EXISTS idx_users_role
     ON public.users USING btree
-    (role COLLATE pg_catalog."default" ASC NULLS LAST)
+    (role COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_users_user_file
 
 -- DROP INDEX IF EXISTS public.idx_users_user_file;
 
 CREATE INDEX IF NOT EXISTS idx_users_user_file
     ON public.users USING btree
-    (user_file COLLATE pg_catalog."default" ASC NULLS LAST)
+    (user_file COLLATE pg_catalog."default" ASC NULLS LAST);

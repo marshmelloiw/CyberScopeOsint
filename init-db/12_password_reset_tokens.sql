@@ -14,10 +14,7 @@ CREATE TABLE IF NOT EXISTS public.password_reset_tokens
         REFERENCES public.users (user_id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
-
-
-ALTER TABLE IF EXISTS public.password_reset_tokens
+);
 
 GRANT ALL ON TABLE public.password_reset_tokens TO cyber;
 

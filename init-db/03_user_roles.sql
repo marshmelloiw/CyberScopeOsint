@@ -15,10 +15,7 @@ CREATE TABLE IF NOT EXISTS public.user_roles
         REFERENCES public.users (user_id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
-
-
-ALTER TABLE IF EXISTS public.user_roles
+);
 
 GRANT ALL ON TABLE public.user_roles TO cyber;
 

@@ -21,10 +21,7 @@ CREATE TABLE IF NOT EXISTS public.notifications
         REFERENCES public.users (user_id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
-
-
-ALTER TABLE IF EXISTS public.notifications
+);
 
 GRANT ALL ON TABLE public.notifications TO cyber;
 

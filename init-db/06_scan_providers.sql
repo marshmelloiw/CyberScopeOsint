@@ -16,10 +16,7 @@ CREATE TABLE IF NOT EXISTS public.scan_providers
         REFERENCES public.scans (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
-
-
-ALTER TABLE IF EXISTS public.scan_providers
+);
 
 GRANT ALL ON TABLE public.scan_providers TO cyber;
 
@@ -29,11 +26,12 @@ GRANT ALL ON TABLE public.scan_providers TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_scan_providers_provider_name
     ON public.scan_providers USING btree
-    (provider_name COLLATE pg_catalog."default" ASC NULLS LAST)
+    (provider_name COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_scan_providers_scan_id
 
 -- DROP INDEX IF EXISTS public.idx_scan_providers_scan_id;
 
 CREATE INDEX IF NOT EXISTS idx_scan_providers_scan_id
     ON public.scan_providers USING btree
-    (scan_id ASC NULLS LAST)
+    (scan_id ASC NULLS LAST);

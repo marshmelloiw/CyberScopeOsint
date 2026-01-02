@@ -24,10 +24,7 @@ CREATE TABLE IF NOT EXISTS public.scan_results
         REFERENCES public.scan_targets (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE SET NULL
-)
-
-
-ALTER TABLE IF EXISTS public.scan_results
+);
 
 GRANT ALL ON TABLE public.scan_results TO cyber;
 
@@ -37,25 +34,28 @@ GRANT ALL ON TABLE public.scan_results TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_scan_results_provider_name
     ON public.scan_results USING btree
-    (provider_name COLLATE pg_catalog."default" ASC NULLS LAST)
+    (provider_name COLLATE pg_catalog."default" ASC NULLS LAST);
+
 -- Index: idx_scan_results_risk_score
 
 -- DROP INDEX IF EXISTS public.idx_scan_results_risk_score;
 
 CREATE INDEX IF NOT EXISTS idx_scan_results_risk_score
     ON public.scan_results USING btree
-    (risk_score COLLATE pg_catalog."default" DESC NULLS FIRST)
+    (risk_score COLLATE pg_catalog."default" DESC NULLS FIRST);
+
 -- Index: idx_scan_results_scan_id
 
 -- DROP INDEX IF EXISTS public.idx_scan_results_scan_id;
 
 CREATE INDEX IF NOT EXISTS idx_scan_results_scan_id
     ON public.scan_results USING btree
-    (scan_id ASC NULLS LAST)
+    (scan_id ASC NULLS LAST);
+
 -- Index: idx_scan_results_scan_target_id
 
 -- DROP INDEX IF EXISTS public.idx_scan_results_scan_target_id;
 
 CREATE INDEX IF NOT EXISTS idx_scan_results_scan_target_id
     ON public.scan_results USING btree
-    (scan_target_id ASC NULLS LAST)
+    (scan_target_id ASC NULLS LAST);

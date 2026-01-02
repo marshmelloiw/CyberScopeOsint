@@ -15,10 +15,7 @@ CREATE TABLE IF NOT EXISTS public.refresh_tokens
         REFERENCES public.users (user_id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
-
-
-ALTER TABLE IF EXISTS public.refresh_tokens
+);
 
 GRANT ALL ON TABLE public.refresh_tokens TO cyber;
 
@@ -28,4 +25,4 @@ GRANT ALL ON TABLE public.refresh_tokens TO cyber;
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id
     ON public.refresh_tokens USING btree
-    (user_id ASC NULLS LAST)
+    (user_id ASC NULLS LAST);
