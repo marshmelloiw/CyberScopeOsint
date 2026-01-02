@@ -73,12 +73,7 @@ psql -U postgres
 
 Create the database:
 
-```sql
-CREATE DATABASE cyberscope_local;
-CREATE USER cyber WITH PASSWORD 'cyberpass';
-GRANT ALL PRIVILEGES ON DATABASE cyberscope_local TO cyber;
-\q
-```
+
 
 ### Step 3: Load Database Schema
 
@@ -221,28 +216,6 @@ SELECT email, role FROM users;
 
 ### Create Admin User (if needed)
 
-```sql
--- Create admin role
-INSERT INTO roles (id, name) 
-VALUES (nextval('roles_id_seq'), 'ROLE_ADMIN') 
-ON CONFLICT DO NOTHING;
-
--- Create admin user (password: admin123)
-INSERT INTO users (
-    user_id, email, password_hash, full_name, 
-    role, is_verified, mfa_enabled, created_at
-)
-VALUES (
-    nextval('users_user_id_seq'),
-    'admin@cyberscope.com',
-    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG',
-    'System Administrator',
-    'admin',
-    'true',
-    'false',
-    CURRENT_TIMESTAMP::text
-);
-```
 
 **⚠️ IMPORTANT**: Change password after first login!
 
