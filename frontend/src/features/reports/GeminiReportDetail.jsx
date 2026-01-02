@@ -20,14 +20,14 @@ const GeminiReportDetail = () => {
         setLoading(true);
         setError(null);
         
-        // Fetch scan status to get Gemini reports
+
         const response = await api.get(`/scans/status/${scanId}`);
         const scanData = response.data;
         
         setScan(scanData);
       } catch (err) {
         console.error('Error fetching Gemini reports:', err);
-        setError(err.response?.data?.error || 'Gemini raporları yüklenemedi');
+        setError(err.response?.data?.error || 'Gemini reports could not be loaded');
       } finally {
         setLoading(false);
       }
@@ -42,7 +42,7 @@ const GeminiReportDetail = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-        <span className="ml-3 text-surface-muted">Gemini raporları yükleniyor...</span>
+        <span className="ml-3 text-surface-muted">Loading Gemini reports...</span>
       </div>
     );
   }
@@ -52,14 +52,14 @@ const GeminiReportDetail = () => {
       <div className="space-y-6">
         <Button variant="outline" onClick={() => navigate('/dashboard/reports')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Geri Dön
+          Go Back
         </Button>
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="h-16 w-16 mx-auto mb-4 text-danger" />
-            <h3 className="text-xl font-semibold text-white mb-2">Gemini Raporu Bulunamadı</h3>
-            <p className="text-surface-muted mb-4">{error || 'Gemini raporları yüklenemedi'}</p>
-            <Button onClick={() => navigate('/dashboard/reports')}>Rapor Listesine Dön</Button>
+            <h3 className="text-xl font-semibold text-white mb-2">Gemini Report Not Found</h3>
+            <p className="text-surface-muted mb-4">{error || 'Gemini reports could not be loaded'}</p>
+            <Button onClick={() => navigate('/dashboard/reports')}>Return to Report List</Button>
           </CardContent>
         </Card>
       </div>
@@ -68,7 +68,7 @@ const GeminiReportDetail = () => {
 
   const result = scan.result || {};
   const geminiReports = result.gemini_reports || {};
-  const scanName = result.name || 'Gemini AI Raporu';
+  const scanName = result.name || 'Gemini AI Report';
   const targets = result.targets || [];
   const providers = result.providers || [];
 
@@ -79,47 +79,47 @@ const GeminiReportDetail = () => {
         <div className="flex items-center space-x-4">
           <Button variant="outline" onClick={() => navigate('/dashboard/reports')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Geri Dön
+            Go Back
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-white">{scanName}</h1>
-            <p className="text-surface-muted">Gemini AI Analiz Raporları</p>
+            <p className="text-surface-muted">Gemini AI Analysis Reports</p>
           </div>
         </div>
         <Button 
           variant="outline" 
           className="text-danger hover:text-danger hover:border-danger"
           onClick={async () => {
-            if (window.confirm(`"${scanName}" raporunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+            if (window.confirm(`Are you sure you want to delete the report "${scanName}"? This action cannot be undone.`)) {
               try {
                 console.log('Deleting scan:', scan.scanId);
                 await api.delete(`/scans/${scan.scanId}`);
                 console.log('Scan deleted successfully');
-                alert('Rapor başarıyla silindi');
+                alert('Report successfully deleted');
                 navigate('/dashboard/reports');
               } catch (err) {
                 console.error('Error deleting scan:', err);
-                const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
-                alert('Rapor silinirken hata oluştu: ' + errorMsg);
+                const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+                alert('Error deleting report: ' + errorMsg);
               }
             }
           }}
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Raporu Sil
+          Delete Report
         </Button>
       </div>
 
       {/* Scan Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Rapor Bilgileri</CardTitle>
+          <CardTitle>Report Information</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {targets.length > 0 && (
               <div>
-                <p className="text-sm text-surface-muted mb-2">Hedefler</p>
+                <p className="text-sm text-surface-muted mb-2">Targets</p>
                 <div className="flex flex-wrap gap-2">
                   {targets.map((target, idx) => (
                     <span key={idx} className="px-3 py-1 bg-surface-panel rounded-lg text-white">
@@ -132,7 +132,7 @@ const GeminiReportDetail = () => {
 
             {providers.length > 0 && (
               <div>
-                <p className="text-sm text-surface-muted mb-2">Provider'lar</p>
+                <p className="text-sm text-surface-muted mb-2">Providers</p>
                 <div className="flex flex-wrap gap-2">
                   {providers.map((provider, idx) => (
                     <span key={idx} className="px-3 py-1 bg-primary-600 rounded-lg text-white">
@@ -149,13 +149,13 @@ const GeminiReportDetail = () => {
       {/* Gemini Reports */}
       <Card>
         <CardHeader>
-          <CardTitle>AI Analiz Raporları (Gemini)</CardTitle>
+          <CardTitle>AI Analysis Reports (Gemini)</CardTitle>
         </CardHeader>
         <CardContent>
           {Object.keys(geminiReports).length === 0 ? (
             <div className="text-center py-12">
               <p className="text-surface-muted mb-2">
-                Henüz AI analiz raporu yok
+                No AI analysis report yet
               </p>
             </div>
           ) : (
@@ -172,7 +172,7 @@ const GeminiReportDetail = () => {
                       </h3>
                       {reportData.status && (
                         <span className="text-sm text-surface-muted">
-                          {reportData.status === 'completed' ? '✓ Tamamlandı' : '⏳ Oluşturuluyor...'}
+                          {reportData.status === 'completed' ? '✓ Completed' : '⏳ Creating...'}
                         </span>
                       )}
                     </div>

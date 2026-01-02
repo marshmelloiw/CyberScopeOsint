@@ -42,7 +42,7 @@ public class UserApiKeysController {
             ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "API key'ler alınamadı: " + e.getMessage()
+                "error", "API keys could not be retrieved: " + e.getMessage()
             ));
         }
     }
@@ -61,7 +61,7 @@ public class UserApiKeysController {
             return ResponseEntity.ok(convertToResponse(apiKeyOpt.get()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "API key alınamadı: " + e.getMessage()
+                "error", "API key could not be retrieved: " + e.getMessage()
             ));
         }
     }
@@ -97,7 +97,7 @@ public class UserApiKeysController {
             return ResponseEntity.ok(convertToResponse(apiKey));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "API key oluşturulamadı: " + e.getMessage()
+                "error", "API key could not be created: " + e.getMessage()
             ));
         }
     }
@@ -132,7 +132,7 @@ public class UserApiKeysController {
             return ResponseEntity.ok(convertToResponse(apiKey));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "API key güncellenemedi: " + e.getMessage()
+                "error", "API key could not be updated: " + e.getMessage()
             ));
         }
     }
@@ -145,12 +145,12 @@ public class UserApiKeysController {
         try {
             userApiKeyService.deleteApiKey(id);
             return ResponseEntity.ok(Map.of(
-                "message", "API key başarıyla silindi",
+                "message", "API key successfully deleted",
                 "id", id
             ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "API key silinemedi: " + e.getMessage()
+                "error", "API key could not be deleted: " + e.getMessage()
             ));
         }
     }
@@ -165,7 +165,7 @@ public class UserApiKeysController {
             return ResponseEntity.ok(convertToResponse(apiKey));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "API key yenilenemedi: " + e.getMessage()
+                "error", "API key could not be regenerated: " + e.getMessage()
             ));
         }
     }
@@ -194,7 +194,7 @@ public class UserApiKeysController {
             return ResponseEntity.ok(exportData);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "API key export edilemedi: " + e.getMessage()
+                "error", "API key could not be exported: " + e.getMessage()
             ));
         }
     }

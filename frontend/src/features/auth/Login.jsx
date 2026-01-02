@@ -11,8 +11,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import MFAVerification from '../../components/auth/MFAVerification';
 
 const loginSchema = z.object({
-  email: z.string().email('Geçerli bir email adresi giriniz'),
-  password: z.string().min(1, 'Şifre gerekli'), // Geçici olarak minimum 1 karakter
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(1, 'Password is required'), // Temporarily minimum 1 character
   rememberMe: z.boolean().optional(),
 });
 
@@ -90,7 +90,7 @@ const Login = () => {
               <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">CyberScope OSINT</h1>
-            <p className="text-primary-200">Güvenlik tehditlerini keşfedin ve analiz edin</p>
+            <p className="text-primary-200">Discover and analyze security threats</p>
           </div>
 
           <MFAVerification
@@ -115,14 +115,14 @@ const Login = () => {
             <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">CyberScope OSINT</h1>
-          <p className="text-primary-200">Güvenlik tehditlerini keşfedin ve analiz edin</p>
+          <p className="text-primary-200">Discover and analyze security threats</p>
         </div>
 
         {/* Login form */}
         <Card className="glass border-white/20">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-white">Giriş Yap</CardTitle>
-            <p className="text-surface-muted">Hesabınıza erişmek için giriş yapın</p>
+            <CardTitle className="text-2xl text-white">Login</CardTitle>
+            <p className="text-surface-muted">Sign in to access your account</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -130,14 +130,14 @@ const Login = () => {
               <Input
                 label="Email"
                 type="email"
-                placeholder="ornek@email.com"
+                placeholder="example@email.com"
                 error={errors.email?.message}
                 {...register('email')}
               />
 
               {/* Password field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Şifre</label>
+                <label className="text-sm font-medium text-white">Password</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
@@ -171,13 +171,13 @@ const Login = () => {
                     className="rounded border-surface-border bg-surface-panel text-primary-600 focus:ring-primary-500"
                     {...register('rememberMe')}
                   />
-                  <span className="text-sm text-white">Beni hatırla</span>
+                  <span className="text-sm text-white">Remember me</span>
                 </label>
                 <Link
                   to="/forgotpassword"
                   className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
                 >
-                  Şifremi unuttum
+                  Forgot password?
                 </Link>
               </div>
 
@@ -195,7 +195,7 @@ const Login = () => {
                 loading={isLoading}
                 disabled={isLoading}
               >
-                {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
 
@@ -205,21 +205,21 @@ const Login = () => {
                 <div className="w-full border-t border-surface-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-surface-panel px-2 text-surface-muted">veya</span>
+                <span className="bg-surface-panel px-2 text-surface-muted">or</span>
               </div>
             </div>
 
-            {/* MFA setup giriş ekranından kaldırıldı; Settings > Security içinde */}
+            {/* MFA setup removed from login screen; available in Settings > Security */}
 
             {/* Register link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-surface-muted">
-                Hesabınız yok mu?{' '}
+                Don't have an account?{' '}
                 <Link
                   to="/auth/register"
                   className="text-primary-400 hover:text-primary-300 transition-colors font-medium"
                 >
-                  Kayıt olun
+                  Register
                 </Link>
               </p>
             </div>
@@ -229,7 +229,7 @@ const Login = () => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-primary-300">
-            © 2024 CyberScope OSINT. Tüm hakları saklıdır.
+            © 2025 CyberScope OSINT. All rights reserved.
           </p>
         </div>
       </div>

@@ -43,7 +43,7 @@ public class UserManagementController {
             return ResponseEntity.ok(Map.of("users", users, "total", users.size()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Kullanıcılar yüklenemedi: " + e.getMessage()));
+                    "error", "Users could not be loaded: " + e.getMessage()));
         }
     }
 
@@ -57,7 +57,7 @@ public class UserManagementController {
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.status(404).body(Map.of(
-                    "error", "Kullanıcı bulunamadı: " + e.getMessage()));
+                    "error", "User not found: " + e.getMessage()));
         }
     }
 
@@ -82,7 +82,7 @@ public class UserManagementController {
             return ResponseEntity.ok(userManagementService.convertToResponse(user));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Kullanıcı oluşturulamadı: " + e.getMessage()));
+                    "error", "User could not be created: " + e.getMessage()));
         }
     }
 
@@ -113,7 +113,7 @@ public class UserManagementController {
             return ResponseEntity.ok(userManagementService.convertToResponse(user));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Kullanıcı güncellenemedi: " + e.getMessage()));
+                    "error", "User could not be updated: " + e.getMessage()));
         }
     }
 
@@ -124,10 +124,10 @@ public class UserManagementController {
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
             userManagementService.deleteUser(id);
-            return ResponseEntity.ok(Map.of("message", "Kullanıcı başarıyla silindi"));
+            return ResponseEntity.ok(Map.of("message", "User successfully deleted"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Kullanıcı silinemedi: " + e.getMessage()));
+                    "error", "User could not be deleted: " + e.getMessage()));
         }
     }
 
@@ -141,7 +141,7 @@ public class UserManagementController {
             return ResponseEntity.ok(userManagementService.convertToResponse(user));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Kullanıcı askıya alınamadı: " + e.getMessage()));
+                    "error", "User could not be suspended: " + e.getMessage()));
         }
     }
 
@@ -155,7 +155,7 @@ public class UserManagementController {
             return ResponseEntity.ok(userManagementService.convertToResponse(user));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Kullanıcı aktifleştirilemedi: " + e.getMessage()));
+                    "error", "User could not be activated: " + e.getMessage()));
         }
     }
 
@@ -183,11 +183,11 @@ public class UserManagementController {
                         .body(Map.of("users", users, "total", users.size()));
             } else {
                 return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Desteklenmeyen format. 'csv' veya 'json' kullanın."));
+                        "error", "Unsupported format. Use 'csv' or 'json'."));
             }
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Export işlemi başarısız: " + e.getMessage()));
+                    "error", "Export operation failed: " + e.getMessage()));
         }
     }
 
@@ -201,7 +201,7 @@ public class UserManagementController {
             return ResponseEntity.ok(audit);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Güvenlik denetimi raporu oluşturulamadı: " + e.getMessage()));
+                    "error", "Security audit report could not be created: " + e.getMessage()));
         }
     }
 
@@ -213,14 +213,14 @@ public class UserManagementController {
         try {
             if (file == null || file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Dosya seçilmedi"));
+                        "error", "No file selected"));
             }
 
             // Validate file type (PDF only)
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
                 return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Sadece PDF dosyası yüklenebilir"));
+                        "error", "Only PDF files can be uploaded"));
             }
 
             // Create uploads directory if it doesn't exist
@@ -245,10 +245,10 @@ public class UserManagementController {
             return ResponseEntity.ok(Map.of(
                     "filePath", relativePath,
                     "originalFilename", originalFilename,
-                    "message", "Dosya başarıyla yüklendi"));
+                    "message", "File successfully uploaded"));
         } catch (IOException e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Dosya yüklenirken hata oluştu: " + e.getMessage()));
+                    "error", "Error occurred while uploading file: " + e.getMessage()));
         }
     }
 
@@ -263,13 +263,13 @@ public class UserManagementController {
 
             if (filePath == null || filePath.isEmpty()) {
                 return ResponseEntity.status(404).body(Map.of(
-                        "error", "Kullanıcı için dosya bulunamadı"));
+                        "error", "File not found for user"));
             }
 
             File file = new File(filePath);
             if (!file.exists()) {
                 return ResponseEntity.status(404).body(Map.of(
-                        "error", "Dosya bulunamadı"));
+                        "error", "File not found"));
             }
 
             Resource resource = new FileSystemResource(file);
@@ -281,7 +281,7 @@ public class UserManagementController {
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                    "error", "Dosya yüklenirken hata oluştu: " + e.getMessage()));
+                    "error", "Error occurred while uploading file: " + e.getMessage()));
         }
     }
 }

@@ -14,12 +14,12 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cyberscope local}
     driver-class-name: org.postgresql.Driver
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:123}
+    username: ${SPRING_DATASOURCE_USERNAME:cyber}
+    password: ${SPRING_DATASOURCE_PASSWORD:cyberpass}
   
   jpa:
     hibernate:
-      ddl-auto: none  # Flyway kullanıyoruz, DB yapısı zaten mevcut
+      ddl-auto: none
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
@@ -55,7 +55,7 @@ osint:
   hibp:
     api-key: ${HIBP_API_KEY:your_actual_hibp_api_key_here}
   gemini:
-    api-key: ${GEMINI_API_KEY:AIzaSyCE7kdwhNHHY0htwf_BHIoQ53LLs8WExH4}
+    api-key: ${GEMINI_API_KEY:AIzaSyAmRJO5umgeEyRzgjayTT7LX3Ywn5y4qPM}
   zap:
     api-key: ${ZAP_API_KEY:n0jjn18pt5al07pu83iejvr6t5}
     base-url: ${ZAP_BASE_URL:http://localhost:9091}

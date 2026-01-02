@@ -76,7 +76,7 @@ public class UserApiKeyService {
             return apiKey;
         } catch (Exception e) {
             logger.error("Error creating API key: {}", e.getMessage(), e);
-            throw new RuntimeException("API key oluşturulamadı: " + e.getMessage(), e);
+            throw new RuntimeException("API key could not be created: " + e.getMessage(), e);
         }
     }
     
@@ -92,7 +92,7 @@ public class UserApiKeyService {
             return apiKeyRepository.findAllOrderByCreatedAtDesc();
         } catch (Exception e) {
             logger.error("Error getting API keys: {}", e.getMessage(), e);
-            throw new RuntimeException("API key'ler alınamadı: " + e.getMessage(), e);
+            throw new RuntimeException("API keys could not be retrieved: " + e.getMessage(), e);
         }
     }
     
@@ -114,7 +114,7 @@ public class UserApiKeyService {
         try {
             Optional<ApiKey> apiKeyOpt = apiKeyRepository.findById(id);
             if (!apiKeyOpt.isPresent()) {
-                throw new RuntimeException("API key bulunamadı");
+                throw new RuntimeException("API key not found");
             }
             
             ApiKey apiKey = apiKeyOpt.get();
@@ -153,7 +153,7 @@ public class UserApiKeyService {
             return apiKey;
         } catch (Exception e) {
             logger.error("Error updating API key {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("API key güncellenemedi: " + e.getMessage(), e);
+            throw new RuntimeException("API key could not be updated: " + e.getMessage(), e);
         }
     }
     
@@ -165,14 +165,14 @@ public class UserApiKeyService {
         try {
             Optional<ApiKey> apiKeyOpt = apiKeyRepository.findById(id);
             if (!apiKeyOpt.isPresent()) {
-                throw new RuntimeException("API key bulunamadı");
+                throw new RuntimeException("API key not found");
             }
             
             apiKeyRepository.delete(apiKeyOpt.get());
             logger.info("Deleted API key: {}", id);
         } catch (Exception e) {
             logger.error("Error deleting API key {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("API key silinemedi: " + e.getMessage(), e);
+            throw new RuntimeException("API key could not be deleted: " + e.getMessage(), e);
         }
     }
     
@@ -184,7 +184,7 @@ public class UserApiKeyService {
         try {
             Optional<ApiKey> apiKeyOpt = apiKeyRepository.findById(id);
             if (!apiKeyOpt.isPresent()) {
-                throw new RuntimeException("API key bulunamadı");
+                throw new RuntimeException("API key not found");
             }
             
             ApiKey apiKey = apiKeyOpt.get();
@@ -198,7 +198,7 @@ public class UserApiKeyService {
             return apiKey;
         } catch (Exception e) {
             logger.error("Error regenerating API key {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("API key yenilenemedi: " + e.getMessage(), e);
+            throw new RuntimeException("API key could not be regenerated: " + e.getMessage(), e);
         }
     }
     

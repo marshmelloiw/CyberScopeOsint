@@ -31,9 +31,7 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<?> getUserNotifications(@RequestParam(required = false) Long userId) {
         try {
-            // TODO: Get userId from authentication context when available
-            // For now, if userId is not provided, return empty list
-            System.out.println("NotificationController.getUserNotifications called with userId: " + userId);
+
             
             // Debug: List all notifications in DB to see what userIds exist
             List<Notification> allNotifications = notificationService.getAllNotifications();
@@ -111,7 +109,7 @@ public class NotificationController {
             System.err.println("Error in getUserNotifications: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Bildirimler alınamadı: " + e.getMessage()
+                "error", "Notifications could not be retrieved: " + e.getMessage()
             ));
         }
     }
@@ -127,7 +125,7 @@ public class NotificationController {
             return ResponseEntity.ok(notifications);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Okunmamış bildirimler alınamadı: " + e.getMessage()
+                "error", "Unread notifications could not be retrieved: " + e.getMessage()
             ));
         }
     }
@@ -143,7 +141,7 @@ public class NotificationController {
             return ResponseEntity.ok(Map.of("count", count));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Okunmamış bildirim sayısı alınamadı: " + e.getMessage()
+                "error", "Unread notification count could not be retrieved: " + e.getMessage()
             ));
         }
     }
@@ -155,7 +153,7 @@ public class NotificationController {
             return ResponseEntity.ok(notification);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Bildirim okundu olarak işaretlenemedi: " + e.getMessage()
+                "error", "Notification could not be marked as read: " + e.getMessage()
             ));
         }
     }
@@ -168,10 +166,10 @@ public class NotificationController {
             }
             
             notificationService.markAllAsRead(userId);
-            return ResponseEntity.ok(Map.of("message", "Tüm bildirimler okundu olarak işaretlendi"));
+            return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Bildirimler okundu olarak işaretlenemedi: " + e.getMessage()
+                "error", "Notifications could not be marked as read: " + e.getMessage()
             ));
         }
     }
@@ -207,7 +205,7 @@ public class NotificationController {
             System.err.println("Error getting preferences: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Bildirim tercihleri alınamadı: " + e.getMessage()
+                "error", "Notification preferences could not be retrieved: " + e.getMessage()
             ));
         }
     }
@@ -235,7 +233,7 @@ public class NotificationController {
             
             // Convert to response format
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Bildirim tercihleri başarıyla kaydedildi");
+            response.put("message", "Notification preferences successfully saved");
             response.put("enableNotifications", savedPrefs.getEnableNotifications());
             response.put("soundAlerts", savedPrefs.getSoundAlerts());
             response.put("inAppNotifications", savedPrefs.getInAppNotifications());
@@ -256,7 +254,7 @@ public class NotificationController {
             System.err.println("Error saving preferences: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Bildirim tercihleri kaydedilemedi: " + e.getMessage()
+                "error", "Notification preferences could not be saved: " + e.getMessage()
             ));
         }
     }

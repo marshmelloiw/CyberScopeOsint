@@ -1,0 +1,185 @@
+classDiagram
+
+direction TB
+
+class ApiKeyRepository {
+    <<external>>
+}
+class EntityFindingRepository {
+    <<external>>
+}
+class EntityRepository {
+    <<external>>
+}
+class NotificationPreferencesRepository {
+    <<external>>
+}
+class NotificationRepository {
+    <<external>>
+}
+class PasswordResetTokenRepository {
+    <<external>>
+}
+class RefreshTokenRepository {
+    <<external>>
+}
+class RoleRepository {
+    <<external>>
+}
+class ScanLogRepository {
+    <<external>>
+}
+class ScanProviderRepository {
+    <<external>>
+}
+class ScanRepository {
+    <<external>>
+}
+class ScanResultRepository {
+    <<external>>
+}
+class ScanTargetRepository {
+    <<external>>
+}
+class UserRepository {
+    <<external>>
+}
+class ApiKeyService {
+}
+class AuthService {
+    UserRepository userRepository
+    PasswordResetTokenRepository passwordResetTokenRepository
+    RefreshTokenRepository refreshTokenRepository
+    RoleRepository roleRepository
+    JwtUtil jwtUtil
+    long refreshTokenValiditySeconds
+    String DEFAULT_ROLE
+}
+class DashboardService {
+    ScanRepository scanRepository
+    ScanResultRepository scanResultRepository
+    EntityFindingRepository entityFindingRepository
+    UserRepository userRepository
+    ShodanService shodanService
+    VirusTotalService virusTotalService
+    HaveIBeenPwnedService haveIBeenPwnedService
+    ZapService zapService
+    GeminiService geminiService
+}
+class GeminiService {
+    WebClient webClient
+    String apiKey
+}
+class HaveIBeenPwnedService {
+    WebClient webClient
+    String apiKey
+    ApiKeyService apiKeyService
+}
+class NotificationService {
+    NotificationRepository notificationRepository
+    NotificationPreferencesRepository preferencesRepository
+}
+class ReportHtmlService {
+    ScanService scanService
+}
+class ReportPdfService {
+    ScanService scanService
+}
+class ScanService {
+    int TWITTER_DEFAULT_MAX_RESULTS
+    ShodanService shodanService
+    VirusTotalService virusTotalService
+    HaveIBeenPwnedService hibpService
+    GeminiService geminiService
+    ZapService zapService
+    TwitterService twitterService
+    EntityRepository entityRepository
+    ScanRepository scanRepository
+    ScanTargetRepository scanTargetRepository
+    ScanProviderRepository scanProviderRepository
+    ScanResultRepository scanResultRepository
+    ScanLogRepository scanLogRepository
+    NotificationService notificationService
+    UserRepository userRepository
+    ApplicationContext applicationContext
+}
+class ShodanService {
+    WebClient webClient
+    String apiKey
+}
+class SmsService {
+}
+class TwitterService {
+    String[] DEFAULT_TWEET_FIELDS
+    String[] DEFAULT_EXPANSIONS
+    String[] DEFAULT_USER_FIELDS
+    WebClient apiClient
+    WebClient authClient
+    String apiKey
+    String apiSecret
+}
+class UserApiKeyService {
+    String API_KEY_PREFIX
+    ApiKeyRepository apiKeyRepository
+}
+class UserManagementService {
+    UserRepository userRepository
+    RoleRepository roleRepository
+    EntityManager entityManager
+}
+class VirusTotalService {
+    WebClient webClient
+    String apiKey
+}
+class ZapService {
+    WebClient webClient
+    String apiKey
+    String baseUrl
+    Duration spiderTimeout
+    Duration activeScanTimeout
+    Duration pollInterval
+    Duration startupTimeout
+    boolean autoStartEnabled
+    String daemonCommand
+    String daemonWorkingDirectory
+    int maxBodySizeBytes
+}
+class JwtUtil {
+    <<external>>
+}
+AuthService --> UserRepository : userRepository
+AuthService --> PasswordResetTokenRepository : passwordResetTokenRepository
+AuthService --> RefreshTokenRepository : refreshTokenRepository
+AuthService --> RoleRepository : roleRepository
+AuthService --> JwtUtil : jwtUtil
+DashboardService --> ScanRepository : scanRepository
+DashboardService --> ScanResultRepository : scanResultRepository
+DashboardService --> EntityFindingRepository : entityFindingRepository
+DashboardService --> UserRepository : userRepository
+DashboardService --> ShodanService : shodanService
+DashboardService --> VirusTotalService : virusTotalService
+DashboardService --> HaveIBeenPwnedService : haveIBeenPwnedService
+DashboardService --> ZapService : zapService
+DashboardService --> GeminiService : geminiService
+HaveIBeenPwnedService --> ApiKeyService : apiKeyService
+NotificationService --> NotificationRepository : notificationRepository
+NotificationService --> NotificationPreferencesRepository : preferencesRepository
+ReportHtmlService --> ScanService : scanService
+ReportPdfService --> ScanService : scanService
+ScanService --> ShodanService : shodanService
+ScanService --> VirusTotalService : virusTotalService
+ScanService --> HaveIBeenPwnedService : hibpService
+ScanService --> GeminiService : geminiService
+ScanService --> ZapService : zapService
+ScanService --> TwitterService : twitterService
+ScanService --> EntityRepository : entityRepository
+ScanService --> ScanRepository : scanRepository
+ScanService --> ScanTargetRepository : scanTargetRepository
+ScanService --> ScanProviderRepository : scanProviderRepository
+ScanService --> ScanResultRepository : scanResultRepository
+ScanService --> ScanLogRepository : scanLogRepository
+ScanService --> NotificationService : notificationService
+ScanService --> UserRepository : userRepository
+UserApiKeyService --> ApiKeyRepository : apiKeyRepository
+UserManagementService --> UserRepository : userRepository
+UserManagementService --> RoleRepository : roleRepository

@@ -37,7 +37,7 @@ public class ReportHtmlService {
 
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html>\n");
-        html.append("<html lang=\"tr\">\n");
+        html.append("<html lang=\"en\">\n");
         html.append("<head>\n");
         html.append("  <meta charset=\"UTF-8\">\n");
         html.append("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
@@ -165,25 +165,25 @@ public class ReportHtmlService {
             if (reportMap.containsKey("summary")) {
                 Object summary = reportMap.get("summary");
                 if (summary instanceof String && ((String) summary).trim().length() > 0) {
-                    fallback.append("## Özet\n\n").append(((String) summary).trim()).append("\n\n");
+                    fallback.append("## Summary\n\n").append(((String) summary).trim()).append("\n\n");
                 }
             }
             if (reportMap.containsKey("analysis")) {
                 Object analysis = reportMap.get("analysis");
                 if (analysis instanceof String && ((String) analysis).trim().length() > 0) {
-                    fallback.append("## Detaylı Analiz\n\n").append(((String) analysis).trim()).append("\n\n");
+                    fallback.append("## Detailed Analysis\n\n").append(((String) analysis).trim()).append("\n\n");
                 }
             }
             if (reportMap.containsKey("recommendations")) {
                 Object recommendations = reportMap.get("recommendations");
                 if (recommendations instanceof String && ((String) recommendations).trim().length() > 0) {
-                    fallback.append("## Öneriler\n\n").append(((String) recommendations).trim()).append("\n\n");
+                    fallback.append("## Recommendations\n\n").append(((String) recommendations).trim()).append("\n\n");
                 }
             }
             if (reportMap.containsKey("keyFindings")) {
                 Object keyFindings = reportMap.get("keyFindings");
                 if (keyFindings instanceof String && ((String) keyFindings).trim().length() > 0) {
-                    fallback.append("## Önemli Bulgular\n\n").append(((String) keyFindings).trim()).append("\n\n");
+                    fallback.append("## Key Findings\n\n").append(((String) keyFindings).trim()).append("\n\n");
                 }
             }
 

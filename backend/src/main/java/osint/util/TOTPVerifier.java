@@ -13,7 +13,7 @@ public class TOTPVerifier {
     public boolean verify(String base32Secret, int code) throws Exception {
         long epochSeconds = System.currentTimeMillis() / 1000L;
         long currentCounter = epochSeconds / TIME_STEP_SECONDS;
-        // Zaman senkronizasyon sorunları için toleransı genişlet (-2..+2)
+
         for (long offset = -2; offset <= 2; offset++) {
             int candidate = generateCode(base32Secret, currentCounter + offset);
             if (candidate == code) {

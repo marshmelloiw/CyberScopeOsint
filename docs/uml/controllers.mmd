@@ -1,0 +1,99 @@
+classDiagram
+
+direction TB
+
+class ApiKeysController {
+    ApiKeyService apiKeyService
+}
+class AuthController {
+    AuthService authService
+}
+class DashboardController {
+    DashboardService dashboardService
+}
+class HealthController {
+}
+class NotificationController {
+    NotificationService notificationService
+    ScanRepository scanRepository
+}
+class OsintController {
+    ShodanService shodanService
+    VirusTotalService virusTotalService
+    HaveIBeenPwnedService hibpService
+    ZapService zapService
+}
+class ScanController {
+    ScanService scanService
+    ReportPdfService reportPdfService
+    ReportHtmlService reportHtmlService
+}
+class TwitterController {
+    TwitterService twitterService
+}
+class UserApiKeysController {
+    UserApiKeyService userApiKeyService
+}
+class UserManagementController {
+    UserManagementService userManagementService
+}
+class ScanRepository {
+    <<external>>
+}
+class ApiKeyService {
+    <<external>>
+}
+class AuthService {
+    <<external>>
+}
+class DashboardService {
+    <<external>>
+}
+class HaveIBeenPwnedService {
+    <<external>>
+}
+class NotificationService {
+    <<external>>
+}
+class ReportHtmlService {
+    <<external>>
+}
+class ReportPdfService {
+    <<external>>
+}
+class ScanService {
+    <<external>>
+}
+class ShodanService {
+    <<external>>
+}
+class TwitterService {
+    <<external>>
+}
+class UserApiKeyService {
+    <<external>>
+}
+class UserManagementService {
+    <<external>>
+}
+class VirusTotalService {
+    <<external>>
+}
+class ZapService {
+    <<external>>
+}
+ApiKeysController --> ApiKeyService : apiKeyService
+AuthController --> AuthService : authService
+DashboardController --> DashboardService : dashboardService
+NotificationController --> NotificationService : notificationService
+NotificationController --> ScanRepository : scanRepository
+OsintController --> ShodanService : shodanService
+OsintController --> VirusTotalService : virusTotalService
+OsintController --> HaveIBeenPwnedService : hibpService
+OsintController --> ZapService : zapService
+ScanController --> ScanService : scanService
+ScanController --> ReportPdfService : reportPdfService
+ScanController --> ReportHtmlService : reportHtmlService
+TwitterController --> TwitterService : twitterService
+UserApiKeysController --> UserApiKeyService : userApiKeyService
+UserManagementController --> UserManagementService : userManagementService

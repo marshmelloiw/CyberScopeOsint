@@ -53,21 +53,21 @@ const ScansList = () => {
       setError(null);
       const response = await api.get(endpoints.scans.list);
       const scansData = response.data.scans || [];
-      
+
       // Transform API data to match component format
       const transformedScans = scansData.map((scan) => {
         const targets = scan.targets || [];
         const providers = scan.providers || [];
         const timestamp = scan.timestamp || 0;
         const completedAt = scan.completedAt;
-        
+
         // Generate name if not provided
         let name = scan.name;
         if (!name && targets.length > 0) {
           const typeName = scan.type ? getTypeLabel(scan.type) : 'Scan';
           name = `${typeName} - ${targets.join(', ')}`;
         }
-        
+
         return {
           id: scan.scanId,
           scanId: scan.scanId,
@@ -81,11 +81,11 @@ const ScansList = () => {
           providers: Array.isArray(providers) ? providers : [],
         };
       });
-      
+
       setScans(transformedScans);
     } catch (err) {
       console.error('Error fetching scans:', err);
-      setError(err.response?.data?.error || 'Scan listesi yüklenemedi');
+      setError(err.response?.data?.error || 'Scan list could not be loaded');
       setScans([]);
     } finally {
       if (showRefreshing) {
@@ -98,7 +98,7 @@ const ScansList = () => {
 
   useEffect(() => {
     fetchScans();
-    
+
     // Refresh every 5 seconds to get updated scan statuses
     const interval = setInterval(() => fetchScans(false), 5000);
     return () => clearInterval(interval);
@@ -127,10 +127,10 @@ const ScansList = () => {
 
   const filteredScans = scans.filter(scan => {
     const matchesSearch = scan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         scan.targets.some(target => target.toLowerCase().includes(searchTerm.toLowerCase()));
+      scan.targets.some(target => target.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || scan.status === statusFilter;
     const matchesType = typeFilter === 'all' || scan.type === typeFilter;
-    
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -154,8 +154,8 @@ const ScansList = () => {
           <p className="text-surface-muted">View and manage your security scan history</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => fetchScans(true)}
             disabled={refreshing || loading}
             className="flex items-center space-x-2"
@@ -164,12 +164,12 @@ const ScansList = () => {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
-        <Link to="/dashboard/scans/new">
-          <Button className="flex items-center space-x-2">
-            <Plus className="h-4 w-4" />
-            <span>New Scan</span>
-          </Button>
-        </Link>
+          <Link to="/dashboard/scans/new">
+            <Button className="flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>New Scan</span>
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -229,14 +229,14 @@ const ScansList = () => {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-              <span className="ml-3 text-surface-muted">Scan listesi yükleniyor...</span>
+              <span className="ml-3 text-surface-muted">Loading scan list...</span>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <p className="text-danger mb-2">{error}</p>
                 <Button onClick={() => window.location.reload()} variant="outline">
-                  Tekrar Dene
+                  Try Again
                 </Button>
               </div>
             </div>
@@ -244,42 +244,42 @@ const ScansList = () => {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <p className="text-surface-muted mb-4">
-                  {scans.length === 0 
-                    ? 'Henüz scan yapılmamış. İlk scan\'inizi oluşturmak için "New Scan" butonuna tıklayın.'
-                    : 'Arama kriterlerinize uygun scan bulunamadı.'}
+                  {scans.length === 0
+                    ? 'No scans found yet. Click "New Scan" to create your first scan.'
+                    : 'No scans found matching your criteria.'}
                 </p>
                 {scans.length === 0 && (
                   <Link to="/dashboard/scans/new">
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
-                      Yeni Scan Oluştur
+                      Create New Scan
                     </Button>
                   </Link>
                 )}
               </div>
             </div>
           ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-border">
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Scan</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Type</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Status</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Risk</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Findings</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Started</th>
-                  <th className="text-left p-3 text-sm font-medium text-surface-muted">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredScans.map((scan) => (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-surface-border">
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Scan</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Type</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Status</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Risk</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Findings</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Started</th>
+                    <th className="text-left p-3 text-sm font-medium text-surface-muted">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredScans.map((scan) => (
                     <tr key={scan.scanId || scan.id} className="border-b border-surface-border/50 hover:bg-surface-panel/50">
-                    <td className="p-3">
-                      <div>
-                        <p className="font-medium text-white">{scan.name}</p>
-                        <p className="text-sm text-surface-muted">
-                            {scan.targets.length > 0 
+                      <td className="p-3">
+                        <div>
+                          <p className="font-medium text-white">{scan.name}</p>
+                          <p className="text-sm text-surface-muted">
+                            {scan.targets.length > 0
                               ? `Targets: ${scan.targets.join(', ')}`
                               : 'No targets'}
                           </p>
@@ -288,67 +288,67 @@ const ScansList = () => {
                               Providers: {formatProviderList(scan.providers)}
                             </p>
                           )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{getTypeIcon(scan.type)}</span>
-                        <span className="text-white">{getTypeLabel(scan.type)}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span className={cn(
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg">{getTypeIcon(scan.type)}</span>
+                          <span className="text-white">{getTypeLabel(scan.type)}</span>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className={cn(
                           'px-2 py-1 rounded-full text-xs font-medium capitalize',
-                        getStatusColor(scan.status)
-                      )}>
-                        {scan.status}
-                      </span>
-                    </td>
-                    <td className="p-3">
+                          getStatusColor(scan.status)
+                        )}>
+                          {scan.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
                         <RiskBadge risk={getRiskScore(scan)} />
-                    </td>
-                    <td className="p-3">
-                      <span className="text-white">{scan.findings}</span>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-surface-muted">
-                          {scan.startedAt 
-                            ? new Date(scan.startedAt).toLocaleString('tr-TR', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })
+                      </td>
+                      <td className="p-3">
+                        <span className="text-white">{scan.findings}</span>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-surface-muted">
+                          {scan.startedAt
+                            ? new Date(scan.startedAt).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
                             : '-'}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center space-x-2">
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center space-x-2">
                           <Link to={`/dashboard/scans/${scan.scanId || scan.id}`}>
                             <Button variant="ghost" size="sm" title="View Details">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        {scan.status === 'running' && (
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          {scan.status === 'running' && (
                             <Button variant="ghost" size="sm" title="Pause">
-                            <Pause className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {scan.status === 'queued' && (
+                              <Pause className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {scan.status === 'queued' && (
                             <Button variant="ghost" size="sm" title="Start">
-                            <Play className="h-4 w-4" />
-                          </Button>
-                        )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-danger hover:text-danger" 
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-danger hover:text-danger"
                             title="Delete"
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              if (window.confirm(`"${scan.name}" scan'ini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+                              if (window.confirm(`Are you sure you want to delete scan "${scan.name}"? This action cannot be undone.`)) {
                                 try {
                                   const scanIdToDelete = scan.scanId || scan.id;
                                   console.log('Deleting scan:', scanIdToDelete);
@@ -356,24 +356,24 @@ const ScansList = () => {
                                   console.log('Scan deleted successfully');
                                   // Refresh scan list
                                   await fetchScans(false);
-                                  alert('Scan başarıyla silindi');
+                                  alert('Scan deleted successfully');
                                 } catch (err) {
                                   console.error('Error deleting scan:', err);
-                                  const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
-                                  alert('Scan silinirken hata oluştu: ' + errorMsg);
+                                  const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+                                  alert('Error deleting scan: ' + errorMsg);
                                 }
                               }
                             }}
                           >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>

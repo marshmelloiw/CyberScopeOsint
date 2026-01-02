@@ -76,7 +76,7 @@ const Notifications = () => {
       setLoading(true);
       const userId = user?.id;
       console.log('Fetching notifications for userId:', userId, 'user:', user);
-      
+
       if (!userId) {
         console.warn('No userId found, cannot fetch notifications');
         setNotifications([]);
@@ -87,18 +87,18 @@ const Notifications = () => {
       // Ensure userId is a number, not a string
       const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
       console.log('Making API call with userId:', numericUserId, 'type:', typeof numericUserId);
-      
+
       const response = await api.get(endpoints.notifications.list, {
         params: { userId: numericUserId }
       });
-      
+
       console.log('Notifications API response:', response.data);
-      
+
       if (response.data && response.data.notifications) {
         // Map API response to component format
         const mappedNotifications = response.data.notifications.map(notif => {
           console.log('Mapping notification:', notif);
-          
+
           // Parse timestamp - handle both ISO string and LocalDateTime format
           let timestamp = notif.createdAt;
           if (timestamp && typeof timestamp === 'string') {
@@ -110,17 +110,17 @@ const Notifications = () => {
           } else if (!timestamp) {
             timestamp = new Date().toISOString();
           }
-          
+
           return {
             id: notif.id,
-      type: 'security-alert',
-            title: `Yüksek Risk Skoru: ${notif.riskScore || 'N/A'}`,
-            message: notif.message || `Risk skoru ${notif.riskScore || 'N/A'} tespit edildi`,
+            type: 'security-alert',
+            title: `High Risk Score: ${notif.riskScore || 'N/A'}`,
+            message: notif.message || `Risk score ${notif.riskScore || 'N/A'} detected`,
             severity: mapRiskLevelToSeverity(notif.riskLevel),
             timestamp: timestamp,
             read: notif.isRead || false,
-      category: 'security',
-            actions: ['Detayları Görüntüle'],
+            category: 'security',
+            actions: ['View Details'],
             riskScore: notif.riskScore,
             riskLevel: notif.riskLevel,
             scanId: notif.scanId,
@@ -172,7 +172,7 @@ const Notifications = () => {
       low: 'bg-emerald-50 dark:bg-success/20 text-emerald-700 dark:text-success border-emerald-200 dark:border-success/30',
       info: 'bg-blue-50 dark:bg-info/20 text-blue-700 dark:text-info border-blue-200 dark:border-info/30',
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium border ${colors[severity] || 'bg-gray-100 dark:bg-surface-muted/20 text-gray-700 dark:text-surface-muted border-gray-200 dark:border-surface-muted/30'}`}>
         {severity.toUpperCase()}
@@ -214,8 +214,8 @@ const Notifications = () => {
     try {
       await api.put(`/notifications/${id}/read`);
       // Update local state
-      setNotifications(prev => 
-        prev.map(notif => 
+      setNotifications(prev =>
+        prev.map(notif =>
           notif.id === id ? { ...notif, read: true } : notif
         )
       );
@@ -230,12 +230,12 @@ const Notifications = () => {
     try {
       const userId = user?.id;
       if (!userId) return;
-      
+
       await api.put('/notifications/read-all', null, {
         params: { userId }
       });
       // Update local state
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(notif => ({ ...notif, read: true }))
       );
       // Dispatch event to update header count
@@ -260,7 +260,7 @@ const Notifications = () => {
       });
 
       console.log('Preferences saved:', response.data);
-      
+
       // Update state with saved preferences from response
       if (response.data) {
         setPreferences(prev => ({
@@ -274,16 +274,16 @@ const Notifications = () => {
           categoryPreferences: response.data.categoryPreferences || prev.categoryPreferences,
         }));
       }
-      
+
       // Close preferences panel after successful save
       setShowPreferences(false);
-      
+
       // Show success message (you can add a toast notification here)
-      alert('Ayarlar başarıyla kaydedildi');
+      alert('Preferences saved successfully');
     } catch (error) {
       console.error('Error saving preferences:', error);
       // Show error message
-      alert('Ayarlar kaydedilirken bir hata oluştu: ' + (error.response?.data?.error || error.message));
+      alert('Error saving preferences: ' + (error.response?.data?.error || error.message));
     } finally {
       setSavingPreferences(false);
     }
@@ -325,13 +325,13 @@ const Notifications = () => {
                     />
                   </button>
                   {preferences.enableNotifications ? (
-                  <Volume2 className="h-4 w-4 text-success" />
+                    <Volume2 className="h-4 w-4 text-success" />
                   ) : (
                     <VolumeX className="h-4 w-4 text-surface-muted" />
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">Sound Alerts</p>
@@ -354,7 +354,7 @@ const Notifications = () => {
                     />
                   </button>
                   {preferences.soundAlerts ? (
-                  <Volume2 className="h-4 w-4 text-success" />
+                    <Volume2 className="h-4 w-4 text-success" />
                   ) : (
                     <VolumeX className="h-4 w-4 text-surface-muted" />
                   )}
@@ -425,13 +425,13 @@ const Notifications = () => {
                     />
                   </button>
                   {preferences.inAppNotifications ? (
-                  <CheckCircle className="h-4 w-4 text-success" />
+                    <CheckCircle className="h-4 w-4 text-success" />
                   ) : (
                     <X className="h-4 w-4 text-surface-muted" />
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Mail className="h-5 w-5 text-primary-600 dark:text-primary" />
@@ -451,7 +451,7 @@ const Notifications = () => {
                   <label htmlFor="email" className="sr-only">Enable email notifications</label>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Smartphone className="h-5 w-5 text-primary-600 dark:text-primary" />
@@ -483,7 +483,7 @@ const Notifications = () => {
                   <p className="font-medium text-gray-900 dark:text-white">Digest Frequency</p>
                   <p className="text-sm text-gray-600 dark:text-surface-muted">How often to send notification digests</p>
                 </div>
-                <select 
+                <select
                   value={preferences.digestFrequency}
                   onChange={(e) => setPreferences(prev => ({ ...prev, digestFrequency: e.target.value }))}
                   className="px-3 py-2 bg-white dark:bg-surface-panel border border-gray-300 dark:border-surface-border rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
@@ -499,11 +499,11 @@ const Notifications = () => {
 
           {/* Save Button */}
           <div className="flex justify-end pt-4 border-t border-surface-border">
-            <Button 
+            <Button
               onClick={savePreferences}
               disabled={savingPreferences}
             >
-              {savingPreferences ? 'Kaydediliyor...' : 'Kaydet'}
+              {savingPreferences ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>
@@ -520,8 +520,8 @@ const Notifications = () => {
           <p className="text-gray-600 dark:text-surface-muted">Manage your security alerts and notifications</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={markAllAsRead}
             disabled={unreadCount === 0}
           >
@@ -572,9 +572,9 @@ const Notifications = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">
-            {activeTab === 'all' ? 'All Notifications' : 
-             activeTab === 'unread' ? 'Unread Notifications' : 
-             `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Notifications`}
+            {activeTab === 'all' ? 'All Notifications' :
+              activeTab === 'unread' ? 'Unread Notifications' :
+                `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Notifications`}
             <span className="ml-2 text-gray-600 dark:text-surface-muted">({filteredNotifications.length})</span>
           </CardTitle>
         </CardHeader>
@@ -582,12 +582,12 @@ const Notifications = () => {
           <div className="space-y-4">
             {loading ? (
               <div className="text-center py-8">
-                <p className="text-gray-600 dark:text-surface-muted">Yükleniyor...</p>
+                <p className="text-gray-600 dark:text-surface-muted">Loading...</p>
               </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="text-center py-8">
                 <Bell className="h-12 w-12 text-gray-400 dark:text-surface-muted mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-surface-muted">Bildirim bulunamadı</p>
+                <p className="text-gray-600 dark:text-surface-muted">No notifications found</p>
               </div>
             ) : (
               filteredNotifications.map((notification) => (
@@ -595,8 +595,8 @@ const Notifications = () => {
                   key={notification.id}
                   className={cn(
                     'p-4 border rounded-lg transition-colors',
-                    notification.read 
-                      ? 'border-gray-200 dark:border-surface-border/50 bg-white dark:bg-surface-panel/30' 
+                    notification.read
+                      ? 'border-gray-200 dark:border-surface-border/50 bg-white dark:bg-surface-panel/30'
                       : 'border-primary-500/50 dark:border-primary-500/30 bg-primary-50 dark:bg-primary-500/10',
                     'hover:bg-gray-50 dark:hover:bg-surface-panel/50'
                   )}
@@ -605,14 +605,14 @@ const Notifications = () => {
                     <div className="flex-shrink-0">
                       {getTypeIcon(notification.type)}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3 flex-wrap">
                           <h3 className={cn(
                             'text-lg font-semibold',
-                            notification.read 
-                              ? 'text-gray-900 dark:text-white' 
+                            notification.read
+                              ? 'text-gray-900 dark:text-white'
                               : 'text-primary-700 dark:text-primary-400'
                           )}>
                             {notification.title}
@@ -624,10 +624,10 @@ const Notifications = () => {
                             </span>
                           )}
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           <span className="text-sm text-gray-600 dark:text-surface-muted">
-                            {new Date(notification.timestamp).toLocaleDateString('tr-TR')}
+                            {new Date(notification.timestamp).toLocaleDateString('en-US')}
                           </span>
                           {!notification.read && (
                             <Button
@@ -640,18 +640,18 @@ const Notifications = () => {
                           )}
                         </div>
                       </div>
-                      
+
                       <p className="text-gray-700 dark:text-surface-muted mt-2">{notification.message}</p>
-                      
+
                       <div className="flex items-center space-x-4 mt-3">
                         <div className="flex space-x-2">
                           {notification.actions.map((action, idx) => (
-                            <Button 
-                              key={idx} 
-                              variant="outline" 
+                            <Button
+                              key={idx}
+                              variant="outline"
                               size="sm"
                               onClick={() => {
-                                if (action === 'Detayları Görüntüle' && notification.scanIdString) {
+                                if (action === 'View Details' && notification.scanIdString) {
                                   navigate(`/dashboard/scans/${notification.scanIdString}`);
                                 }
                               }}

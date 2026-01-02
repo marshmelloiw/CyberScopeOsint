@@ -48,7 +48,7 @@ public class UserManagementService {
                     .collect(Collectors.toList());
         } catch (Exception e) {
             logger.error("Error fetching all users: {}", e.getMessage(), e);
-            throw new RuntimeException("Kullanıcılar yüklenemedi: " + e.getMessage(), e);
+            throw new RuntimeException("Users could not be loaded: " + e.getMessage(), e);
         }
     }
 
@@ -60,12 +60,12 @@ public class UserManagementService {
         try {
             Optional<User> userOpt = userRepository.findById(id);
             if (!userOpt.isPresent()) {
-                throw new RuntimeException("Kullanıcı bulunamadı");
+                throw new RuntimeException("User not found");
             }
             return convertToResponse(userOpt.get());
         } catch (Exception e) {
             logger.error("Error fetching user {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Kullanıcı bulunamadı: " + e.getMessage(), e);
+            throw new RuntimeException("User not found: " + e.getMessage(), e);
         }
     }
 
@@ -77,7 +77,7 @@ public class UserManagementService {
             String role, String password, String phoneNumber, String userFile) {
         try {
             if (userRepository.existsByEmail(email)) {
-                throw new RuntimeException("Bu email zaten kullanılıyor");
+                throw new RuntimeException("This email is already in use");
             }
 
             String fullName = (firstName != null && lastName != null)
@@ -109,7 +109,7 @@ public class UserManagementService {
             return user;
         } catch (Exception e) {
             logger.error("Error creating user: {}", e.getMessage(), e);
-            throw new RuntimeException("Kullanıcı oluşturulamadı: " + e.getMessage(), e);
+            throw new RuntimeException("User could not be created: " + e.getMessage(), e);
         }
     }
 
@@ -122,7 +122,7 @@ public class UserManagementService {
         try {
             Optional<User> userOpt = userRepository.findById(id);
             if (!userOpt.isPresent()) {
-                throw new RuntimeException("Kullanıcı bulunamadı");
+                throw new RuntimeException("User not found");
             }
 
             User user = userOpt.get();
@@ -130,7 +130,7 @@ public class UserManagementService {
             // Update email if provided and different
             if (email != null && !email.isEmpty() && !email.equals(user.getEmail())) {
                 if (userRepository.existsByEmail(email)) {
-                    throw new RuntimeException("Bu email zaten kullanılıyor");
+                    throw new RuntimeException("This email is already in use");
                 }
                 user.setEmail(email);
             }
@@ -188,7 +188,7 @@ public class UserManagementService {
             return user;
         } catch (Exception e) {
             logger.error("Error updating user {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Kullanıcı güncellenemedi: " + e.getMessage(), e);
+            throw new RuntimeException("User could not be updated: " + e.getMessage(), e);
         }
     }
 
@@ -200,7 +200,7 @@ public class UserManagementService {
         try {
             Optional<User> userOpt = userRepository.findById(id);
             if (!userOpt.isPresent()) {
-                throw new RuntimeException("Kullanıcı bulunamadı");
+                throw new RuntimeException("User not found");
             }
 
             // First, delete related records in user_roles table (if exists)
@@ -235,7 +235,7 @@ public class UserManagementService {
             logger.info("Deleted user: {}", id);
         } catch (Exception e) {
             logger.error("Error deleting user {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Kullanıcı silinemedi: " + e.getMessage(), e);
+            throw new RuntimeException("User could not be deleted: " + e.getMessage(), e);
         }
     }
 
@@ -247,7 +247,7 @@ public class UserManagementService {
         try {
             Optional<User> userOpt = userRepository.findById(id);
             if (!userOpt.isPresent()) {
-                throw new RuntimeException("Kullanıcı bulunamadı");
+                throw new RuntimeException("User not found");
             }
 
             User user = userOpt.get();
@@ -258,7 +258,7 @@ public class UserManagementService {
             return user;
         } catch (Exception e) {
             logger.error("Error suspending user {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Kullanıcı askıya alınamadı: " + e.getMessage(), e);
+            throw new RuntimeException("User could not be suspended: " + e.getMessage(), e);
         }
     }
 
@@ -270,7 +270,7 @@ public class UserManagementService {
         try {
             Optional<User> userOpt = userRepository.findById(id);
             if (!userOpt.isPresent()) {
-                throw new RuntimeException("Kullanıcı bulunamadı");
+                throw new RuntimeException("User not found");
             }
 
             User user = userOpt.get();
@@ -281,7 +281,7 @@ public class UserManagementService {
             return user;
         } catch (Exception e) {
             logger.error("Error activating user {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Kullanıcı aktifleştirilemedi: " + e.getMessage(), e);
+            throw new RuntimeException("User could not be activated: " + e.getMessage(), e);
         }
     }
 
@@ -370,7 +370,7 @@ public class UserManagementService {
             return csv.toString();
         } catch (Exception e) {
             logger.error("Error exporting users as CSV: {}", e.getMessage(), e);
-            throw new RuntimeException("CSV export başarısız: " + e.getMessage(), e);
+            throw new RuntimeException("CSV export failed: " + e.getMessage(), e);
         }
     }
 
@@ -442,17 +442,17 @@ public class UserManagementService {
             List<String> recommendations = new ArrayList<>();
             if (usersWithoutMfa > 0) {
                 recommendations.add(String.format(
-                        "%d kullanıcıda 2FA etkin değil. Güvenlik için 2FA'yı etkinleştirmenizi öneririz.",
+                        "%d users do not have 2FA enabled. We recommend enabling 2FA for security.",
                         usersWithoutMfa));
             }
             if (usersNeverLoggedIn > 0) {
                 recommendations
-                        .add(String.format("%d kullanıcı hiç giriş yapmamış. Bu hesapları gözden geçirmenizi öneririz.",
+                        .add(String.format("%d users have never logged in. We recommend reviewing these accounts.",
                                 usersNeverLoggedIn));
             }
             if (usersInactive30Days > 0) {
                 recommendations.add(String.format(
-                        "%d kullanıcı son 30 günde aktif olmamış. Bu hesapları askıya almayı düşünebilirsiniz.",
+                        "%d users have not been active in the last 30 days. You might consider suspending them.",
                         usersInactive30Days));
             }
             audit.put("recommendations", recommendations);
@@ -460,7 +460,7 @@ public class UserManagementService {
             return audit;
         } catch (Exception e) {
             logger.error("Error generating security audit: {}", e.getMessage(), e);
-            throw new RuntimeException("Güvenlik denetimi raporu oluşturulamadı: " + e.getMessage(), e);
+            throw new RuntimeException("Security audit report could not be created: " + e.getMessage(), e);
         }
     }
 
@@ -492,7 +492,7 @@ public class UserManagementService {
 
     private Role resolveRoleEntity(String normalizedRole) {
         return roleRepository.findByName(normalizedRole)
-                .orElseThrow(() -> new RuntimeException("Rol bulunamadı: " + normalizedRole));
+                .orElseThrow(() -> new RuntimeException("Role not found: " + normalizedRole));
     }
 
     private void assignRole(User user, String normalizedRole) {

@@ -10,7 +10,7 @@ import useAuthStore from '../../store/auth';
 import { ArrowLeft, Mail } from 'lucide-react';
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email('Geçerli bir email adresi giriniz'),
+  email: z.string().email('Enter a valid email address'),
 });
 
 const ForgotPassword = () => {
@@ -30,15 +30,15 @@ const ForgotPassword = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     clearError();
-    
+
     try {
       console.log('Forgot password attempt with:', data);
       const result = await forgotPassword(data.email);
       console.log('Forgot password result:', result);
-      
+
       // Show success message
       setIsEmailSent(true);
-      
+
     } catch (err) {
       console.error('Forgot password error:', err);
       // Error is handled by the store
@@ -64,7 +64,7 @@ const ForgotPassword = () => {
               <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">CyberScope OSINT</h1>
-            <p className="text-primary-200">Güvenlik tehditlerini keşfedin ve analiz edin</p>
+            <p className="text-primary-200">Discover and analyze security threats</p>
           </div>
 
           {/* Success message */}
@@ -75,16 +75,16 @@ const ForgotPassword = () => {
                   <Mail className="h-8 w-8 text-success" />
                 </div>
               </div>
-              <CardTitle className="text-2xl text-white">Email Gönderildi!</CardTitle>
+              <CardTitle className="text-2xl text-white">Email Sent!</CardTitle>
               <p className="text-surface-muted">
-                Şifre sıfırlama linki <strong>{getValues('email')}</strong> adresine gönderildi.
+                Password reset link has been sent to <strong>{getValues('email')}</strong> address.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg bg-info/10 border border-info/20 p-4">
                 <p className="text-sm text-info">
-                  <strong>Önemli:</strong> Email'inizi kontrol edin ve spam klasörünü de kontrol etmeyi unutmayın. 
-                  Link 24 saat geçerlidir.
+                  <strong>Important:</strong> Check your email and don't forget to check your spam folder.
+                  The link is valid for 24 hours.
                 </p>
               </div>
 
@@ -95,13 +95,13 @@ const ForgotPassword = () => {
                   className="w-full"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Gönderiliyor...' : 'Emaili Tekrar Gönder'}
+                  {isLoading ? 'Sending...' : 'Resend Email'}
                 </Button>
 
                 <Link to="/auth/login">
                   <Button variant="ghost" className="w-full">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Giriş Sayfasına Dön
+                    Back to Login Page
                   </Button>
                 </Link>
               </div>
@@ -111,7 +111,7 @@ const ForgotPassword = () => {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-xs text-primary-300">
-              © 2024 CyberScope OSINT. Tüm hakları saklıdır.
+              © 2025 CyberScope OSINT. All rights reserved.
             </p>
           </div>
         </div>
@@ -128,15 +128,15 @@ const ForgotPassword = () => {
             <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">CyberScope OSINT</h1>
-          <p className="text-primary-200">Güvenlik tehditlerini keşfedin ve analiz edin</p>
+          <p className="text-primary-200">Discover and analyze security threats</p>
         </div>
 
         {/* Forgot password form */}
         <Card className="glass border-white/20">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-white">Şifremi Unuttum</CardTitle>
+            <CardTitle className="text-2xl text-white">Forgot Password</CardTitle>
             <p className="text-surface-muted">
-              Email adresinizi girin, size şifre sıfırlama linki gönderelim
+              Enter your email address and we'll send you a password reset link
             </p>
           </CardHeader>
           <CardContent>
@@ -164,7 +164,7 @@ const ForgotPassword = () => {
                 loading={isLoading}
                 disabled={isLoading}
               >
-                {isLoading ? 'Gönderiliyor...' : 'Şifre Sıfırlama Linki Gönder'}
+                {isLoading ? 'Sending...' : 'Send Password Reset Link'}
               </Button>
             </form>
 
@@ -175,7 +175,7 @@ const ForgotPassword = () => {
                 className="inline-flex items-center text-sm text-primary-400 hover:text-primary-300 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Giriş sayfasına dön
+                Back to login page
               </Link>
             </div>
           </CardContent>
@@ -184,7 +184,7 @@ const ForgotPassword = () => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-primary-300">
-            © 2024 CyberScope OSINT. Tüm hakları saklıdır.
+            © 2025 CyberScope OSINT. All rights reserved.
           </p>
         </div>
       </div>

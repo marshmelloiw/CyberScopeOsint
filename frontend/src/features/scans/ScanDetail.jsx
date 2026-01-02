@@ -30,15 +30,15 @@ const ScanDetail = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch scan status and results
         const response = await api.get(`/scans/status/${scanId}`);
         const scanData = response.data;
-        
+
         setScan(scanData);
       } catch (err) {
         console.error('Error fetching scan details:', err);
-        setError(err.response?.data?.error || 'Scan detayları yüklenemedi');
+        setError(err.response?.data?.error || 'Scan details could not be loaded');
       } finally {
         setLoading(false);
       }
@@ -46,14 +46,14 @@ const ScanDetail = () => {
 
     if (scanId) {
       fetchScanDetails();
-      
+
       // Poll for updates if scan is still running
       const interval = setInterval(() => {
         if (scan?.status === 'RUNNING') {
           fetchScanDetails();
         }
       }, 3000);
-      
+
       return () => clearInterval(interval);
     }
   }, [scanId]);
@@ -95,7 +95,7 @@ const ScanDetail = () => {
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '-';
-    return new Date(timestamp).toLocaleString('tr-TR', {
+    return new Date(timestamp).toLocaleString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -109,7 +109,7 @@ const ScanDetail = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-        <span className="ml-3 text-surface-muted">Scan detayları yükleniyor...</span>
+        <span className="ml-3 text-surface-muted">Loading scan details...</span>
       </div>
     );
   }
@@ -119,14 +119,14 @@ const ScanDetail = () => {
       <div className="space-y-6">
         <Button variant="outline" onClick={() => navigate('/dashboard/scans')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Geri Dön
+          Go Back
         </Button>
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="h-16 w-16 mx-auto mb-4 text-danger" />
-            <h3 className="text-xl font-semibold text-white mb-2">Scan Bulunamadı</h3>
-            <p className="text-surface-muted mb-4">{error || 'Scan detayları yüklenemedi'}</p>
-            <Button onClick={() => navigate('/dashboard/scans')}>Scan Listesine Dön</Button>
+            <h3 className="text-xl font-semibold text-white mb-2">Scan Not Found</h3>
+            <p className="text-surface-muted mb-4">{error || 'Scan details could not be loaded'}</p>
+            <Button onClick={() => navigate('/dashboard/scans')}>Return to Scan List</Button>
           </CardContent>
         </Card>
       </div>
@@ -145,71 +145,71 @@ const ScanDetail = () => {
         <div className="flex items-center space-x-4">
           <Button variant="outline" onClick={() => navigate('/dashboard/scans')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Geri Dön
+            Go Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-white">{result.name || 'Scan Detayları'}</h1>
+            <h1 className="text-3xl font-bold text-white">{result.name || 'Scan Details'}</h1>
             <p className="text-surface-muted">Scan ID: {scan.scanId}</p>
           </div>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="text-danger hover:text-danger hover:border-danger"
           onClick={async () => {
-            if (window.confirm(`"${result.name || 'Bu scan'}" scan'ini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+            if (window.confirm(`Are you sure you want to delete scan "${result.name || 'This scan'}"? This action cannot be undone.`)) {
               try {
                 console.log('Deleting scan:', scan.scanId);
                 await api.delete(`/scans/${scan.scanId}`);
                 console.log('Scan deleted successfully');
-                alert('Scan başarıyla silindi');
+                alert('Scan deleted successfully');
                 navigate('/dashboard/scans');
               } catch (err) {
                 console.error('Error deleting scan:', err);
-                const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
-                alert('Scan silinirken hata oluştu: ' + errorMsg);
+                const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+                alert('Error deleting scan: ' + errorMsg);
               }
             }
           }}
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Scan'i Sil
+          Delete Scan
         </Button>
       </div>
 
       {/* Scan Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Scan Bilgileri</CardTitle>
+          <CardTitle>Scan Information</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-surface-muted mb-1">Durum</p>
+              <p className="text-sm text-surface-muted mb-1">Status</p>
               <div className="flex items-center space-x-2">
                 {getStatusIcon(scan.status)}
                 <span className="text-white capitalize">{scan.status?.toLowerCase()}</span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-surface-muted mb-1">Tip</p>
+              <p className="text-sm text-surface-muted mb-1">Type</p>
               <div className="flex items-center space-x-2">
                 {getTypeIcon(result.type)}
                 <span className="text-white">{getTypeLabel(result.type)}</span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-surface-muted mb-1">Risk Seviyesi</p>
+              <p className="text-sm text-surface-muted mb-1">Risk Level</p>
               <RiskBadge risk={scan.status === 'COMPLETED' ? 5 : 0} />
             </div>
             <div>
-              <p className="text-sm text-surface-muted mb-1">Başlangıç</p>
+              <p className="text-sm text-surface-muted mb-1">Start Time</p>
               <p className="text-white">{formatTimestamp(scan.logs?.[0]?.timestamp)}</p>
             </div>
           </div>
-          
+
           {result.targets && result.targets.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm text-surface-muted mb-2">Hedefler</p>
+              <p className="text-sm text-surface-muted mb-2">Targets</p>
               <div className="flex flex-wrap gap-2">
                 {result.targets.map((target, idx) => (
                   <span key={idx} className="px-3 py-1 bg-surface-panel rounded-lg text-white">
@@ -222,7 +222,7 @@ const ScanDetail = () => {
 
           {result.providers && result.providers.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm text-surface-muted mb-2">Provider'lar</p>
+              <p className="text-sm text-surface-muted mb-2">Providers</p>
               <div className="flex flex-wrap gap-2">
                 {result.providers.map((provider, idx) => (
                   <span key={idx} className="px-3 py-1 bg-primary-600 rounded-lg text-white">
@@ -249,10 +249,10 @@ const ScanDetail = () => {
                   : 'border-transparent text-surface-muted hover:text-white hover:border-surface-border'
               )}
             >
-              {tab === 'gemini' && 'AI Analiz'}
-              {tab === 'overview' && 'Genel Bakış'}
-              {tab === 'results' && 'Sonuçlar'}
-              {tab === 'logs' && 'Loglar'}
+              {tab === 'gemini' && 'AI Analysis'}
+              {tab === 'overview' && 'Overview'}
+              {tab === 'results' && 'Results'}
+              {tab === 'logs' && 'Logs'}
             </button>
           ))}
         </nav>
@@ -263,15 +263,15 @@ const ScanDetail = () => {
         {activeTab === 'gemini' && (
           <Card>
             <CardHeader>
-              <CardTitle>AI Analiz Raporları (Gemini)</CardTitle>
+              <CardTitle>AI Analysis Reports (Gemini)</CardTitle>
             </CardHeader>
             <CardContent>
               {Object.keys(geminiReports).length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-surface-muted mb-2">
-                    {scan.status === 'RUNNING' 
-                      ? 'AI analiz raporları hala oluşturuluyor...'
-                      : 'Henüz AI analiz raporu yok'}
+                    {scan.status === 'RUNNING'
+                      ? 'AI analysis reports are still being generated...'
+                      : 'No AI analysis report yet'}
                   </p>
                   {scan.status === 'RUNNING' && (
                     <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mt-4" />
@@ -290,7 +290,7 @@ const ScanDetail = () => {
                             {providerLabel} - {target}
                           </h3>
                           <span className="text-sm text-surface-muted">
-                            {report.status === 'completed' ? '✓ Tamamlandı' : '⏳ Oluşturuluyor...'}
+                            {report.status === 'completed' ? '✓ Completed' : '⏳ Generating...'}
                           </span>
                         </div>
                         {(() => {
@@ -327,23 +327,23 @@ const ScanDetail = () => {
         {activeTab === 'overview' && (
           <Card>
             <CardHeader>
-              <CardTitle>Genel Bakış</CardTitle>
+              <CardTitle>Overview</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-surface-muted mb-2">Scan Adı</p>
-                  <p className="text-white">{result.name || 'İsimsiz Scan'}</p>
+                  <p className="text-sm text-surface-muted mb-2">Scan Name</p>
+                  <p className="text-white">{result.name || 'Unnamed Scan'}</p>
                 </div>
                 {scan.completedAt && (
                   <div>
-                    <p className="text-sm text-surface-muted mb-2">Tamamlanma Zamanı</p>
+                    <p className="text-sm text-surface-muted mb-2">Completion Time</p>
                     <p className="text-white">{formatTimestamp(scan.completedAt)}</p>
                   </div>
                 )}
                 {scan.errorMessage && (
                   <div>
-                    <p className="text-sm text-surface-muted mb-2">Hata Mesajı</p>
+                    <p className="text-sm text-surface-muted mb-2">Error Message</p>
                     <p className="text-red-400">{scan.errorMessage}</p>
                   </div>
                 )}
@@ -355,11 +355,11 @@ const ScanDetail = () => {
         {activeTab === 'results' && (
           <Card>
             <CardHeader>
-              <CardTitle>Scan Sonuçları</CardTitle>
+              <CardTitle>Scan Results</CardTitle>
             </CardHeader>
             <CardContent>
               {Object.keys(results).length === 0 ? (
-                <p className="text-surface-muted">Henüz sonuç yok</p>
+                <p className="text-surface-muted">No results yet</p>
               ) : (
                 <div className="space-y-6">
                   {Object.entries(results).map(([target, targetResults]) => (
@@ -368,8 +368,8 @@ const ScanDetail = () => {
                       {targetResults && typeof targetResults === 'object' && (
                         <div className="space-y-4">
                           {Object.entries(targetResults).map(([provider, providerData]) => (
-                          <div key={provider} className="bg-surface-panel rounded-lg p-4">
-                            <h4 className="font-medium text-white mb-2">{getProviderLabel(provider)}</h4>
+                            <div key={provider} className="bg-surface-panel rounded-lg p-4">
+                              <h4 className="font-medium text-white mb-2">{getProviderLabel(provider)}</h4>
                               {providerData && typeof providerData === 'object' && (
                                 <pre className="text-xs text-surface-muted overflow-x-auto bg-surface-border p-3 rounded">
                                   {JSON.stringify(providerData, null, 2)}
@@ -391,11 +391,11 @@ const ScanDetail = () => {
         {activeTab === 'logs' && (
           <Card>
             <CardHeader>
-              <CardTitle>Scan Logları</CardTitle>
+              <CardTitle>Scan Logs</CardTitle>
             </CardHeader>
             <CardContent>
               {logs.length === 0 ? (
-                <p className="text-surface-muted">Henüz log yok</p>
+                <p className="text-surface-muted">No logs yet</p>
               ) : (
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {logs.map((log, idx) => (

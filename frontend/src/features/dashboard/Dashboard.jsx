@@ -48,22 +48,22 @@ const Dashboard = () => {
   useEffect(() => {
     fetchSummary();
     fetchChartData();
-    
+
     // Auto-refresh every 30 seconds to get latest data (silent refresh - no loading states)
     const interval = setInterval(() => {
       // Save scroll position
       const scrollY = window.scrollY;
-      
+
       // Silent refresh - update data without showing loading states
       fetchSummarySilent();
       fetchChartDataSilent();
-      
+
       // Restore scroll position after a brief delay
       setTimeout(() => {
         window.scrollTo(0, scrollY);
       }, 100);
     }, 30000); // Refresh every 30 seconds (reduced frequency)
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -74,7 +74,7 @@ const Dashboard = () => {
       const { data } = await api.get(endpoints.dashboard.summary);
       setSummary(data);
     } catch (err) {
-      const message = err?.response?.data?.error || 'Dashboard verileri yüklenemedi';
+      const message = err?.response?.data?.error || 'Dashboard data could not be loaded';
       setError(message);
     } finally {
       setLoading(false);
@@ -186,8 +186,8 @@ const Dashboard = () => {
     const actions = [
       {
         key: 'reports',
-        label: 'Raporları Görüntüle',
-        description: 'Analiz raporlarına göz atın',
+        label: 'View Reports',
+        description: 'Browse analysis reports',
         icon: FileSearch,
         onClick: () => navigate('/dashboard/reports'),
         variant: 'secondary',
@@ -197,16 +197,16 @@ const Dashboard = () => {
     if (isAdmin || isAnalyst) {
       actions.unshift({
         key: 'zap-scan',
-        label: 'ZAP Taraması',
-        description: 'OWASP ZAP ile URL güvenlik taraması başlatın',
+        label: 'ZAP Scan',
+        description: 'Start a URL security scan with OWASP ZAP',
         icon: Zap,
         onClick: () => navigate('/dashboard/scans/new?type=url&providers=ZAP'),
         variant: 'primary',
       });
       actions.unshift({
         key: 'new-scan',
-        label: 'Yeni Tarama',
-        description: 'Hemen yeni bir keşif başlatın',
+        label: 'New Scan',
+        description: 'Start a new discovery immediately',
         icon: Search,
         onClick: () => navigate('/dashboard/scans/new'),
         variant: 'primary',
@@ -216,16 +216,16 @@ const Dashboard = () => {
     if (isAdmin) {
       actions.push({
         key: 'user-management',
-        label: 'Kullanıcı Yönetimi',
-        description: 'Rolleri ve erişimleri yönetin',
+        label: 'User Management',
+        description: 'Manage roles and access',
         icon: Shield,
         onClick: () => navigate('/dashboard/users'),
         variant: 'tertiary',
       });
       actions.push({
         key: 'settings',
-        label: 'Sistem Ayarları',
-        description: 'Platform yapılandırmasını düzenleyin',
+        label: 'System Settings',
+        description: 'Edit platform configuration',
         icon: SettingsIcon,
         onClick: () => navigate('/dashboard/settings'),
         variant: 'tertiary',
@@ -235,8 +235,8 @@ const Dashboard = () => {
     if (role === ROLE.VIEWER) {
       actions.push({
         key: 'notifications',
-        label: 'Bildirimler',
-        description: 'Güncel bildirimleri inceleyin',
+        label: 'Notifications',
+        description: 'Review current notifications',
         icon: AlertTriangle,
         onClick: () => navigate('/dashboard/notifications'),
         variant: 'secondary',
@@ -246,8 +246,8 @@ const Dashboard = () => {
     if (isAdmin && !actions.some((a) => a.key === 'apikeys')) {
       actions.push({
         key: 'apikeys',
-        label: 'API Anahtarları',
-        description: 'Harici servis entegrasyonlarını yönetin',
+        label: 'API Keys',
+        description: 'Manage external service integrations',
         icon: Key,
         onClick: () => navigate('/dashboard/apikeys'),
         variant: 'secondary',
@@ -324,7 +324,7 @@ const Dashboard = () => {
       <div className="flex h-full min-h-[50vh] items-center justify-center">
         <div className="flex items-center space-x-3 text-surface-muted">
           <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
-          <span>Dashboard verileri yükleniyor...</span>
+          <span>Loading dashboard data...</span>
         </div>
       </div>
     );
@@ -339,7 +339,7 @@ const Dashboard = () => {
             onClick={fetchSummary}
             className="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 transition-colors"
           >
-            Tekrar dene
+            Try again
           </button>
         </div>
       </div>
@@ -350,7 +350,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-surface-muted">Güvenlik görünümünüzün güncel özeti.</p>
+        <p className="text-surface-muted">Current summary of your security landscape.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -368,7 +368,7 @@ const Dashboard = () => {
             <CardContent>
               {recentAlerts.length === 0 ? (
                 <div className="flex items-center justify-center py-10 text-surface-muted">
-                  <p>Henüz uyarı bulunmuyor.</p>
+                  <p>No alerts yet.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -385,7 +385,7 @@ const Dashboard = () => {
                           <p className="text-sm text-surface-muted">{alert.description}</p>
                           <div className="mt-1 flex items-center space-x-2 text-xs text-surface-muted">
                             <span>{alert.provider}</span>
-                            {alert.findings > 0 && <span>• {alert.findings} bulgu</span>}
+                            {alert.findings > 0 && <span>• {alert.findings} findings</span>}
                           </div>
                         </div>
                       </div>
@@ -404,7 +404,7 @@ const Dashboard = () => {
                   onClick={() => navigate('/dashboard/notifications')}
                   className="text-sm text-primary-500 hover:text-primary-400 transition-colors"
                 >
-                  Tüm uyarıları görüntüle →
+                  View all alerts →
                 </button>
               </div>
             </CardContent>
@@ -429,11 +429,11 @@ const Dashboard = () => {
                   <div className="flex items-center space-x-3">
                     <Icon className={cn(
                       'h-5 w-5 flex-shrink-0',
-                      variant === 'primary' 
-                        ? 'text-white' 
+                      variant === 'primary'
+                        ? 'text-white'
                         : variant === 'tertiary'
-                        ? 'text-primary-600 dark:text-primary-300'
-                        : 'text-gray-700 dark:text-gray-300'
+                          ? 'text-primary-600 dark:text-primary-300'
+                          : 'text-gray-700 dark:text-gray-300'
                     )} />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium">{label}</p>
@@ -443,8 +443,8 @@ const Dashboard = () => {
                           variant === 'primary'
                             ? 'text-white/90'
                             : variant === 'tertiary'
-                            ? 'text-primary-600/80 dark:text-primary-300/80'
-                            : 'text-gray-600 dark:text-gray-400'
+                              ? 'text-primary-600/80 dark:text-primary-300/80'
+                              : 'text-gray-600 dark:text-gray-400'
                         )}>
                           {description}
                         </p>
@@ -469,7 +469,7 @@ const Dashboard = () => {
                       <span className="flex items-center space-x-2">
                         <div className={cn('h-2 w-2 rounded-full', row.active ? 'bg-success' : 'bg-danger')} />
                         <span className={cn('text-sm', row.active ? 'text-success' : 'text-danger')}>
-                          {row.active ? 'Aktif' : 'Pasif'}
+                          {row.active ? 'Active' : 'Inactive'}
                         </span>
                       </span>
                     </div>
@@ -486,7 +486,7 @@ const Dashboard = () => {
         {/* Tool Usage Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Kullanılan Araçların Sıklığı</CardTitle>
+            <CardTitle>Tool Usage Frequency</CardTitle>
           </CardHeader>
           <CardContent>
             {chartsLoading ? (
@@ -516,12 +516,12 @@ const Dashboard = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-64 flex items-center justify-center text-surface-muted">
-                  <p>Henüz araç kullanım verisi yok</p>
+                  <p>No tool usage data yet</p>
                 </div>
               )
             ) : (
               <div className="h-64 flex items-center justify-center text-surface-muted">
-                <p>Veri yükleniyor...</p>
+                <p>Loading data...</p>
               </div>
             )}
           </CardContent>
@@ -530,7 +530,7 @@ const Dashboard = () => {
         {/* User Activity Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Kullanıcı Aktivite Durumu</CardTitle>
+            <CardTitle>User Activity Status</CardTitle>
           </CardHeader>
           <CardContent>
             {chartsLoading ? (
@@ -545,8 +545,8 @@ const Dashboard = () => {
                       <PieChart>
                         <Pie
                           data={[
-                            { name: 'Aktif', value: userActivityData.active || 0, color: '#22c55e' },
-                            { name: 'Pasif', value: userActivityData.inactive || 0, color: '#6b7280' },
+                            { name: 'Active', value: userActivityData.active || 0, color: '#22c55e' },
+                            { name: 'Inactive', value: userActivityData.inactive || 0, color: '#6b7280' },
                           ]}
                           cx="50%"
                           cy="50%"
@@ -577,26 +577,26 @@ const Dashboard = () => {
                       <div className="flex items-center space-x-2">
                         <div className="h-3 w-3 rounded-full bg-success"></div>
                         <span className="text-surface-muted">
-                          Aktif: {userActivityData.active || 0} ({userActivityData.activePercentage?.toFixed(1) || 0}%)
+                          Active: {userActivityData.active || 0} ({userActivityData.activePercentage?.toFixed(1) || 0}%)
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="h-3 w-3 rounded-full bg-surface-muted"></div>
                         <span className="text-surface-muted">
-                          Pasif: {userActivityData.inactive || 0} ({userActivityData.inactivePercentage?.toFixed(1) || 0}%)
+                          Inactive: {userActivityData.inactive || 0} ({userActivityData.inactivePercentage?.toFixed(1) || 0}%)
                         </span>
                       </div>
                     </div>
                   </>
                 ) : (
                   <div className="h-64 flex items-center justify-center text-surface-muted">
-                    <p>Henüz kullanıcı verisi yok</p>
+                    <p>No user data yet</p>
                   </div>
                 )}
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-surface-muted">
-                <p>Veri yükleniyor...</p>
+                <p>Loading data...</p>
               </div>
             )}
           </CardContent>
@@ -605,7 +605,7 @@ const Dashboard = () => {
         {/* Scan Status Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Tarama Durumları</CardTitle>
+            <CardTitle>Scan Statuses</CardTitle>
           </CardHeader>
           <CardContent>
             {chartsLoading ? (
@@ -632,12 +632,12 @@ const Dashboard = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-64 flex items-center justify-center text-surface-muted">
-                  <p>Henüz tarama verisi yok</p>
+                  <p>No scan data yet</p>
                 </div>
               )
             ) : (
               <div className="h-64 flex items-center justify-center text-surface-muted">
-                <p>Veri yükleniyor...</p>
+                <p>Loading data...</p>
               </div>
             )}
           </CardContent>

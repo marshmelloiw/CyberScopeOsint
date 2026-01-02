@@ -27,7 +27,7 @@ public class ScanController {
     }
     
     @PostMapping("/start")
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı (JWT filter eksik)
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> startScan(@RequestBody ScanService.ScanRequest request) {
         try {
             // Start async scan and return scanId immediately
@@ -44,14 +44,14 @@ public class ScanController {
             e.printStackTrace();
             
             return ResponseEntity.status(500).body(Map.of(
-                "error", "Scan başlatılamadı: " + e.getMessage(),
+                "error", "Scan could not be started: " + e.getMessage(),
                 "status", "error"
             ));
         }
     }
     
     @GetMapping("/status/{scanId}")
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ScanService.ScanStatus> getScanStatus(@PathVariable String scanId) {
         ScanService.ScanStatus status = scanService.getScanStatus(scanId);
         
@@ -63,7 +63,7 @@ public class ScanController {
     }
     
     @GetMapping
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getAllScans() {
         try {
             java.util.List<java.util.Map<String, Object>> scans = scanService.getAllScans();
@@ -75,31 +75,31 @@ public class ScanController {
             System.err.println("Error getting scans: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
-                "error", "Scan listesi alınamadı: " + e.getMessage()
+                "error", "Scan list could not be retrieved: " + e.getMessage()
             ));
         }
     }
     
     @DeleteMapping("/{scanId}")
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> deleteScan(@PathVariable String scanId) {
         try {
             scanService.deleteScan(scanId);
             return ResponseEntity.ok(java.util.Map.of(
-                "message", "Scan başarıyla silindi",
+                "message", "Scan successfully deleted",
                 "scanId", scanId
             ));
         } catch (Exception e) {
             System.err.println("Error deleting scan: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
-                "error", "Scan silinemedi: " + e.getMessage()
+                "error", "Scan could not be deleted: " + e.getMessage()
             ));
         }
     }
     
     @GetMapping("/reports")
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getGeminiReports() {
         try {
             java.util.List<java.util.Map<String, Object>> reports = scanService.getScansWithGeminiReports();
@@ -111,13 +111,13 @@ public class ScanController {
             System.err.println("Error getting Gemini reports: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
-                "error", "Raporlar alınamadı: " + e.getMessage()
+                "error", "Reports could not be retrieved: " + e.getMessage()
             ));
         }
     }
 
     @GetMapping("/{scanId}/report/pdf")
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> downloadReportPdf(@PathVariable String scanId) {
         try {
             byte[] pdfBytes = reportPdfService.generatePdfReport(scanId);
@@ -134,13 +134,13 @@ public class ScanController {
             System.err.println("Error generating PDF report: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
-                "error", "PDF raporu oluşturulamadı: " + e.getMessage()
+                "error", "PDF report could not be created: " + e.getMessage()
             ));
         }
     }
 
     @GetMapping("/{scanId}/report/html")
-    // @PreAuthorize("isAuthenticated()")  // Geçici olarak devre dışı
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> downloadReportHtml(@PathVariable String scanId) {
         try {
             String htmlContent = reportHtmlService.generateHtmlReport(scanId);
@@ -158,7 +158,7 @@ public class ScanController {
             System.err.println("Error generating HTML report: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
-                "error", "HTML raporu oluşturulamadı: " + e.getMessage()
+                "error", "HTML report could not be created: " + e.getMessage()
             ));
         }
     }

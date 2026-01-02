@@ -791,7 +791,7 @@ public class ScanService {
             logger.info("Scan {} removed from memory cache", scanId);
         } catch (Exception e) {
             logger.error("Error deleting scan {}: {}", scanId, e.getMessage(), e);
-            throw new RuntimeException("Scan silinemedi: " + e.getMessage(), e);
+            throw new RuntimeException("Scan could not be deleted: " + e.getMessage(), e);
         }
     }
 
@@ -1063,17 +1063,17 @@ public class ScanService {
                 if (findingsCount != null && findingsCount > 0) {
                     if (riskScore != null) {
                         message = String.format(
-                                "Yüksek risk tespit edildi: %s için %s taramasında %d bulgu, risk skoru %.1f (Seviye: %s)",
-                                target, provider, findingsCount, riskScore.doubleValue(), riskLevel);
+                                "High risk detected: %d findings in %s scan for %s, risk score %.1f (Level: %s)",
+                                findingsCount, provider, target, riskScore.doubleValue(), riskLevel);
                     } else {
                         message = String.format(
-                                "Yüksek risk tespit edildi: %s için %s taramasında %d bulgu (Seviye: %s)",
-                                target, provider, findingsCount, riskLevel);
+                                "High risk detected: %d findings in %s scan for %s (Level: %s)",
+                                findingsCount, provider, target, riskLevel);
                     }
                 } else {
                     message = String.format(
-                            "Yüksek risk skoru tespit edildi: %s için %s taramasında risk skoru %.1f (Seviye: %s)",
-                            target, provider, riskScore != null ? riskScore.doubleValue() : 0.0, riskLevel);
+                            "High risk score detected: Risk score %.1f in %s scan for %s (Level: %s)",
+                            riskScore != null ? riskScore.doubleValue() : 0.0, provider, target, riskLevel);
                 }
 
                 notificationService.createNotification(

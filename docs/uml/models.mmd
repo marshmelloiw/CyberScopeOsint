@@ -1,0 +1,169 @@
+classDiagram
+
+direction TB
+
+class ApiKey {
+    Long id
+    String keyName
+    String apiKey
+    String secretKey
+    String status
+    String description
+    List<String> permissions
+    String rateLimit
+    Long usageCount
+    LocalDateTime lastUsedAt
+    LocalDateTime expiresAt
+    Long userId
+    LocalDateTime createdAt
+    LocalDateTime updatedAt
+}
+class Entity {
+    Long id
+    User user
+    String entityType
+    String entityValue
+    LocalDateTime createdAt
+    LocalDateTime lastScanAt
+    Scan lastScan
+    BigDecimal riskScore
+    String riskLevel
+    LocalDateTime firstSeenAt
+    LocalDateTime lastSeenAt
+}
+class EntityFinding {
+    Long id
+    Entity entity
+    Scan scan
+    String findingType
+    String findingId
+    String title
+    String description
+    String severity
+    BigDecimal cvssScore
+    String source
+    Map<String, Object> rawData
+    LocalDateTime discoveredAt
+    LocalDateTime resolvedAt
+    String status
+}
+class Notification {
+    Integer id
+    Long userId
+    Long scanId
+    BigDecimal riskScore
+    String riskLevel
+    String message
+    Boolean isRead
+    LocalDateTime createdAt
+}
+class NotificationPreferences {
+    Integer id
+    Long userId
+    Boolean enableNotifications
+    Boolean soundAlerts
+    Boolean categorySecurity
+    Boolean categoryScan
+    Boolean categoryBreach
+    Boolean categorySystem
+    Boolean categoryIntelligence
+    Boolean inAppNotifications
+    Boolean emailNotifications
+    Boolean pushNotifications
+    String digestFrequency
+    LocalDateTime createdAt
+    LocalDateTime updatedAt
+}
+class PasswordResetToken {
+    Long id
+    String token
+    String email
+    Instant expiresAt
+}
+class RefreshToken {
+    Long id
+    User user
+    String token
+    Instant expiresAt
+}
+class Role {
+    Long id
+    String name
+}
+class Scan {
+    Long id
+    String scanId
+    String name
+    String type
+    String status
+    User user
+    LocalDateTime createdAt
+    LocalDateTime startedAt
+    LocalDateTime completedAt
+    String errorMessage
+    String priority
+    Long scheduleId
+}
+class ScanLog {
+    Long id
+    Scan scan
+    String logLevel
+    String message
+    LocalDateTime timestamp
+}
+class ScanProvider {
+    Long id
+    Scan scan
+    String providerName
+    String status
+    String errorMessage
+    LocalDateTime createdAt
+    LocalDateTime completedAt
+}
+class ScanResult {
+    Long id
+    Scan scan
+    ScanTarget scanTarget
+    String providerName
+    Map<String, Object> resultData
+    BigDecimal riskScore
+    String riskLevel
+    Integer findingsCount
+    Map<String, Object> geminiReport
+    LocalDateTime createdAt
+    LocalDateTime updatedAt
+}
+class ScanTarget {
+    Long id
+    Scan scan
+    String target
+    String targetType
+    String status
+    LocalDateTime createdAt
+    LocalDateTime processedAt
+}
+class User {
+    Long id
+    String email
+    String passwordHash
+    String fullName
+    String role
+    Boolean isVerified
+    Boolean mfaEnabled
+    String totpSecret
+    LocalDateTime createdAt
+    LocalDateTime lastLogin
+    String phoneNumber
+    String userFile
+}
+Entity --> User : user
+Entity --> Scan : lastScan
+EntityFinding --> Entity : entity
+EntityFinding --> Scan : scan
+RefreshToken --> User : user
+Scan --> User : user
+ScanLog --> Scan : scan
+ScanProvider --> Scan : scan
+ScanResult --> Scan : scan
+ScanResult --> ScanTarget : scanTarget
+ScanTarget --> Scan : scan

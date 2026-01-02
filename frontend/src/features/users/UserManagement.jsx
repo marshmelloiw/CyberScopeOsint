@@ -73,7 +73,7 @@ const UserManagement = () => {
       setUsers(usersData);
     } catch (err) {
       console.error('Error fetching users:', err);
-      setError(err.response?.data?.error || 'Kullanıcılar yüklenemedi');
+      setError(err.response?.data?.error || 'Users could not be loaded');
       setUsers([]);
     } finally {
       setLoading(false);
@@ -86,10 +86,10 @@ const UserManagement = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesStatus = user.status === statusFilter;
-    
+
     return matchesSearch && matchesRole && matchesStatus;
   });
 
@@ -98,7 +98,7 @@ const UserManagement = () => {
 
     // Validate file type
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-      alert('Sadece PDF dosyası yüklenebilir');
+      alert('Only PDF files can be uploaded');
       return null;
     }
 
@@ -112,20 +112,20 @@ const UserManagement = () => {
       return response.data.filePath;
     } catch (err) {
       console.error('Error uploading file:', err);
-      alert('Dosya yüklenirken hata oluştu: ' + (err.response?.data?.error || err.message));
+      alert('Error occurred while uploading file: ' + (err.response?.data?.error || err.message));
       return null;
     }
   };
 
   const handleInviteUser = async () => {
     if (!inviteData.email || !inviteData.firstName || !inviteData.lastName || !inviteData.password) {
-      alert('Lütfen tüm zorunlu alanları doldurun (Email, Ad, Soyad, Şifre)');
+      alert('Please fill in all required fields (Email, First Name, Last Name, Password)');
       return;
     }
 
     // Password validation
     if (inviteData.password.length < 6) {
-      alert('Şifre en az 6 karakter olmalıdır');
+      alert('Password must be at least 6 characters');
       return;
     }
 
@@ -148,9 +148,9 @@ const UserManagement = () => {
         phoneNumber: inviteData.phoneNumber || null,
         userFile: filePath,
       });
-      
-      alert('Kullanıcı başarıyla oluşturuldu! Kullanıcı belirtilen email ve şifre ile giriş yapabilir.');
-      
+
+      alert('User successfully created! User can login with the specified email and password.');
+
       // Reset form
       setInviteData({
         email: '',
@@ -163,12 +163,12 @@ const UserManagement = () => {
         selectedFile: null,
       });
       setShowInviteForm(false);
-      
+
       // Refresh users list
       await fetchUsers();
     } catch (err) {
       console.error('Error creating user:', err);
-      alert('Kullanıcı oluşturulamadı: ' + (err.response?.data?.error || err.message));
+      alert('User could not be created: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -179,7 +179,7 @@ const UserManagement = () => {
     const nameParts = (user.name || '').split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
-    
+
     const editDataNew = {
       email: user.email || '',
       firstName: firstName,
@@ -192,7 +192,7 @@ const UserManagement = () => {
       deleteFile: false,
       mfaEnabled: user.twoFactorEnabled || false,
     };
-    
+
     console.log('Setting edit data:', editDataNew);
     console.log('editDataNew.phoneNumber:', editDataNew.phoneNumber);
     console.log('editDataNew.userFile:', editDataNew.userFile);
@@ -204,22 +204,22 @@ const UserManagement = () => {
 
   const handleUpdateUser = async () => {
     if (!editingUserId) {
-      alert('Düzenlenecek kullanıcı bulunamadı');
+      alert('User to edit not found');
       return;
     }
 
     if (!editData.email || !editData.firstName || !editData.lastName) {
-      alert('Lütfen tüm zorunlu alanları doldurun');
+      alert('Please fill in all required fields');
       return;
     }
 
     try {
       console.log('Updating user:', editingUserId, 'with data:', editData);
       console.log('Phone number being sent:', editData.phoneNumber);
-      
+
       // Handle file operations
       let filePath = editData.userFile; // Keep existing file path by default
-      
+
       // If user wants to delete file
       if (editData.deleteFile) {
         filePath = null; // Set to null to delete file
@@ -231,7 +231,7 @@ const UserManagement = () => {
           return; // Upload failed, stop here
         }
       }
-      
+
       const response = await api.put(endpoints.users.update(editingUserId), {
         email: editData.email,
         firstName: editData.firstName,
@@ -242,11 +242,11 @@ const UserManagement = () => {
         userFile: filePath, // Can be null to delete, existing path, or new path
         mfaEnabled: editData.mfaEnabled,
       });
-      
+
       console.log('Update response:', response.data);
       console.log('Updated phone number:', response.data.phoneNumber);
-      alert('Kullanıcı başarıyla güncellendi!');
-      
+      alert('User successfully updated!');
+
       // Reset form
       setShowEditForm(false);
       setEditingUserId(null);
@@ -262,54 +262,54 @@ const UserManagement = () => {
         deleteFile: false,
         mfaEnabled: false,
       });
-      
+
       // Refresh users list
       await fetchUsers();
     } catch (err) {
       console.error('Error updating user:', err);
-      const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
-      alert('Kullanıcı güncellenemedi: ' + errorMsg);
+      const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+      alert('User could not be updated: ' + errorMsg);
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
     }
 
     try {
       await api.delete(endpoints.users.delete(userId));
-      alert('Kullanıcı başarıyla silindi!');
+      alert('User successfully deleted!');
       await fetchUsers();
     } catch (err) {
       console.error('Error deleting user:', err);
-      alert('Kullanıcı silinemedi: ' + (err.response?.data?.error || err.message));
+      alert('User could not be deleted: ' + (err.response?.data?.error || err.message));
     }
   };
 
   const handleSuspendUser = async (userId) => {
-    if (!window.confirm('Bu kullanıcıyı askıya almak istediğinize emin misiniz?')) {
+    if (!window.confirm('Are you sure you want to suspend this user?')) {
       return;
     }
 
     try {
       await api.put(`/users/${userId}/suspend`);
-      alert('Kullanıcı başarıyla askıya alındı!');
+      alert('User successfully suspended!');
       await fetchUsers();
     } catch (err) {
       console.error('Error suspending user:', err);
-      alert('Kullanıcı askıya alınamadı: ' + (err.response?.data?.error || err.message));
+      alert('User could not be suspended: ' + (err.response?.data?.error || err.message));
     }
   };
 
   const handleActivateUser = async (userId) => {
     try {
       await api.put(`/users/${userId}/activate`);
-      alert('Kullanıcı başarıyla aktifleştirildi!');
+      alert('User successfully activated!');
       await fetchUsers();
     } catch (err) {
       console.error('Error activating user:', err);
-      alert('Kullanıcı aktifleştirilemedi: ' + (err.response?.data?.error || err.message));
+      alert('User could not be activated: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -318,7 +318,7 @@ const UserManagement = () => {
       const response = await api.get(`/users/export?format=${format}`, {
         responseType: format === 'csv' ? 'blob' : 'json',
       });
-      
+
       if (format === 'csv') {
         // Download CSV file
         const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
@@ -329,7 +329,7 @@ const UserManagement = () => {
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
-        alert('Kullanıcılar CSV formatında başarıyla export edildi!');
+        alert('Users successfully exported in CSV format!');
       } else {
         // Download JSON file
         const dataStr = JSON.stringify(response.data, null, 2);
@@ -342,11 +342,11 @@ const UserManagement = () => {
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
-        alert('Kullanıcılar JSON formatında başarıyla export edildi!');
+        alert('Users successfully exported in JSON format!');
       }
     } catch (err) {
       console.error('Error exporting users:', err);
-      alert('Export işlemi başarısız: ' + (err.response?.data?.error || err.message));
+      alert('Export operation failed: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -360,7 +360,7 @@ const UserManagement = () => {
       setShowSecurityAudit(true);
     } catch (err) {
       console.error('Error fetching security audit:', err);
-      alert('Güvenlik denetimi raporu alınamadı: ' + (err.response?.data?.error || err.message));
+      alert('Security audit report could not be retrieved: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -373,11 +373,11 @@ const UserManagement = () => {
 
   const handleBulkAction = async (action) => {
     if (selectedUsers.length === 0) {
-      alert('Lütfen en az bir kullanıcı seçin');
+      alert('Please select at least one user');
       return;
     }
 
-    if (!window.confirm(`${selectedUsers.length} kullanıcı üzerinde ${action} işlemini yapmak istediğinize emin misiniz?`)) {
+    if (!window.confirm(`Are you sure you want to perform ${action} on ${selectedUsers.length} users?`)) {
       return;
     }
 
@@ -396,13 +396,13 @@ const UserManagement = () => {
       });
 
       await Promise.all(promises);
-      alert(`${selectedUsers.length} kullanıcı üzerinde ${action} işlemi başarıyla tamamlandı!`);
+      alert(`${action} operation successfully completed on ${selectedUsers.length} users!`);
       setSelectedUsers([]);
       setShowBulkOperations(false);
       await fetchUsers();
     } catch (err) {
       console.error('Error performing bulk action:', err);
-      alert('Toplu işlem başarısız: ' + (err.response?.data?.error || err.message));
+      alert('Bulk operation failed: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -415,7 +415,7 @@ const UserManagement = () => {
           handleEditUser(user);
         } else {
           console.error('User not found:', userId);
-          alert('Kullanıcı bulunamadı');
+          alert('User not found');
         }
         break;
       case 'delete':
@@ -441,7 +441,7 @@ const UserManagement = () => {
       setUsers((prevUsers) => prevUsers.map((user) => (user.id === userId ? { ...user, role: newRole } : user)));
     } catch (err) {
       console.error('Error updating role:', err);
-      alert('Rol güncellenemedi: ' + (err.response?.data?.error || err.message));
+      alert('Role could not be updated: ' + (err.response?.data?.error || err.message));
     } finally {
       setRoleUpdateLoading((prev) => {
         const next = { ...prev };
@@ -454,16 +454,16 @@ const UserManagement = () => {
   const InviteUserForm = useMemo(() => (
     <Card>
       <CardHeader>
-        <CardTitle>Yeni Kullanıcı Oluştur</CardTitle>
+        <CardTitle>Create New User</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Ad *</label>
+              <label className="block text-sm font-medium text-white mb-2">First Name *</label>
               <Input
-                placeholder="Ad girin"
+                placeholder="Enter first name"
                 value={inviteData.firstName}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -472,11 +472,11 @@ const UserManagement = () => {
                 style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Soyad *</label>
+              <label className="block text-sm font-medium text-white mb-2">Last Name *</label>
               <Input
-                placeholder="Soyad girin"
+                placeholder="Enter last name"
                 value={inviteData.lastName}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -488,10 +488,10 @@ const UserManagement = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Email Adresi *</label>
+            <label className="block text-sm font-medium text-white mb-2">Email Address *</label>
             <Input
               type="email"
-              placeholder="Email adresi girin"
+              placeholder="Enter email address"
               value={inviteData.email}
               onChange={(e) => {
                 const value = e.target.value;
@@ -502,10 +502,10 @@ const UserManagement = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Şifre *</label>
+            <label className="block text-sm font-medium text-white mb-2">Password *</label>
             <Input
               type="password"
-              placeholder="Şifre girin (en az 6 karakter)"
+              placeholder="Enter password (at least 6 characters)"
               value={inviteData.password}
               onChange={(e) => {
                 const value = e.target.value;
@@ -513,14 +513,14 @@ const UserManagement = () => {
               }}
               style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
             />
-            <p className="text-xs text-surface-muted mt-1">Kullanıcı bu email ve şifre ile giriş yapabilecek</p>
+            <p className="text-xs text-surface-muted mt-1">User can login with this email and password</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Telefon Numarası</label>
+            <label className="block text-sm font-medium text-white mb-2">Phone Number</label>
             <Input
               type="tel"
-              placeholder="Telefon numarası girin (örn: +905551234567)"
+              placeholder="Enter phone number (e.g. +905551234567)"
               value={inviteData.phoneNumber}
               onChange={(e) => {
                 const value = e.target.value;
@@ -544,7 +544,7 @@ const UserManagement = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Dosya Yükle (PDF)</label>
+            <label className="block text-sm font-medium text-white mb-2">Upload File (PDF)</label>
             <div className="space-y-2">
               <input
                 type="file"
@@ -580,17 +580,17 @@ const UserManagement = () => {
                 </div>
               )}
             </div>
-            <p className="text-xs text-surface-muted mt-1">Sadece PDF dosyası yüklenebilir</p>
+            <p className="text-xs text-surface-muted mt-1">Only PDF files can be uploaded</p>
           </div>
 
           {/* Actions */}
           <div className="flex justify-end space-x-3">
             <Button variant="outline" onClick={() => setShowInviteForm(false)}>
-              İptal
+              Cancel
             </Button>
             <Button onClick={handleInviteUser}>
               <Mail className="h-4 w-4 mr-2" />
-              Kullanıcı Oluştur
+              Create User
             </Button>
           </div>
         </div>
@@ -601,15 +601,15 @@ const UserManagement = () => {
   const EditUserForm = useMemo(() => (
     <Card>
       <CardHeader>
-        <CardTitle>Düzenle Kullanıcı</CardTitle>
+        <CardTitle>Edit User</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Ad *</label>
+              <label className="block text-sm font-medium text-white mb-2">First Name *</label>
               <Input
-                placeholder="Ad girin"
+                placeholder="Enter first name"
                 value={editData.firstName}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -618,11 +618,11 @@ const UserManagement = () => {
                 style={{ fontFamily: 'inherit', fontSize: 'inherit' }}
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Soyad *</label>
+              <label className="block text-sm font-medium text-white mb-2">Last Name *</label>
               <Input
-                placeholder="Soyad girin"
+                placeholder="Enter last name"
                 value={editData.lastName}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -637,7 +637,7 @@ const UserManagement = () => {
             <label className="block text-sm font-medium text-white mb-2">Email *</label>
             <Input
               type="email"
-              placeholder="Email adresi"
+              placeholder="Email address"
               value={editData.email}
               onChange={(e) => {
                 const value = e.target.value;
@@ -648,7 +648,7 @@ const UserManagement = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Rol</label>
+            <label className="block text-sm font-medium text-white mb-2">Role</label>
             <select
               value={editData.role}
               onChange={(e) => setEditData(prev => ({ ...prev, role: e.target.value }))}
@@ -661,22 +661,22 @@ const UserManagement = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Durum</label>
+            <label className="block text-sm font-medium text-white mb-2">Status</label>
             <select
               value={editData.status}
               onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
               className="w-full px-3 py-2 bg-surface-panel border border-surface-border rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
-              <option value="active">Aktif</option>
-              <option value="inactive">Pasif</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Telefon Numarası</label>
+            <label className="block text-sm font-medium text-white mb-2">Phone Number</label>
             <Input
               type="tel"
-              placeholder="Telefon numarası girin (örn: +905551234567)"
+              placeholder="Enter phone number (e.g. +905551234567)"
               value={editData.phoneNumber}
               onChange={(e) => {
                 const value = e.target.value;
@@ -687,7 +687,7 @@ const UserManagement = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Dosya Yükle (PDF)</label>
+            <label className="block text-sm font-medium text-white mb-2">Upload File (PDF)</label>
             <div className="space-y-2">
               {editData.userFile && !editData.selectedFile && (
                 <div className="flex items-center justify-between p-2 bg-surface-panel border border-surface-border rounded-lg mb-2">
@@ -702,16 +702,16 @@ const UserManagement = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (window.confirm('Mevcut dosyayı silmek istediğinize emin misiniz?')) {
+                        if (window.confirm('Are you sure you want to delete the existing file?')) {
                           setEditData(prev => ({ ...prev, userFile: null, deleteFile: true }));
                         }
                       }}
                       className="text-danger hover:text-danger"
-                      title="Dosyayı Sil"
+                      title="Delete File"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                    <span className="text-xs text-surface-muted">Mevcut dosya</span>
+                    <span className="text-xs text-surface-muted">Existing file</span>
                   </div>
                 </div>
               )}
@@ -743,7 +743,7 @@ const UserManagement = () => {
                     size="sm"
                     onClick={() => setEditData(prev => ({ ...prev, selectedFile: null }))}
                     className="text-danger hover:text-danger"
-                    title="Dosya seçimini iptal et"
+                    title="Cancel file selection"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -751,9 +751,9 @@ const UserManagement = () => {
               )}
             </div>
             <p className="text-xs text-surface-muted mt-1">
-              {editData.userFile 
-                ? 'Yeni dosya seçerseniz mevcut dosya değiştirilecek veya sil butonuna basarak mevcut dosyayı silebilirsiniz'
-                : 'PDF dosyası seçin'}
+              {editData.userFile
+                ? 'If you select a new file, the existing file will be replaced, or click delete to remove it'
+                : 'Select PDF file'}
             </p>
           </div>
 
@@ -765,7 +765,7 @@ const UserManagement = () => {
                 onChange={(e) => setEditData(prev => ({ ...prev, mfaEnabled: e.target.checked }))}
                 className="rounded border-surface-border bg-surface-panel text-primary-600"
               />
-              <span className="text-sm text-white">İki Faktörlü Doğrulama (2FA)</span>
+              <span className="text-sm text-white">Two-Factor Authentication (2FA)</span>
             </label>
           </div>
 
@@ -774,11 +774,11 @@ const UserManagement = () => {
               setShowEditForm(false);
               setEditingUserId(null);
             }}>
-              İptal
+              Cancel
             </Button>
             <Button onClick={handleUpdateUser}>
               <Edit className="h-4 w-4 mr-2" />
-              Kaydet
+              Save
             </Button>
           </div>
         </div>
@@ -804,9 +804,9 @@ const UserManagement = () => {
                       {role.id.toUpperCase()}
                     </span>
                   </div>
-                  
+
                   <p className="text-surface-muted mb-3">{role.description}</p>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h5 className="font-medium text-white mb-2">Permissions</h5>
@@ -861,7 +861,7 @@ const UserManagement = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div>
                       <h5 className="font-medium text-white mb-2">Role Statistics</h5>
                       <div className="space-y-2 text-sm">
@@ -904,7 +904,7 @@ const UserManagement = () => {
           </Button>
           <Button onClick={() => setShowInviteForm(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
-            Kullanıcı Oluştur
+            Create User
           </Button>
         </div>
       </div>
@@ -922,7 +922,7 @@ const UserManagement = () => {
       {loading && (
         <div className="flex items-center justify-center h-96">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-          <span className="ml-3 text-surface-muted">Kullanıcılar yükleniyor...</span>
+          <span className="ml-3 text-surface-muted">Loading users...</span>
         </div>
       )}
 
@@ -933,7 +933,7 @@ const UserManagement = () => {
             <AlertCircle className="h-16 w-16 mx-auto mb-4 text-danger" />
             <p className="text-danger mb-2">{error}</p>
             <Button onClick={fetchUsers} variant="outline">
-              Tekrar Dene
+              Try Again
             </Button>
           </CardContent>
         </Card>
@@ -1093,7 +1093,7 @@ const UserManagement = () => {
                               window.open(fileUrl, '_blank');
                             }}
                             className="text-primary hover:text-primary"
-                            title="Dosyayı Görüntüle"
+                            title="View File"
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
@@ -1142,24 +1142,24 @@ const UserManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="h-20 flex-col space-y-2"
               onClick={() => handleExportUsers('csv')}
             >
               <Download className="h-6 w-6" />
               <span>Export Users</span>
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="h-20 flex-col space-y-2"
               onClick={handleBulkOperations}
             >
               <Building className="h-6 w-6" />
               <span>Bulk Operations</span>
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="h-20 flex-col space-y-2"
               onClick={handleSecurityAudit}
             >
@@ -1178,8 +1178,8 @@ const UserManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-surface-muted">Toplu işlem yapmak için kullanıcıları seçin:</p>
-              
+              <p className="text-surface-muted">Select users for bulk operation:</p>
+
               <div className="max-h-60 overflow-y-auto border border-surface-border rounded-lg p-4">
                 {users.map(user => (
                   <label key={user.id} className="flex items-center space-x-2 p-2 hover:bg-surface-panel rounded">
@@ -1202,7 +1202,7 @@ const UserManagement = () => {
 
               <div className="flex items-center justify-between">
                 <span className="text-surface-muted">
-                  {selectedUsers.length} kullanıcı seçildi
+                  {selectedUsers.length} users selected
                 </span>
                 <div className="flex space-x-2">
                   <Button
@@ -1212,21 +1212,21 @@ const UserManagement = () => {
                       setSelectedUsers([]);
                     }}
                   >
-                    İptal
+                    Cancel
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleBulkAction('activate')}
                     disabled={selectedUsers.length === 0}
                   >
-                    Aktifleştir
+                    Activate
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleBulkAction('suspend')}
                     disabled={selectedUsers.length === 0}
                   >
-                    Askıya Al
+                    Suspend
                   </Button>
                   <Button
                     variant="outline"
@@ -1234,7 +1234,7 @@ const UserManagement = () => {
                     disabled={selectedUsers.length === 0}
                     className="text-danger hover:text-danger"
                   >
-                    Sil
+                    Delete
                   </Button>
                 </div>
               </div>
@@ -1316,7 +1316,7 @@ const UserManagement = () => {
 
               <div className="flex justify-end">
                 <Button variant="outline" onClick={() => setShowSecurityAudit(false)}>
-                  Kapat
+                  Close
                 </Button>
               </div>
             </div>

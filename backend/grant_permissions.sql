@@ -2,7 +2,7 @@
 -- Bu script, cyber kullanıcısına tüm tablolar için tam yetki verir
 
 -- Veritabanına bağlan
-\c cyberscope
+\c "cyberscope local"
 
 -- Tüm mevcut tablolara SELECT, INSERT, UPDATE, DELETE izinleri ver
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO cyber;
@@ -24,6 +24,10 @@ GRANT ALL PRIVILEGES ON TABLE scan_results TO cyber;
 GRANT ALL PRIVILEGES ON TABLE scan_logs TO cyber;
 GRANT ALL PRIVILEGES ON TABLE roles TO cyber;
 GRANT ALL PRIVILEGES ON TABLE password_reset_tokens TO cyber;
+GRANT ALL PRIVILEGES ON TABLE api_keys TO cyber;
+
+-- Flyway schema history tablosuna izin ver
+GRANT ALL PRIVILEGES ON TABLE flyway_schema_history TO cyber;
 
 -- İzinleri kontrol et
 SELECT 

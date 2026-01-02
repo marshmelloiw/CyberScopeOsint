@@ -68,7 +68,7 @@ public class AuthService {
 
     public Map<String, Object> register(String name, String email, String password, MultipartFile file) {
         if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email zorunludur");
+            throw new IllegalArgumentException("Email is required");
         }
 
         String normalizedEmail = email.trim().toLowerCase();
@@ -78,21 +78,21 @@ public class AuthService {
         }
 
         if (password == null || password.trim().isEmpty()) {
-            throw new IllegalArgumentException("Şifre zorunludur");
+            throw new IllegalArgumentException("Password is required");
         }
 
         if (password.trim().length() < 8) {
-            throw new IllegalArgumentException("Şifre en az 8 karakter olmalıdır");
+            throw new IllegalArgumentException("Password must be at least 8 characters");
         }
 
         // Validate file
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Dosya seçilmedi");
+            throw new IllegalArgumentException("File not selected");
         }
 
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
-            throw new IllegalArgumentException("Sadece PDF dosyası yüklenebilir");
+            throw new IllegalArgumentException("Only PDF files can be uploaded");
         }
 
         // Save file
@@ -111,7 +111,7 @@ public class AuthService {
             Files.copy(file.getInputStream(), filePathObj, StandardCopyOption.REPLACE_EXISTING);
             filePath = uploadDir + "/" + uniqueFilename;
         } catch (IOException e) {
-            throw new IllegalArgumentException("Dosya yüklenirken hata oluştu: " + e.getMessage());
+            throw new IllegalArgumentException("Error occurred during file upload: " + e.getMessage());
         }
 
         String hash = passwordEncoder.encode(password.trim());
@@ -131,7 +131,7 @@ public class AuthService {
 
         // Return success message (no token - user needs admin approval)
         Map<String, Object> response = new java.util.HashMap<>();
-        response.put("message", "Kayıt başarılı. Hesabınızın aktifleştirilmesi için yönetici onayı gerekmektedir.");
+        response.put("message", "Registration successful. Admin approval is required to activate your account.");
         response.put("user_id", user.getId());
 
         return response;
@@ -139,7 +139,7 @@ public class AuthService {
 
     public JwtResponse login(String email, String rawPassword) {
         if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre");
+            throw new IllegalArgumentException("Invalid username or password");
         }
 
         String normalizedEmail = email.trim().toLowerCase();
@@ -147,17 +147,17 @@ public class AuthService {
         logger.debug("Attempting login for email={}", normalizedEmail);
 
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid username or password"));
         String sanitizedPassword = rawPassword != null ? rawPassword.trim() : "";
 
         if (!passwordEncoder.matches(sanitizedPassword, user.getPasswordHash())) {
             logger.warn("Password mismatch for user id={} email={}", user.getId(), normalizedEmail);
-            throw new IllegalArgumentException("Geçersiz kullanıcı adı veya şifre");
+            throw new IllegalArgumentException("Invalid username or password");
         }
 
         if (!Boolean.TRUE.equals(user.getIsVerified())) {
             logger.warn("Login blocked for unverified user id={} email={}", user.getId(), normalizedEmail);
-            throw new IllegalArgumentException("Hesabınız aktif değil. Lütfen yöneticinizle iletişime geçin.");
+            throw new IllegalArgumentException("Your account is not active. Please contact your administrator.");
         }
 
         boolean totpEnabled = Boolean.TRUE.equals(user.getMfaEnabled()) && user.getTotpSecret() != null;
@@ -208,22 +208,22 @@ public class AuthService {
 
     public void changePassword(String email, String currentPassword, String newPassword) {
         if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email gerekli");
+            throw new IllegalArgumentException("Email is required");
         }
 
         String normalizedEmail = email.trim().toLowerCase();
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // Verify current password
         String sanitizedCurrentPassword = currentPassword != null ? currentPassword.trim() : "";
         if (!passwordEncoder.matches(sanitizedCurrentPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Mevcut şifre hatalı");
+            throw new IllegalArgumentException("Current password is incorrect");
         }
 
         // Validate new password
         if (newPassword == null || newPassword.trim().length() < 8) {
-            throw new IllegalArgumentException("Yeni şifre en az 8 karakter olmalıdır");
+            throw new IllegalArgumentException("New password must be at least 8 characters");
         }
 
         // Update password
@@ -244,7 +244,7 @@ public class AuthService {
     }
 
     public boolean verifySmsMfa(String email, String code) {
-        throw new UnsupportedOperationException("SMS MFA henüz desteklenmiyor");
+        throw new UnsupportedOperationException("SMS MFA is not supported yet");
     }
 
     public MfaSetupResponse setupTotpMfa(String email) {
@@ -326,11 +326,11 @@ public class AuthService {
 
     public JwtResponse refreshAccessToken(String refreshTokenValue) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new IllegalArgumentException("Geçersiz yenileme tokenı"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
 
         if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
             refreshTokenRepository.delete(refreshToken);
-            throw new IllegalArgumentException("Yenileme tokenının süresi dolmuş");
+            throw new IllegalArgumentException("Refresh token has expired");
         }
 
         User user = refreshToken.getUser();
@@ -404,7 +404,7 @@ public class AuthService {
 
     private Role resolveRoleEntity(String normalizedRole) {
         return roleRepository.findByName(normalizedRole)
-                .orElseThrow(() -> new IllegalArgumentException("Rol bulunamadı: " + normalizedRole));
+                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + normalizedRole));
     }
 
     private void assignRole(User user, String normalizedRole) {

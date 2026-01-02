@@ -48,7 +48,7 @@ public class AuthController {
             return ResponseEntity.ok(jwt);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", e.getMessage())); // e.getMessage() → “Hesabınız aktif değil.”
+                    .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Login failed: " + e.getMessage()));
@@ -88,13 +88,13 @@ public class AuthController {
     public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         try {
             authService.changePassword(request.getEmail(), request.getCurrentPassword(), request.getNewPassword());
-            return ResponseEntity.ok(Map.of("message", "Şifre başarıyla değiştirildi"));
+            return ResponseEntity.ok(Map.of("message", "Password successfully changed"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Şifre değiştirilemedi: " + e.getMessage()));
+                    .body(Map.of("error", "Password could not be changed: " + e.getMessage()));
         }
     }
 
@@ -107,13 +107,13 @@ public class AuthController {
     @PostMapping("/mfa/sms/setup")
     public ResponseEntity<?> setupSmsMfa(@Valid @RequestBody SmsMfaSetupRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body(Map.of("error", "SMS MFA henüz desteklenmiyor"));
+                .body(Map.of("error", "SMS MFA is not supported yet"));
     }
 
     @PostMapping("/mfa/sms/verify")
     public ResponseEntity<?> verifySmsMfa(@Valid @RequestBody SmsMfaVerifyRequest request) {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body(Map.of("error", "SMS MFA henüz desteklenmiyor"));
+                .body(Map.of("error", "SMS MFA is not supported yet"));
     }
 
     @PostMapping("/mfa/setup")

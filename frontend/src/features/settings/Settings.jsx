@@ -275,7 +275,7 @@ const Settings = () => {
                 <p className="font-medium text-gray-900 dark:text-white">Member Since</p>
                 <p className="text-sm text-gray-600 dark:text-surface-muted">When you joined the platform</p>
               </div>
-              <span className="text-gray-900 dark:text-white">January 2024</span>
+              <span className="text-gray-900 dark:text-white">January 2025</span>
             </div>
 
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-surface-panel/50 rounded-lg">
@@ -547,8 +547,8 @@ const Settings = () => {
                   <div className="flex items-center space-x-3">
                     <Moon className={cn(
                       'h-5 w-5',
-                      appearanceData.theme === 'dark' 
-                        ? 'text-primary-600 dark:text-primary-400' 
+                      appearanceData.theme === 'dark'
+                        ? 'text-primary-600 dark:text-primary-400'
                         : 'text-gray-600 dark:text-primary-400'
                     )} />
                     <div>
@@ -570,8 +570,8 @@ const Settings = () => {
                   <div className="flex items-center space-x-3">
                     <Sun className={cn(
                       'h-5 w-5',
-                      appearanceData.theme === 'light' 
-                        ? 'text-primary-600 dark:text-primary-400' 
+                      appearanceData.theme === 'light'
+                        ? 'text-primary-600 dark:text-primary-400'
                         : 'text-gray-600 dark:text-primary-400'
                     )} />
                     <div>

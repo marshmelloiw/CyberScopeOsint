@@ -27,36 +27,36 @@ const Reports = () => {
         setLoading(true);
       }
       setError(null);
-      
+
       // Get scans with Gemini reports from dedicated endpoint
       const response = await api.get('/scans/reports');
       const scansData = response.data.reports || [];
-      
+
       const completedScans = scansData;
-      
+
       const transformedReports = completedScans.map((scan) => {
         const targets = scan.targets || [];
         const providers = scan.providers || [];
         const timestamp = scan.timestamp || scan.createdAt || 0;
         const completedAt = scan.completedAt || scan.createdAt;
         const geminiReports = scan.geminiReports || {};
-        
+
         // Generate title if not provided
         let title = scan.name;
         if (!title && targets.length > 0) {
           const typeName = scan.type ? scan.type.charAt(0).toUpperCase() + scan.type.slice(1) : 'Scan';
           title = `${typeName} AI Report - ${targets.join(', ')}`;
         }
-        
+
         // Count Gemini reports
         const geminiReportCount = Object.keys(geminiReports).length;
-        
+
         return {
           id: scan.scanId,
           scanId: scan.scanId,
           title: title || 'Unnamed AI Report',
           type: scan.type || 'unknown',
-      status: 'completed',
+          status: 'completed',
           createdAt: timestamp ? new Date(timestamp).toISOString() : completedAt,
           updatedAt: completedAt || new Date().toISOString(),
           targets: Array.isArray(targets) ? targets : [],
@@ -66,11 +66,11 @@ const Reports = () => {
           geminiReportCount,
         };
       });
-      
+
       setReports(transformedReports);
     } catch (err) {
       console.error('Error fetching reports:', err);
-      setError(err.response?.data?.error || 'Rapor listesi yüklenemedi');
+      setError(err.response?.data?.error || 'Report list could not be loaded');
       setReports([]);
     } finally {
       if (showRefreshing) {
@@ -83,7 +83,7 @@ const Reports = () => {
 
   useEffect(() => {
     fetchReports();
-    
+
     // Refresh every 10 seconds
     const interval = setInterval(() => fetchReports(false), 10000);
     return () => clearInterval(interval);
@@ -125,8 +125,8 @@ const Reports = () => {
           <h1 className="text-3xl font-bold text-white">AI Reports</h1>
           <p className="text-surface-muted">View and manage your Gemini AI analysis reports</p>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => fetchReports(true)}
           disabled={refreshing || loading}
           className="flex items-center space-x-2"
@@ -134,7 +134,7 @@ const Reports = () => {
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
         </Button>
-        </div>
+      </div>
 
       {/* Filters and search */}
       <Card>
@@ -190,7 +190,7 @@ const Reports = () => {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-              <span className="ml-3 text-surface-muted">Raporlar yükleniyor...</span>
+              <span className="ml-3 text-surface-muted">Loading reports...</span>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-12">
@@ -198,7 +198,7 @@ const Reports = () => {
                 <AlertCircle className="h-16 w-16 mx-auto mb-4 text-danger" />
                 <p className="text-danger mb-2">{error}</p>
                 <Button onClick={() => fetchReports(false)} variant="outline">
-                  Tekrar Dene
+                  Try Again
                 </Button>
               </div>
             </div>
@@ -206,107 +206,107 @@ const Reports = () => {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <p className="text-surface-muted mb-4">
-                  {reports.length === 0 
-                    ? 'Henüz Gemini AI raporu yok. Tamamlanan scan\'lerin AI analiz raporları burada görünecek.'
-                    : 'Arama kriterlerinize uygun rapor bulunamadı.'}
+                  {reports.length === 0
+                    ? 'No Gemini AI reports yet. AI analysis reports for completed scans will appear here.'
+                    : 'No reports found matching your criteria.'}
                 </p>
                 <Link to="/dashboard/scans/new">
                   <Button>
-                    Yeni Scan Oluştur
+                    Create New Scan
                   </Button>
                 </Link>
               </div>
             </div>
           ) : (
-          <div className="space-y-4">
-            {filteredReports.map((report) => (
-              <div
-                key={report.id}
-                className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      {getTypeIcon(report.type)}
-                      <h3 className="text-lg font-semibold text-white">{report.title}</h3>
-                      <span className={cn(
+            <div className="space-y-4">
+              {filteredReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="p-4 border border-surface-border rounded-lg hover:bg-surface-panel/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        {getTypeIcon(report.type)}
+                        <h3 className="text-lg font-semibold text-white">{report.title}</h3>
+                        <span className={cn(
                           'px-2 py-1 rounded-full text-xs font-medium capitalize',
-                        getStatusColor(report.status)
-                      )}>
-                        {report.status}
-                      </span>
-                    </div>
+                          getStatusColor(report.status)
+                        )}>
+                          {report.status}
+                        </span>
+                      </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
-                      <div>
+                        <div>
                           <span className="text-surface-muted">Targets:</span>
                           <span className="text-white ml-2">
                             {report.targets.length > 0 ? report.targets.join(', ') : 'N/A'}
                           </span>
-                      </div>
-                      <div>
+                        </div>
+                        <div>
                           <span className="text-surface-muted">Providers:</span>
                           <span className="text-white ml-2">
                             {report.providers.length > 0 ? report.providers.join(', ') : 'N/A'}
                           </span>
-                      </div>
-                      <div>
+                        </div>
+                        <div>
                           <span className="text-surface-muted">AI Reports:</span>
                           <span className="text-white ml-2">{report.geminiReportCount || 0}</span>
-                      </div>
-                      <div>
+                        </div>
+                        <div>
                           <span className="text-surface-muted">Risk:</span>
                           <span className="ml-2">
                             <RiskBadge risk={Number(report.riskScore ?? 0)} />
                           </span>
+                        </div>
                       </div>
-                    </div>
 
                       <div className="flex items-center space-x-4 text-sm text-surface-muted">
-                      <div className="flex items-center space-x-1">
-                          <span>Created: {new Date(report.createdAt).toLocaleDateString('tr-TR')}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1">
+                          <span>Created: {new Date(report.createdAt).toLocaleDateString('en-US')}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
                           <span className="capitalize">{report.type}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-col space-y-2 ml-4">
+                    <div className="flex flex-col space-y-2 ml-4">
                       <Link to={`/dashboard/reports/${report.scanId}`}>
                         <Button variant="ghost" size="sm" className="w-full">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
                       </Link>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-danger hover:text-danger w-full"
                         onClick={async (e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          if (window.confirm(`"${report.title}" raporunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+                          if (window.confirm(`Are you sure you want to delete report "${report.title}"? This action cannot be undone.`)) {
                             try {
                               console.log('Deleting report/scan:', report.scanId);
                               await api.delete(`/scans/${report.scanId}`);
                               console.log('Report/scan deleted successfully');
                               await fetchReports(false);
-                              alert('Rapor başarıyla silindi');
+                              alert('Report deleted successfully');
                             } catch (err) {
                               console.error('Error deleting report:', err);
-                              const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
-                              alert('Rapor silinirken hata oluştu: ' + errorMsg);
+                              const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+                              alert('Error deleting report: ' + errorMsg);
                             }
                           }
                         }}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
-                    </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="w-full"
                         onClick={async (e) => {
                           e.preventDefault();
@@ -315,7 +315,7 @@ const Reports = () => {
                             const response = await api.get(`/scans/${report.scanId}/report/pdf`, {
                               responseType: 'blob'
                             });
-                            
+
                             // Create blob URL and trigger download
                             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
                             const link = document.createElement('a');
@@ -327,17 +327,17 @@ const Reports = () => {
                             window.URL.revokeObjectURL(url);
                           } catch (err) {
                             console.error('Error downloading PDF:', err);
-                            const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
-                            alert('PDF indirilirken hata oluştu: ' + errorMsg);
+                            const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+                            alert('Error downloading PDF: ' + errorMsg);
                           }
                         }}
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Download PDF
-                    </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="w-full"
                         onClick={async (e) => {
                           e.preventDefault();
@@ -346,7 +346,7 @@ const Reports = () => {
                             const response = await api.get(`/scans/${report.scanId}/report/html`, {
                               responseType: 'blob'
                             });
-                            
+
                             // Create blob URL and trigger download
                             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/html' }));
                             const link = document.createElement('a');
@@ -358,19 +358,19 @@ const Reports = () => {
                             window.URL.revokeObjectURL(url);
                           } catch (err) {
                             console.error('Error downloading HTML:', err);
-                            const errorMsg = err.response?.data?.error || err.message || 'Bilinmeyen hata';
-                            alert('HTML indirilirken hata oluştu: ' + errorMsg);
+                            const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+                            alert('Error downloading HTML: ' + errorMsg);
                           }
                         }}
                       >
                         <FileCode className="h-4 w-4 mr-2" />
                         Download HTML
-                    </Button>
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

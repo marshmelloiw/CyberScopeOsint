@@ -1,0 +1,77 @@
+classDiagram
+
+direction TB
+
+class ChangePasswordRequest {
+    String email
+    String currentPassword
+    String newPassword
+}
+class ChartDataResponse {
+}
+class DashboardSummaryResponse {
+    long openAlerts
+    double averageRiskScore
+    long activeScans
+    long newFindings24h
+}
+class ForgotPasswordRequest {
+    String email
+}
+class JwtResponse {
+    String token
+    String refreshToken
+    String tokenType
+    boolean mfaRequired
+    Long userId
+    String email
+    String fullName
+    String role
+    boolean verified
+    boolean mfaEnabled
+    long expiresIn
+}
+class LoginRequest {
+    String email
+    String password
+}
+class MfaSetupRequest {
+    String username
+}
+class MfaSetupResponse {
+    String totpSecret
+    String totpUri
+    String qrCodeUrl
+}
+class MfaVerifyRequest {
+    String username
+    String totpToken
+}
+class NotificationDTO {
+    Integer id
+    Long userId
+    Long scanId
+    String scanIdString
+    BigDecimal riskScore
+    String riskLevel
+    String message
+    Boolean isRead
+    LocalDateTime createdAt
+}
+class RefreshTokenRequest {
+    String refreshToken
+}
+class RegisterRequest {
+    String name
+    String email
+}
+class ResetPasswordRequest {
+    String token
+    String newPassword
+}
+class SmsMfaSetupRequest {
+    String phoneNumber
+}
+class SmsMfaVerifyRequest {
+    String code
+}

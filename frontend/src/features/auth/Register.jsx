@@ -10,17 +10,17 @@ import useAuthStore from '../../store/auth';
 import { Upload } from 'lucide-react';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Ad en az 2 karakter olmalıdır'),
-  email: z.string().email('Geçerli bir email adresi giriniz'),
-  password: z.string().min(8, 'Şifre en az 8 karakter olmalıdır'),
-  confirmPassword: z.string().min(8, 'Şifre tekrarı en az 8 karakter olmalıdır'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string().min(8, 'Password confirmation must be at least 8 characters'),
   file: z.instanceof(FileList)
-    .refine((files) => files.length > 0, 'Dosya seçilmelidir')
-    .refine((files) => files[0]?.type === 'application/pdf', 'Sadece PDF dosyası yüklenebilir'),
-  agreeToTerms: z.boolean().refine((val) => val === true, 'Kullanım şartlarını kabul etmelisiniz'),
+    .refine((files) => files.length > 0, 'File must be selected')
+    .refine((files) => files[0]?.type === 'application/pdf', 'Only PDF files can be uploaded'),
+  agreeToTerms: z.boolean().refine((val) => val === true, 'You must accept the terms of use'),
 }).refine((data) => data.password === data.confirmPassword, {
   path: ['confirmPassword'],
-  message: 'Şifreler eşleşmiyor',
+  message: 'Passwords do not match',
 });
 
 const Register = () => {
@@ -51,7 +51,7 @@ const Register = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     clearError();
-    
+
     try {
       console.log('Register attempt with:', data);
       const file = data.file[0];
@@ -62,11 +62,11 @@ const Register = () => {
         file: file,
       });
       console.log('Register result:', result);
-      
+
       // Show success message and redirect to login
-      alert(result.message || 'Kayıt başarılı! Hesabınızın aktifleştirilmesi için yönetici onayı gerekmektedir. Giriş yapabilmek için lütfen yönetici onayını bekleyin.');
+      alert(result.message || 'Registration successful! Administrator approval is required for your account activation. Please wait for administrator approval to log in.');
       navigate('/auth/login');
-      
+
     } catch (err) {
       console.error('Register error:', err);
       // Error is handled by the store
@@ -81,25 +81,25 @@ const Register = () => {
         {/* Logo and title */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-              <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
+            <img src="/logo.png" alt="CyberScope" className="h-16 w-16" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">CyberScope OSINT</h1>
-          <p className="text-primary-200">Güvenlik tehditlerini keşfedin ve analiz edin</p>
+          <p className="text-primary-200">Discover and analyze security threats</p>
         </div>
 
         {/* Register form */}
         <Card className="glass border-white/20">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-white">Kayıt Ol</CardTitle>
-            <p className="text-surface-muted">Hesabınızı oluşturun ve güvenlik analizlerine başlayın</p>
+            <CardTitle className="text-2xl text-white">Register</CardTitle>
+            <p className="text-surface-muted">Create your account and start security analysis</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Name field */}
               <Input
-                label="Ad Soyad"
+                label="Full Name"
                 type="text"
-                placeholder="Adınız ve soyadınız"
+                placeholder="First and last name"
                 error={errors.name?.message}
                 {...register('name')}
               />
@@ -115,7 +115,7 @@ const Register = () => {
 
               {/* Password field */}
               <Input
-                label="Şifre"
+                label="Password"
                 type="password"
                 placeholder="••••••••"
                 error={errors.password?.message}
@@ -124,7 +124,7 @@ const Register = () => {
 
               {/* Confirm password field */}
               <Input
-                label="Şifre (Tekrar)"
+                label="Password (Confirm)"
                 type="password"
                 placeholder="••••••••"
                 error={errors.confirmPassword?.message}
@@ -133,7 +133,7 @@ const Register = () => {
 
               {/* File upload field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Dosya Yükle</label>
+                <label className="text-sm font-medium text-white">Upload File</label>
                 <div className="relative">
                   <input
                     type="file"
@@ -148,7 +148,7 @@ const Register = () => {
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     <span className="text-sm">
-                      {selectedFileName || 'PDF dosyası seçin'}
+                      {selectedFileName || 'Select PDF file'}
                     </span>
                   </label>
                 </div>
@@ -156,7 +156,7 @@ const Register = () => {
                   <p className="text-sm text-danger">{errors.file.message}</p>
                 )}
                 {selectedFileName && (
-                  <p className="text-sm text-surface-muted">Seçilen dosya: {selectedFileName}</p>
+                  <p className="text-sm text-surface-muted">Selected file: {selectedFileName}</p>
                 )}
               </div>
 
@@ -173,16 +173,16 @@ const Register = () => {
                       to="/terms"
                       className="text-primary-400 hover:text-primary-300 transition-colors"
                     >
-                      Kullanım şartlarını
+                      Terms of use
                     </Link>
-                    {' '}ve{' '}
+                    {' '}and{' '}
                     <Link
                       to="/privacy"
                       className="text-primary-400 hover:text-primary-300 transition-colors"
                     >
-                      gizlilik politikasını
+                      privacy policy
                     </Link>
-                    {' '}kabul ediyorum
+                    {' '}I accept
                   </span>
                 </label>
                 {errors.agreeToTerms && (
@@ -204,19 +204,19 @@ const Register = () => {
                 loading={isLoading}
                 disabled={isLoading}
               >
-                {isLoading ? 'Kayıt oluşturuluyor...' : 'Kayıt Ol'}
+                {isLoading ? 'Creating account...' : 'Register'}
               </Button>
             </form>
 
             {/* Login link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-surface-muted">
-                Zaten hesabınız var mı?{' '}
+                Already have an account?{' '}
                 <Link
                   to="/auth/login"
                   className="text-primary-400 hover:text-primary-300 transition-colors font-medium"
                 >
-                  Giriş yapın
+                  Login
                 </Link>
               </p>
             </div>
@@ -226,7 +226,7 @@ const Register = () => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-primary-300">
-            © 2024 CyberScope OSINT. Tüm hakları saklıdır.
+            © 2025 CyberScope OSINT. All rights reserved.
           </p>
         </div>
       </div>
