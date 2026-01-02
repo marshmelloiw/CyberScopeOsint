@@ -147,47 +147,6 @@ mvn clean install
 
 Edit `backend/src/main/resources/application.yml`:
 
-```yaml
-spring:
-  application:
-    name: cyberscope-osint
-  
-  datasource:
-    url: jdbc:postgresql://localhost:5432/cyberscope_local
-    username: cyber
-    password: cyberpass
-  
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: false
-  
-  flyway:
-    enabled: false
-
-server:
-  port: 8080
-
-security:
-  jwt:
-    secret: CHANGE_THIS_SECRET_KEY_MIN_256_BITS
-    expiration: 3600
-    refresh-expiration: 604800
-
-# OSINT API Keys (Optional)
-osint:
-  shodan:
-    api-key: YOUR_SHODAN_API_KEY
-  virustotal:
-    api-key: YOUR_VIRUSTOTAL_API_KEY
-  haveibeenpwned:
-    api-key: YOUR_HIBP_API_KEY
-  gemini:
-    api-key: YOUR_GEMINI_API_KEY
-  zap:
-    url: http://localhost:8090
-    api-key: YOUR_ZAP_API_KEY
-```
 
 **IMPORTANT**: Change `jwt.secret` in production!
 
