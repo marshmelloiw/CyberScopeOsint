@@ -133,4 +133,17 @@ class ReportViewModel : ViewModel() {
     fun clearDownloadState() {
         _downloadState.value = null
     }
+    
+    fun deleteReport(scanId: String) {
+        viewModelScope.launch {
+            repository.deleteReport(scanId)
+                .onSuccess {
+                    // Reload reports after deletion
+                    loadReports()
+                }
+                .onFailure { error ->
+                    // Handle error - could show a toast or error message
+                }
+        }
+    }
 }

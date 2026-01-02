@@ -74,4 +74,17 @@ class ReportRepository {
             Result.failure(e)
         }
     }
+    
+    suspend fun deleteReport(scanId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.deleteScan(scanId)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to delete report: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

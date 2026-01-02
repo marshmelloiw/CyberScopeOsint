@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -16,16 +17,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.size
 import com.cyberscope.reports.data.model.Scan
 import com.cyberscope.reports.ui.viewmodel.ReportViewModel
 import com.cyberscope.reports.ui.viewmodel.UiState
 
 @Composable
-fun ReportsScreen(viewModel: ReportViewModel) {
+fun ReportsScreen(
+    viewModel: ReportViewModel, 
+    notificationViewModel: com.cyberscope.reports.ui.viewmodel.NotificationViewModel? = null,
+    modifier: Modifier = Modifier
+) {
     val reportsState by viewModel.reportsState.collectAsState()
     val selectedScan by viewModel.selectedScan.collectAsState()
+    val notifications by notificationViewModel?.notifications?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
     
-    Column(modifier = Modifier.fillMaxSize()) {
+    // Show notification when new scan completes
+    LaunchedEffect(notifications) {
+        val unreadNotifications = notifications.filter { !it.isRead }
+        if (unreadNotifications.isNotEmpty()) {
+            // Refresh reports when new notification arrives
+            viewModel.loadReports()
+        }
+    }
+    
+    // Show report details when scan is loaded
+    val loadedScan by viewModel.selectedScan.collectAsState()
+    LaunchedEffect(loadedScan) {
+        loadedScan?.let {
+            // Scan details loaded, show dialog
+        }
+    }
+    
+    Column(modifier = modifier.fillMaxSize()) {
         // Header with refresh button
         Row(
             modifier = Modifier
@@ -99,6 +123,9 @@ fun ReportsScreen(viewModel: ReportViewModel) {
                                 scan = report,
                                 onClick = {
                                     viewModel.selectScan(report)
+                                },
+                                onDelete = {
+                                    viewModel.deleteReport(report.scanId)
                                 }
                             )
                         }
@@ -135,7 +162,7 @@ fun ReportsScreen(viewModel: ReportViewModel) {
 }
 
 @Composable
-fun ReportCard(scan: Scan, onClick: () -> Unit) {
+fun ReportCard(scan: Scan, onClick: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -169,13 +196,28 @@ fun ReportCard(scan: Scan, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
                 }
-                // Download button - will be handled in dialog
-                Icon(
-                    imageVector = Icons.Filled.Download,
-                    contentDescription = "Download Report",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable(onClick = onClick)
-                )
+                // Action buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete Report",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable(onClick = onDelete)
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.Download,
+                        contentDescription = "Download Report",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable(onClick = onClick)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(12.dp))

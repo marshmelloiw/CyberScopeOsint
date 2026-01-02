@@ -85,3 +85,81 @@ data class ReportsResponse(
     @SerializedName("total")
     val total: Int
 )
+
+// Auth Models
+data class LoginRequest(
+    val email: String,
+    val password: String
+)
+
+data class JwtResponse(
+    @SerializedName("accessToken")
+    val accessToken: String?,
+    
+    @SerializedName("refreshToken")
+    val refreshToken: String?,
+    
+    @SerializedName("tokenType")
+    val tokenType: String?,
+    
+    @SerializedName("userId")
+    val userId: Long?,
+    
+    @SerializedName("email")
+    val email: String?,
+    
+    @SerializedName("fullName")
+    val fullName: String?,
+    
+    @SerializedName("role")
+    val role: String?,
+    
+    @SerializedName("verified")
+    val verified: Boolean?,
+    
+    @SerializedName("mfaRequired")
+    val mfaRequired: Boolean?,
+    
+    @SerializedName("mfaEnabled")
+    val mfaEnabled: Boolean?,
+    
+    @SerializedName("expiresIn")
+    val expiresIn: Long?
+)
+
+data class Notification(
+    @SerializedName("id")
+    val id: Int,
+    
+    @SerializedName("userId")
+    val userId: Long,
+    
+    @SerializedName("scanId")
+    val scanId: Long,
+    
+    @SerializedName("scanIdString")
+    val scanIdString: String?,
+    
+    @SerializedName("riskScore")
+    val riskScore: BigDecimal?,
+    
+    @SerializedName("riskLevel")
+    val riskLevel: String?,
+    
+    @SerializedName("message")
+    val message: String,
+    
+    @SerializedName("isRead")
+    val isRead: Boolean,
+    
+    @SerializedName("createdAt")
+    val createdAt: String
+)
+
+data class NotificationsResponse(
+    @SerializedName("notifications")
+    val notifications: List<Notification>,
+    
+    @SerializedName("unreadCount")
+    val unreadCount: Int
+)
