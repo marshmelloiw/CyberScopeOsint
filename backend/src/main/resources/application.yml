@@ -46,19 +46,19 @@ spring:
 # OSINT API Keys Configuration
 osint:
   twitter:
-    api-key: ${TWITTER_API_KEY:P4brtpH8Cr8d8XT2M2PMDiELr}
-    api-secret: ${TWITTER_API_SECRET:VpMc4lNDAI4UWZZlSWSwZonFPxkghf37VHSTKGCQS7xOUoxYq3}
-    bearer-token: ${TWITTER_BEARER_TOKEN:AAAAAAAAAAAAAAAAAAAAAEpE5QEAAAAAJ0UVTTXVj6yYdOiGKdJKLH5Uc9c%3D7rByVUEtGZQY0uHiy6vwtVnSYbaI8atWSYAl5rgNwc25S3YTtA}
+    api-key: ${TWITTER_API_KEY:}
+    api-secret: ${TWITTER_API_SECRET:}
+    bearer-token: ${TWITTER_BEARER_TOKEN:}
   shodan:
-    api-key: ${SHODAN_API_KEY:Vg3Cqg9KxB32E0ZhT1JRraMiYLeBAjdf}
+    api-key: ${SHODAN_API_KEY:}
   virustotal:
-    api-key: ${VIRUSTOTAL_API_KEY:5f8038cb6237695af7d6b01f508fff4d1512782710d924ac6df87b07ffe2219b}
+    api-key: ${VIRUSTOTAL_API_KEY:}
   hibp:
-    api-key: ${HIBP_API_KEY:your_actual_hibp_api_key_here}
+    api-key: ${HIBP_API_KEY:}
   gemini:
-    api-key: ${GEMINI_API_KEY:AIzaSyAmRJO5umgeEyRzgjayTT7LX3Ywn5y4qPM}
+    api-key: ${GEMINI_API_KEY:}
   zap:
-    api-key: ${ZAP_API_KEY:n0jjn18pt5al07pu83iejvr6t5}
+    api-key: ${ZAP_API_KEY:}
     base-url: ${ZAP_BASE_URL:http://localhost:9091}
     auto-start: ${ZAP_AUTO_START:false}
     daemon-command: ${ZAP_DAEMON_COMMAND:}
