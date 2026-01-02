@@ -286,8 +286,8 @@ VALUES (
 ```
 
 **Login Credentials:**
-- Email: `admin@cyberscope.com`
-- Password: `[Set your own secure password]`
+- Email: `admin@example.com`
+- Password: `[secure password]`
 
 **⚠️ IMPORTANT**: Change password after first login!
 
