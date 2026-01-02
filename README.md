@@ -244,10 +244,6 @@ VALUES (
 );
 ```
 
-**Login Credentials:**
-- Email: `admin@cyberscope.com`
-- Password: `admin123`
-
 **⚠️ IMPORTANT**: Change password after first login!
 
 ---
